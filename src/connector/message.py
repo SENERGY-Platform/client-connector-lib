@@ -5,48 +5,131 @@ try:
     from modules.logger import root_logger
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
-import json, time
+import json
 
 logger = root_logger.getChild(__name__)
 
 
 class Message:
     _device_id_key = 'device_url'
-    _service_key = 'service_url'
-    _time_stamp_key = 'time'
+    _endpoint_key = 'service_url'
+    _endpoint_name_key = 'service_name'
+    _timestamp_key = 'time'
     _task_id_key = 'task_id'
-    _data_key = 'protocol_parts'
-    _payload_key = 'value'
+    _payload_key = 'protocol_parts'
+    _instance_id_key = 'device_instance_id'
+    _worker_id_key = 'worker_id'
+    _output_name_key = 'output_name'
 
     def __init__(self):
-        self.device_id = None
-        self.service = None
-        self.time_stamp = None
-        self.task_id = None
-        self.payload = None
+        self._device_id = str()       # device_url
+        self._endpoint = str()        # service_url (sepl)
+        self._endpoint_name = str()   # service_name (sepl)
+        self._timestamp = int()       # time (sepl)
+        self._task_id = str()         # task_id (sepl)
+        self._instance_id = str()     # device_instance_id (sepl)
+        self._worker_id = str()       # worker_id (sepl)
+        self._output_name = str()     # output_name (sepl)
+        self._payload_header = str()  # protocol_parts
+        self._payload_body = str()    # protocol_parts
+
+    @property
+    def device_id(self):
+        return self._device_id
+
+    @device_id.setter
+    def device_id(self, arg):
+        if type(arg) is not str:
+            raise TypeError("device id must be a string but got '{}'".format(type(arg)))
+        self._device_id = arg
+
+    @property
+    def payload_header(self):
+        return self._payload_header
+
+    @payload_header.setter
+    def payload_header(self, arg):
+        if type(arg) is not str:
+            raise TypeError("payload header must be a string but got '{}'".format(type(arg)))
+        self._payload_header = arg
+
+    @property
+    def payload_body(self):
+        return self._payload_body
+
+    @payload_body.setter
+    def payload_body(self, arg):
+        if type(arg) is not str:
+            raise TypeError("payload body must be a string but got '{}'".format(type(arg)))
+        self._payload_body = arg
+
+    @property
+    def timestamp(self):
+        return self._timestamp
+
+    @timestamp.setter
+    def timestamp(self, arg):
+        raise TypeError('attribute timestamp is immutable')
+
 
     @staticmethod
-    def pack(message):
+    def pack(message, prefix=None):
         if type(message) is not Message:
             raise TypeError("message must be of type 'Message' but got '{}'".format(type(message)))
-        message.time_stamp = int(time.mktime(time.localtime()))
-        # build message string/json:
-        str_message = message.payload # ask ingo about message format
-        return str_message
+        payload = list()
+        if message._payload_header:
+            payload.append(
+                {
+                    'name': 'header',
+                    'value': message._payload_header
+                }
+            )
+        if message._payload_body:
+            payload.append(
+                {
+                    'name': 'body',
+                    'value': message._payload_body
+                }
+            )
+        msg_struct = {
+            Message._device_id_key: message._device_id,
+            Message._endpoint_key: message._endpoint,
+            Message._endpoint_name_key: message._endpoint_name,
+            Message._timestamp_key: str(message._timestamp),
+            Message._task_id_key: message._task_id,
+            Message._payload_key: payload,
+            Message._instance_id_key: message._instance_id,
+            Message._worker_id_key: message._worker_id,
+            Message._output_name_key: message._output_name
+        }
+        msg_str = json.dumps(msg_struct)
+        if prefix:
+            if type(prefix) is not str:
+                raise TypeError("prefix must be a string but got '{}'".format(type(prefix)))
+            msg_str = prefix + ':' + msg_str
+        return msg_str
 
     @staticmethod
     def unpack(message):
         msg_obj = Message()
         try:
             message = json.loads(message)
-            msg_obj.device_id = message.get(Message._device_id_key)
-            msg_obj.service = message.get(Message._service_key)
-            msg_obj.time_stamp = message.get(Message._time_stamp_key)
-            msg_obj.task_id = message.get(Message._task_id_key)
-            data = message.get(Message._data_key)
-            if len(data):
-                payload_dirty = data[0].get(Message._payload_key)
-                msg_obj.payload = payload_dirty.replace('\n', '').replace(' ', '')
+            msg_obj._device_id = message.get(Message._device_id_key)
+            msg_obj._endpoint = message.get(Message._endpoint_key)
+            msg_obj._endpoint_name = message.get(Message._endpoint_name_key)
+            msg_obj._timestamp = int(message.get(Message._timestamp_key))
+            msg_obj._task_id = message.get(Message._task_id_key)
+            msg_obj._instance_id = message.get(Message._instance_id_key)
+            msg_obj._worker_id = message.get(Message._worker_id_key)
+            msg_obj._output_name = message.get(Message._output_name_key)
+            payload = message.get(Message._payload_key)
+            for item in payload:
+                value_dirty = item.get('value')
+                part = item.get('name')
+                if part == 'body':
+                    msg_obj._payload_body = value_dirty.replace('\n', '').replace(' ', '')
+                elif part == 'header':
+                    msg_obj._payload_header = value_dirty.replace('\n', '').replace(' ', '')
         except Exception as ex:
             logger.error(ex)
         return msg_obj
