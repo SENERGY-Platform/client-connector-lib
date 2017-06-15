@@ -90,7 +90,10 @@ class Connector(Thread):
 
     @staticmethod
     def send(message):
-        OUT_QUEUE.put(Message.pack(message))
+        if type(message) is Message:                # temp workaround
+            OUT_QUEUE.put(Message.pack(message))
+        else:
+            OUT_QUEUE.put(message)
 
     @staticmethod
     def receive():
@@ -131,7 +134,7 @@ class Connector(Thread):
         )
         if response.status == 200:
             message = Message()
-            message.payload = 'update'
+            message._payload = 'update'
             Connector.send(message)
             logger.info("registered devices with platform")
             return True
