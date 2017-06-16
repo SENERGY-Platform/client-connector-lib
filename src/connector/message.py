@@ -71,6 +71,14 @@ class Message:
     def timestamp(self, arg):
         raise TypeError('attribute timestamp is immutable')
 
+    @property
+    def endpoint(self):
+        return self._endpoint
+
+    @endpoint.setter
+    def endpoint(self, arg):
+        raise TypeError('attribute endpoint is immutable')
+
 
     @staticmethod
     def pack(message, prefix=None):
