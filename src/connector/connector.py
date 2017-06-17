@@ -6,7 +6,7 @@ try:
     from modules.http_lib import Methods as http
     from connector.configuration import CONNECTOR_LOOKUP_URL, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_DEVICE_REGISTRATION_PATH
     from connector.websocket import Websocket
-    from connector.message import Message
+    from connector.message import Message, Prefix
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, json, time
@@ -89,11 +89,23 @@ class Connector(Thread):
             time.sleep(30)
 
     @staticmethod
-    def send(message):
-        if type(message) is Message:                # temp workaround
-            OUT_QUEUE.put(Message.pack(message))
+    def _derivePrefix(message):
+        if message._task_id:
+            return Prefix.response
         else:
-            OUT_QUEUE.put(message)
+            return Prefix.change
+
+    @staticmethod
+    def send(message):
+        msg_str = Message.pack(message)
+        prefix = Connector._derivePrefix(message)
+        OUT_QUEUE.put(prefix + msg_str)
+
+    @staticmethod
+    def _sendRaw(message):
+        if type(message) is not str:
+            raise TypeError("message must be a string but got '{}'".format(type(message)))
+        OUT_QUEUE.put(message)
 
     @staticmethod
     def receive():
@@ -130,12 +142,10 @@ class Connector(Thread):
             ),
             json.dumps(payload),
             headers={'Content-Type': 'application/json'},
-            timeout=30 # reduce in future
+            timeout=10
         )
         if response.status == 200:
-            message = Message()
-            message._payload = 'update'
-            Connector.send(message)
+            Connector._sendRaw('update')
             logger.info("registered devices with platform")
             return True
         else:
