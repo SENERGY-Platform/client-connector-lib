@@ -31,7 +31,7 @@ class Message:
         self._worker_id = str()       # worker_id (sepl)
         self._output_name = str()     # output_name (sepl)
         self._payload_header = str()  # protocol_parts
-        self._payload_body = str()    # protocol_parts
+        self._payload = str()    # protocol_parts
 
     @property
     def device_id(self):
@@ -54,14 +54,14 @@ class Message:
         self._payload_header = arg
 
     @property
-    def payload_body(self):
-        return self._payload_body
+    def payload(self):
+        return self._payload
 
-    @payload_body.setter
-    def payload_body(self, arg):
+    @payload.setter
+    def payload(self, arg):
         if type(arg) is not str:
             raise TypeError("payload body must be a string but got '{}'".format(type(arg)))
-        self._payload_body = arg
+        self._payload = arg
 
     @property
     def timestamp(self):
@@ -81,7 +81,7 @@ class Message:
 
 
     @staticmethod
-    def pack(message, prefix=None):
+    def pack(message):
         if type(message) is not Message:
             raise TypeError("message must be of type 'Message' but got '{}'".format(type(message)))
         payload = list()
@@ -92,11 +92,11 @@ class Message:
                     'value': message._payload_header
                 }
             )
-        if message._payload_body:
+        if message._payload:
             payload.append(
                 {
                     'name': 'body',
-                    'value': message._payload_body
+                    'value': message._payload
                 }
             )
         msg_struct = {
@@ -111,10 +111,6 @@ class Message:
             Message._output_name_key: message._output_name
         }
         msg_str = json.dumps(msg_struct)
-        if prefix:
-            if type(prefix) is not str:
-                raise TypeError("prefix must be a string but got '{}'".format(type(prefix)))
-            msg_str = prefix + ':' + msg_str
         return msg_str
 
     @staticmethod
@@ -135,9 +131,14 @@ class Message:
                 value_dirty = item.get('value')
                 part = item.get('name')
                 if part == 'body':
-                    msg_obj._payload_body = value_dirty.replace('\n', '').replace(' ', '')
+                    msg_obj._payload = value_dirty.replace('\n', '').replace(' ', '')
                 elif part == 'header':
                     msg_obj._payload_header = value_dirty.replace('\n', '').replace(' ', '')
         except Exception as ex:
             logger.error(ex)
         return msg_obj
+
+class Prefix:
+    change = 'change:'
+    response = 'response:'
+    update = 'update:'
