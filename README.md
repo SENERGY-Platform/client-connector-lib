@@ -7,7 +7,7 @@ Written in Python3 and relying on the `websockets` module.
 
 ----------
 
-**Environment variables:**
+**Environment variables**
 > 
 > `CONNECTOR_LOOKUP_URL` (default:
 > 'http://fgseitsrancher.wifa.intern.uni-leipzig.de:8093/lookup')
@@ -79,6 +79,37 @@ Basic Usage
 
 ----------
 
-Creating a device
+Create a device
 -----------------
 
+**Device structure**
+
+> `id` local id of a device.
+> `type` type of a device.
+> `name` name of a device.
+
+**Example**
+
+    my_device = Device('unique device id', 'device type', 'device name')
+
+
+----------
+
+Create a message
+----------------
+*Non-final implementation of Message, breaking changes imminent.*
+
+**Message structure**
+
+> `device_id` local id of a device.
+> `timestamp` message timestamp set by platform (receive) / connector (send).
+> `endpoint` local endpoint set by platform.
+> `payload_header` payload metadata.
+> `payload` message content.
+
+**Example**
+
+    my_message = Message()
+    my_message.device_id = 'unique device id'
+    my_message.payload_header = "'Content-Type': 'application/json'"
+    my_message.payload = "{'unit': 'kW', 'value': '1.43'}"
