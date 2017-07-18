@@ -142,11 +142,15 @@ Support Modules
 **HTTP Library**
 
 > **`get(url)`** 
+> 
 > HTTP GET: 
+> 
 > `url` requires a fully qualified URL string.
 >  
 > Optional:
+> 
 > `query` takes a dictionary with query arguments.
+> 
 > `headers` takes a dictionary with header fields.
 > 
 > Returns a `Response` object.
