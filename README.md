@@ -143,17 +143,13 @@ Support Modules
 
 > **`get(url)`** 
 > 
-> HTTP GET: 
-> 
-> `url` requires a fully qualified URL string.
->  
-> Optional:
-> 
-> `query` takes a dictionary with query arguments.
-> 
-> `headers` takes a dictionary with header fields.
-> 
-> Returns a `Response` object.
+> >`url` requires a fully qualified URL string.   Optional:
+> >
+> >`query` takes a dictionary with query arguments.
+> >
+> >`headers` takes a dictionary with header fields.
+> >
+> >Returns a `Response` object.
 > 
 > ----------
 > 
@@ -235,8 +231,10 @@ Support Modules
 > `header` response header.
 > `body` response body.
 
-
 ----------
 
 
 **Logger**
+
+
+
