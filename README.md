@@ -43,8 +43,6 @@ Written in Python3 and relying on the `websockets` module.
         # start your code
 
 
--------------
-
 Basic Usage
 -----------
 
@@ -77,7 +75,6 @@ Basic Usage
 > 
 > Requires a `Device` object as argument.
 
-----------
 
 Create a device
 -----------------
@@ -92,8 +89,6 @@ Create a device
 
     my_device = Device('unique device id', 'device type', 'device name')
 
-
-----------
 
 Create a message
 ----------------
