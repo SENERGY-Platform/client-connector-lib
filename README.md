@@ -1,4 +1,4 @@
-connector-client
+connector-client2
 ================
 
 A Python client providing a quasi-framework for users wanting to integrate their personal IoT project / device with the SEPL platform.
