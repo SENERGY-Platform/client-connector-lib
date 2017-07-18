@@ -7,7 +7,7 @@ Written in Python3 and relying on the `websockets` module.
 
 ----------
 
-> **Environment variables:**
+**Environment variables:**
 > 
 > `CONNECTOR_LOOKUP_URL` (default:
 > 'http://fgseitsrancher.wifa.intern.uni-leipzig.de:8093/lookup')
@@ -48,15 +48,14 @@ Written in Python3 and relying on the `websockets` module.
 Basic Usage
 -----------
 
-> **Send a message to the platform**
+**Send a message to the platform**
 > 
 >     Connector.send() 
 > 
 > Requires a `Message` object as argument.
 > 
-> ----------
-> 
-> **Receive a message from the platform**
+
+**Receive a message from the platform**
 > 
 >     Connector.receive()
 > 
@@ -64,17 +63,15 @@ Basic Usage
 > Returned object is a `Message` object containing the payload and
 > metadata.
 > 
-> ----------
-> 
-> **Register a device to the platform**
+
+**Register a device to the platform**
 > 
 >     Connector.register()
 > 
 > Requires a `Device` object as argument.
 > 
->----------
->
-> **Remove a device from the platform**
+
+ **Remove a device from the platform**
 > 
 >     Connector.unregister()
 > 
