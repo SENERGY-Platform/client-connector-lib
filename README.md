@@ -7,11 +7,13 @@ A Python client providing a quasi-framework for users wanting to integrate their
 Written in Python3 and relying on the websockets module.
 
 
+----------
+
 **Environment variables:**
 
 `CONNECTOR_LOOKUP_URL` (default: 'http://fgseitsrancher.wifa.intern.uni-leipzig.de:8093/lookup')
 
-`CONNECTOR_DEVICE_REGISTRATION_PATH (default: 'discovery')
+`CONNECTOR_DEVICE_REGISTRATION_PATH` (default: 'discovery')
 
 `CONNECTOR_HTTPS` = (default: None)
 
@@ -24,7 +26,7 @@ Written in Python3 and relying on the websockets module.
 ----------
 
 
-Basic Client
+Basic Example
 -------------
 
 ```
@@ -44,7 +46,7 @@ if __name__ == '__main__':
     # start your code
 ```
 
-
+-------------
 **Query parameters (optional):**
 
 `time_window` limits the time-frame of the query. Accepts `h`, `m` and `s` as suffixes. (Example: `12h`)
