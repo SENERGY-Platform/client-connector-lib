@@ -82,7 +82,9 @@ Create a device
 **Device structure**
 
 > `id` local id of a device.
+> 
 > `type` type of a device.
+> 
 > `name` name of a device.
 
 **Example**
@@ -97,9 +99,13 @@ Create a message
 **Message structure**
 
 > `device_id` local id of a device.
+> 
 > `timestamp` message timestamp set by platform (receive) / connector (send).
+> 
 > `endpoint` local endpoint set by platform.
+> 
 > `payload_header` payload metadata.
+> 
 > `payload` message content.
 
 **Example**
