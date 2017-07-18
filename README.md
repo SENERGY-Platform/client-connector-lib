@@ -137,7 +137,6 @@ Support Modules
 
 **HTTP Library**
 
-
 >     get(url)
 > 
 > >`url` requires a fully qualified URL string.   
