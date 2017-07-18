@@ -143,7 +143,9 @@ Support Modules
 
 > **`get(url)`** 
 > 
-> >`url` requires a fully qualified URL string.   Optional:
+> >`url` requires a fully qualified URL string.   
+> >
+> >Optional:
 > >
 > >`query` takes a dictionary with query arguments.
 > >
@@ -154,49 +156,49 @@ Support Modules
 > ----------
 > 
 > **`post(url, body)`**
-> HTTP POST: 
-> `url` requires a fully qualified URL string. 
-> `body` should be provided as a string.
->  
-> Optional:
-> `headers` takes a dictionary with header fields.
-> 
-> Returns a `Response` object.
+> >`url` requires a fully qualified URL string. 
+> >`body` should be provided as a string.
+> >
+> >Optional:
+> >
+> >`headers` takes a dictionary with header fields.
+> >
+> >Returns a `Response` object.
 > 
 > ----------
 > 
 > **`put(url, body)`**
-> HTTP PUT: 
-> `url` requires a fully qualified URL string. 
-> `body` should be provided as a string.
->  
-> Optional:
-> `headers` takes a dictionary with header fields.
-> 
-> Returns a `Response` object.
+> > `url` requires a fully qualified URL string. 
+> >`body` should be provided as a string.
+> > 
+> >
+> > Optional:
+> >
+> > `headers` takes a dictionary with header fields.
+> >
+> > Returns a `Response` object.
 > 
 > ----------
 > 
 > **`delete(url)`**
-> HTTP DELETE:
-> `url` requires a fully qualified URL string. 
-> 
-> Optional:
-> `headers` takes a dictionary with header fields.
-> 
-> Returns a `Response` object.
+> > `url` requires a fully qualified URL string. 
+> > 
+> > Optional:
+> >
+> >`headers` takes a dictionary with header fields.
+> >
+> >Returns a `Response` object.
 > 
 > ----------
 > 
 > **`header(url)`**
-> HTTP HEADER:
-> `url` requires a fully qualified URL string.
->  
-> Optional:
-> `query` takes a dictionary with query arguments.
-> `headers` takes a dictionary with header fields.
-> 
-> Returns a `Response` object.
+> > `url` requires a fully qualified URL string.
+> > 
+> > Optional:
+> > `query` takes a dictionary with query arguments.
+> > `headers` takes a dictionary with header fields.
+> >
+> > Returns a `Response` object.
 > 
 > ----------
 > 
@@ -208,28 +210,34 @@ Support Modules
 > 
 > ----------
 > 
+> **Response object structure**
+> 
+> `status` response status.
+> `header` response header.
+> `body` response body.
+> 
+> ----------
+> 
 > **Example**
 >         
 >     from modules.http_lib import Methods as http
 >     
 >     
->     # get https://www.yourdomain.com/path?id=1&lang=en
+>     # get http://www.yourdomain.com/path?id=1&lang=en
 >     response = get(
->         'https://www.yourdomain.com/path',
+>         'http://www.yourdomain.com/path',
 >         query = {'id':1, 'lang':'en'}
 >        )
 >     body = response.body   
 >     
 >     response = post(
->         'https://www.yourdomain.com/path',
+>         'http://www.yourdomain.com/path',
 >         body = "{'unit': 'kW', 'value': '1.43'}",
 >         headers = {'Content-Type': 'application/json'}
 >        )
+>     status = response.status
 > 
-> **Response object structure**
-> `status` response status.
-> `header` response header.
-> `body` response body.
+
 
 ----------
 
