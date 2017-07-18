@@ -22,7 +22,6 @@ Written in Python3 and relying on the `websockets` module.
 > 
 > `LOGLEVEL` (default: 'info')
 
-----------
 
 **Basic client structure**
 
@@ -114,3 +113,26 @@ Create a message
     my_message.device_id = 'unique device id'
     my_message.payload_header = "'Content-Type': 'application/json'"
     my_message.payload = "{'unit': 'kW', 'value': '1.43'}"
+
+
+Advanced configuration
+----------------------
+
+For time-critical applications it's possible to use callbacks for client-code execution. When creating a `Connector` object two optional arguments (`con_callbck`, `discon_callbck`) can be used to start / resume or halt / pause execution.
+
+`con_callbck` will be executed when a connection to the SEPL platform has been established.
+
+`discon_callbck` will be executed if the connection to the SEPL platform is closed / lost.
+
+**Example**
+
+    def resumeThread():
+       pass
+    
+    def pauseThread():
+       pass
+       
+       
+    connector = Connector(con_callbck=resumeThread, discon_callbck=pauseThread)
+
+
