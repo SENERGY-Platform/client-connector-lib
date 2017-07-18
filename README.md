@@ -47,7 +47,7 @@ Basic Usage
 
 **Send a message to the platform**
 > 
->     Connector.send() 
+>     Connector.send(message) 
 > 
 > Requires a `Message` object as argument.
 > 
@@ -63,14 +63,14 @@ Basic Usage
 
 **Register a device to the platform**
 > 
->     Connector.register()
+>     Connector.register(device)
 > 
 > Requires a `Device` object as argument.
 > 
 
  **Remove a device from the platform**
 > 
->     Connector.unregister()
+>     Connector.unregister(device)
 > 
 > Requires a `Device` object as argument.
 
@@ -136,3 +136,103 @@ For time-critical applications it's possible to use callbacks for client-code ex
     connector = Connector(con_callbck=resumeThread, discon_callbck=pauseThread)
 
 
+Support Modules
+-----------------
+
+**HTTP Library**
+
+> **`get(url)`** 
+> HTTP GET: 
+> `url` requires a fully qualified URL string.
+>  
+> Optional:
+> `query` takes a dictionary with query arguments.
+> `headers` takes a dictionary with header fields.
+> 
+> Returns a `Response` object.
+> 
+> ----------
+> 
+> **`post(url, body)`**
+> HTTP POST: 
+> `url` requires a fully qualified URL string. 
+> `body` should be provided as a string.
+>  
+> Optional:
+> `headers` takes a dictionary with header fields.
+> 
+> Returns a `Response` object.
+> 
+> ----------
+> 
+> **`put(url, body)`**
+> HTTP PUT: 
+> `url` requires a fully qualified URL string. 
+> `body` should be provided as a string.
+>  
+> Optional:
+> `headers` takes a dictionary with header fields.
+> 
+> Returns a `Response` object.
+> 
+> ----------
+> 
+> **`delete(url)`**
+> HTTP DELETE:
+> `url` requires a fully qualified URL string. 
+> 
+> Optional:
+> `headers` takes a dictionary with header fields.
+> 
+> Returns a `Response` object.
+> 
+> ----------
+> 
+> **`header(url)`**
+> HTTP HEADER:
+> `url` requires a fully qualified URL string.
+>  
+> Optional:
+> `query` takes a dictionary with query arguments.
+> `headers` takes a dictionary with header fields.
+> 
+> Returns a `Response` object.
+> 
+> ----------
+> 
+> **Global optional arguments**
+> 
+> `timeout` time to pass until a request fails in seconds. (default: 3)
+> `retries` number of retries for a failed request. (default: 0)
+> `retry_delay` delay between retries in seconds. (default: 0.5) 
+> 
+> ----------
+> 
+> **Example**
+>         
+>     from modules.http_lib import Methods as http
+>     
+>     
+>     # get https://www.yourdomain.com/path?id=1&lang=en
+>     response = get(
+>         'https://www.yourdomain.com/path',
+>         query = {'id':1, 'lang':'en'}
+>        )
+>     body = response.body   
+>     
+>     response = post(
+>         'https://www.yourdomain.com/path',
+>         body = "{'unit': 'kW', 'value': '1.43'}",
+>         headers = {'Content-Type': 'application/json'}
+>        )
+> 
+> **Response object structure**
+> `status` response status.
+> `header` response header.
+> `body` response body.
+
+
+----------
+
+
+**Logger**
