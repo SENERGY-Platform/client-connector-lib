@@ -25,12 +25,10 @@ Written in Python3 and relying on the `websockets` module.
 
 **Basic client structure**
 
-    from modules.logger import root_logger
     from connector.connector import Connector
     from connector.message import Message
     from connector.device import Device
     
-    logger = root_logger.getChild(__name__)
     
     # your code
 
@@ -198,6 +196,7 @@ Support Modules
 > > Optional:
 > >
 > > `query` takes a dictionary with query arguments.
+> >
 > > `headers` takes a dictionary with header fields.
 > >
 > > Returns a `Response` object.
@@ -230,13 +229,13 @@ Support Modules
 >     
 >     
 >     # get http://www.yourdomain.com/path?id=1&lang=en
->     response = get(
+>     response = http.get(
 >         'http://www.yourdomain.com/path',
 >         query = {'id':1, 'lang':'en'}
 >        )
 >     body = response.body   
 >     
->     response = post(
+>     response = http.post(
 >         'http://www.yourdomain.com/path',
 >         body = "{'unit': 'kW', 'value': '1.43'}",
 >         headers = {'Content-Type': 'application/json'}
@@ -250,5 +249,21 @@ Support Modules
 
 **Logger**
 
-
-
+> **Levels**
+> 
+>  `info`, `warning`, `error`, `critical` and `debug`
+>  
+>  ----------
+> 
+> **Example**
+> 
+>     from modules.logger import root_logger
+>     
+>     logger = root_logger.getChild(__name__)
+>     
+>     
+>     logger.info('info message')
+>     logger.warning('warning message')
+>     logger.error('error message')
+>     logger.critical('critical message')
+>     logger.debug('debug message')
