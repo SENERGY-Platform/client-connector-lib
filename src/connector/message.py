@@ -69,7 +69,12 @@ class Message:
 
     @timestamp.setter
     def timestamp(self, arg):
-        raise TypeError('attribute timestamp is immutable')
+        if self._timestamp:
+            raise TypeError('attribute timestamp already set')
+        else:
+            if type(arg) is not int:
+                raise TypeError("timestamp must be an integer but got '{}'".format(type(arg)))
+            self._timestamp = arg
 
     @property
     def endpoint(self):
@@ -128,12 +133,11 @@ class Message:
             msg_obj._output_name = message.get(Message._output_name_key)
             payload = message.get(Message._payload_key)
             for item in payload:
-                value_dirty = item.get('value')
                 part = item.get('name')
                 if part == 'body':
-                    msg_obj._payload = value_dirty.replace('\n', '').replace(' ', '')
+                    msg_obj._payload = item.get('value')
                 elif part == 'header':
-                    msg_obj._payload_header = value_dirty.replace('\n', '').replace(' ', '')
+                    msg_obj._payload_header = item.get('value')
         except Exception as ex:
             logger.error(ex)
         return msg_obj
