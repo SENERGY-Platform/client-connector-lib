@@ -139,7 +139,8 @@ Support Modules
 
 **HTTP Library**
 
-> **get(url)** 
+
+>     get(url)
 > 
 > >`url` requires a fully qualified URL string.   
 > >
@@ -153,7 +154,7 @@ Support Modules
 > 
 > ----------
 > 
-> **post(url, body)**
+>      post(url, body)
 > >`url` requires a fully qualified URL string. 
 > >`body` should be provided as a string.
 > >
@@ -193,6 +194,7 @@ Support Modules
 > > `url` requires a fully qualified URL string.
 > > 
 > > Optional:
+> >
 > > `query` takes a dictionary with query arguments.
 > > `headers` takes a dictionary with header fields.
 > >
