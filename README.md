@@ -205,7 +205,9 @@ Support Modules
 > **Global optional arguments**
 > 
 > `timeout` time to pass until a request fails in seconds. (default: 3)
+> 
 > `retries` number of retries for a failed request. (default: 0)
+> 
 > `retry_delay` delay between retries in seconds. (default: 0.5) 
 > 
 > ----------
@@ -213,7 +215,9 @@ Support Modules
 > **Response object structure**
 > 
 > `status` response status.
+> 
 > `header` response header.
+> 
 > `body` response body.
 > 
 > ----------
