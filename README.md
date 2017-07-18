@@ -1,11 +1,9 @@
 connector-client
-===================
-
+================
 
 A Python client providing a quasi-framework for users wanting to integrate their personal IoT project / device with the SEPL platform.
 
-Written in Python3 and relying on the websockets module.
-
+Written in Python3 and relying on the `websockets` module.
 
 ----------
 
@@ -15,25 +13,24 @@ Written in Python3 and relying on the websockets module.
 
 `CONNECTOR_DEVICE_REGISTRATION_PATH` (default: 'discovery')
 
-`CONNECTOR_HTTPS` = (default: None)
+`CONNECTOR_HTTPS` (default: None)
 
-`CONNECTOR_USER` = (default: '')
+`CONNECTOR_USER` (default: '')
 
-`CONNECTOR_PASSWORD` = (default: '')
+`CONNECTOR_PASSWORD` (default: '')
 
-`LOGLEVEL` = (default: 'info')
+`LOGLEVEL` (default: 'info')
 
 ----------
 
-
-Basic Example
--------------
+**Basic Example**
 
 ```
 try:
     from modules.logger import root_logger
-    from modules.http_lib import Methods as http
     from connector.connector import Connector
+    from connector.message import Message
+    from connector.device import Device
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 
@@ -47,30 +44,43 @@ if __name__ == '__main__':
 ```
 
 -------------
-**Query parameters (optional):**
 
-`time_window` limits the time-frame of the query. Accepts `h`, `m` and `s` as suffixes. (Example: `12h`)
+Basic Usage
+-----------
 
-`granularity` sets the granularity of the result. Available options: `all`, `second`, `minute`, `fifteen_minute`, `thirty_minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`
+**Send a message to the platform**
+
+    Connector.send()
+
+Requires a `Message` object as argument.
+
+----------
+
+**Receive a message from the platform**
+
+    Connector.receive()
+
+Blocks and returns when a message is received from the platform. Returned object is a `Message` object containing the payload and metadata.
+
+----------
+
+**Register a device to the platform**
+
+    Connector.register()
+
+Requires a `Device` object as argument.
+
+----------
+
+**Remove a device from the platform**
+
+    Connector.unregister()
+
+Requires a `Device` object as argument.
 
 
-**Returns a JSON array of JSON objects:**
+----------
 
-`[{"time_stamp":<string>,"result":<float>,"data_points":<integer>}]`
+Creating a device
+-----------------
 
-
-**Example:**
-```
-GET /devices/your_device/average?granularity=hour&time_window=12h
-```
-Performs a "timeseries" query covering the last 12 hours and aggregates per hour:
-```
--> [{"time_stamp":"2016-12-06T13:00:00.000Z","result":6.101150962541688,"data_points":53},{"time_stamp":"2016-11-29T12:00:00.000Z","result":6.0534987847972435,"data_points":1652}]
-```
-A simpler query:
-```
-GET /devices/your_device/average
-
--> [{"time_stamp":"2016-12-06T13:06:20.205Z","result":6.050372958501621,"data_points":10111}]
-```
-By omitting `granularity` the service uses `all` as a standard value and not providing `time_window` results in an interval ranging from the beginning of "Unix time" to the current time.
