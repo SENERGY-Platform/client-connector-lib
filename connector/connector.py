@@ -60,6 +60,7 @@ class Connector(Thread):
             function()
 
     def run(self):
+        logger.info(20*'*'+' Starting SEPL connector client '+20*'*')
         while True:
             while not self._lookup():
                 logger.debug("retry in 10s")
