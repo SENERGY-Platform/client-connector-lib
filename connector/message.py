@@ -31,7 +31,7 @@ class Message:
         self._worker_id = str()       # worker_id (sepl)
         self._output_name = str()     # output_name (sepl)
         self._payload_header = str()  # protocol_parts
-        self._payload = str()    # protocol_parts
+        self._payload = str()         # protocol_parts
 
     @property
     def device_id(self):
