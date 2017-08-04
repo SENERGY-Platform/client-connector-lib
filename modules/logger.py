@@ -4,7 +4,7 @@ if __name__ == '__main__':
 import logging, os
 
 
-LOGLEVEL = os.getenv('LOGGING_LEVEL', 'info')
+LOGLEVEL = os.getenv('LOGGING_LEVEL', 'debug')
 
 # logging level mapper
 logging_levels = {
