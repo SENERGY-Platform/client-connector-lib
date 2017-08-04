@@ -3,6 +3,7 @@ if __name__ == '__main__':
 
 try:
     from modules.logger import root_logger
+    from modules.singleton import Singleton
     from modules.http_lib import Methods as http
     from connector.configuration import CONNECTOR_LOOKUP_URL, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_DEVICE_REGISTRATION_PATH
     from connector.websocket import Websocket
@@ -19,17 +20,27 @@ logger = root_logger.getChild(__name__)
 OUT_QUEUE = Queue()
 IN_QUEUE = Queue()
 
-class Connector(Thread):
+
+def callback(event, message=None):
+    event.message = message
+    event.set()
+
+def callAndWaitFor(function, *args, timeout=None):
+    event = Event()
+    event.message = None
+    function(functools.partial(callback, event), *args)
+    event.wait(timeout=timeout)
+    return event.message
+
+class Connector(Thread, metaclass=Singleton):
     _host = str()
     _http_port = int()
     _ws_port = int()
-    _ws_open = False
 
     def __init__(self, con_callbck=None, discon_callbck=None):
         super().__init__()
         self._con_callbck = con_callbck
         self._discon_callbck = discon_callbck
-        self._credentials = {'user': CONNECTOR_USER, 'pw': CONNECTOR_PASSWORD}
         self.start()
 
     def _lookup(self):
@@ -43,18 +54,6 @@ class Connector(Thread):
             logger.error("lookup failed - '{}'".format(response.status))
             return False
 
-    def _callback(self, event, message=None):
-        event.message = message
-        event.set()
-
-    def _callAndWaitFor(self, function, *args, timeout=None):
-        event = Event()
-        event.message = None
-        callback = functools.partial(self._callback, event)
-        function(callback, *args)
-        event.wait(timeout=timeout)
-        return event.message
-
     def _checkAndCall(self, function):
         if function:
             function()
@@ -66,47 +65,31 @@ class Connector(Thread):
                 logger.debug("retry in 10s")
                 time.sleep(10)
             websocket = Websocket(IN_QUEUE, OUT_QUEUE, Connector._host, Connector._ws_port)
-            if self._callAndWaitFor(websocket.connect):
+            if callAndWaitFor(websocket.connect):
                 logger.info("sending credentials")
-                if self._callAndWaitFor(websocket.send, json.dumps(self._credentials)):
-                    answer = True #self._call_and_wait_for(websocket.receive, timeout=10)
+                if callAndWaitFor(websocket.send, json.dumps(self._credentials)):
+                    answer = callAndWaitFor(websocket.receive, timeout=10)
                     if answer:
-                        #logger.info("received answer")
-                        #logger.debug(answer)
-                        self._callAndWaitFor(websocket.ioStart)
-                        Connector._ws_open = True
+                        logger.info("received answer")
+                        logger.debug(answer)
+                        callAndWaitFor(websocket.ioStart)
                         self._checkAndCall(self._con_callbck)
                         websocket.join()
-                        Connector._ws_open = False
                         self._checkAndCall(self._discon_callbck)
                     else:
                         logger.info("no answer")
-                        self._callAndWaitFor(websocket.shutdown)
+                        callAndWaitFor(websocket.shutdown)
                         websocket.join()
             else:
-                self._callAndWaitFor(websocket.shutdown)
+                callAndWaitFor(websocket.shutdown)
                 websocket.join()
             logger.info("reconnecting in 30s")
             time.sleep(30)
 
     @staticmethod
-    def _derivePrefix(message):
-        if message._task_id:
-            return Prefix.response
-        else:
-            return Prefix.change
-
-    @staticmethod
-    def send(message):
+    def send(message, callback, timeout=10, retries=0, retry_delay=0.5):
         msg_str = Message.pack(message)
-        prefix = Connector._derivePrefix(message)
-        OUT_QUEUE.put(prefix + msg_str)
-
-    @staticmethod
-    def _sendRaw(message):
-        if type(message) is not str:
-            raise TypeError("message must be a string but got '{}'".format(type(message)))
-        OUT_QUEUE.put(message)
+        OUT_QUEUE.put(msg_str)
 
     @staticmethod
     def receive():
@@ -119,50 +102,8 @@ class Connector(Thread):
 
     @staticmethod
     def register(devices):
-        if type(devices) is not list:
-            devices = [devices]
-        payload = {
-            "credentials": {
-                "user": CONNECTOR_USER,
-                "pw": CONNECTOR_PASSWORD
-            },
-            "devices": [
-                {
-                "id": device.id,
-                "zway_type": device.type,
-                "title": device.name
-                }
-                for device in devices
-            ]
-        }
-        response = http.post(
-            'http://{}:{}/{}'.format(
-                Connector._host,
-                Connector._http_port,
-                CONNECTOR_DEVICE_REGISTRATION_PATH
-            ),
-            json.dumps(payload),
-            headers={'Content-Type': 'application/json'},
-            timeout=10
-        )
-        if response.status == 200:
-            Connector._sendRaw('update')
-            logger.info("registered devices with platform")
-            return True
-        else:
-            logger.error("could not register devices - '{}'".format(response.status))
-            return False
+        pass
 
     @staticmethod
     def unregister(devices):
-        if type(devices) is not list:
-            devices = [devices]
-        # ask Ingo
-        """response = http.delete(
-            'http://{}:{}/{}/{}'.format(
-                Connector._host,
-                Connector._http_port,
-                CONNECTOR_DEVICE_REGISTRATION_PATH,
-                device.id
-            )
-        )"""
+        pass
