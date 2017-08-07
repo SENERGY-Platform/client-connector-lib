@@ -6,119 +6,145 @@ try:
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import json
+from uuid import uuid4 as uuid
+
 
 logger = root_logger.getChild(__name__)
+
+class Envelope:
+    def __init__(self, handler, message, token):
+        self.handler = handler
+        self.token = token
+        if type(message) is not Message:
+            raise TypeError("message must be of type 'Message' but got '{}'".format(type(message)))
+        self.message = message
+
+    @staticmethod
+    def open(string: str):
+        handler_and_token, message = string.split(':', maxsplit=1)
+        #### temp ####
+        if '.' in handler_and_token:
+            handler, token = handler_and_token.split('.', maxsplit=1)
+            return __class__(handler, Message.deserialize(message), token)
+        else:
+            handler = handler_and_token
+            return __class__(handler, Message.deserialize(message), uuid())
+        #### temp ####
+
+    @staticmethod
+    def close(envelope):
+        return '{}.{}:{}'.format(envelope.handler, envelope.token, Message.serialize(envelope.message))
+
+
+class Payload:
+    def __init__(self, header=None, body=None):
+        self.__header = header or str()
+        self.__body = body or str()
+
+    @property
+    def header(self):
+        return self.__header
+
+    @header.setter
+    def header(self, arg):
+        if type(arg) is not str:
+            raise TypeError("payload header must be a string but got '{}'".format(type(arg)))
+        self.__header = arg
+
+    @property
+    def body(self):
+        return self.__body
+
+    @body.setter
+    def body(self, arg):
+        if type(arg) is not str:
+            raise TypeError("payload body must be a string but got '{}'".format(type(arg)))
+        self.__body = arg
 
 
 class Message:
     _device_id_key = 'device_url'
-    _endpoint_key = 'service_url'
-    _payload_key = 'protocol_parts'
+    _service_key = 'service_url'
+    _protocol_parts_key = 'protocol_parts'
 
-    def __init__(self):
-        self._device_id = str()       # device_url
-        self._endpoint = str()        # service_url (sepl)
-        self._payload_header = str()  # protocol_parts
-        self._payload = str()         # protocol_parts
+    def __init__(self, device_id, payload=None, endpoint=None):
+        self.__device_id = device_id             # device_url
+        self.__endpoint = endpoint               # service_url (sepl)
+        if type(payload) is not Payload:
+            raise TypeError("payload must be of type 'Payload' but got '{}'".format(type(payload)))
+        self.__payload = payload or Payload()                 # protocol_parts
+        self.__token = 123
+        self.__overhead = None
 
     @property
     def device_id(self):
-        return self._device_id
+        return self.__device_id
 
     @device_id.setter
     def device_id(self, arg):
         if type(arg) is not str:
             raise TypeError("device id must be a string but got '{}'".format(type(arg)))
-        self._device_id = arg
-
-    @property
-    def payload_header(self):
-        return self._payload_header
-
-    @payload_header.setter
-    def payload_header(self, arg):
-        if type(arg) is not str:
-            raise TypeError("payload header must be a string but got '{}'".format(type(arg)))
-        self._payload_header = arg
+        self.__device_id = arg
 
     @property
     def payload(self):
-        return self._payload
+        return self.__payload
 
     @payload.setter
     def payload(self, arg):
-        if type(arg) is not str:
-            raise TypeError("payload body must be a string but got '{}'".format(type(arg)))
-        self._payload = arg
-
-    @property
-    def timestamp(self):
-        return self._timestamp
-
-    @timestamp.setter
-    def timestamp(self, arg):
-        if self._timestamp:
-            raise TypeError('attribute timestamp already set')
-        else:
-            if type(arg) is not int:
-                raise TypeError("timestamp must be an integer but got '{}'".format(type(arg)))
-            self._timestamp = arg
+        raise TypeError("attribute payload is immutable, use 'payload.body' or 'payload.header' instead")
 
     @property
     def endpoint(self):
-        return self._endpoint
+        return self.__endpoint
 
     @endpoint.setter
     def endpoint(self, arg):
         raise TypeError('attribute endpoint is immutable')
 
-
     @staticmethod
-    def pack(message):
+    def serialize(message: __class__):
         if type(message) is not Message:
             raise TypeError("message must be of type 'Message' but got '{}'".format(type(message)))
-        payload = list()
-        if message._payload_header:
-            payload.append(
-                {
-                    'name': 'header',
-                    'value': message._payload_header
-                }
-            )
-        if message._payload:
-            payload.append(
-                {
-                    'name': 'body',
-                    'value': message._payload
-                }
-            )
+        protocol_parts = (
+            {
+                'name': 'header',
+                'value': message.payload.header
+            },
+            {
+                'name': 'body',
+                'value': message.payload.body
+            }
+        )
         msg_struct = {
-            Message._device_id_key: message._device_id,
-            Message._endpoint_key: message._endpoint,
-            Message._payload_key: payload,
+            Message._device_id_key: message.device_id,
+            Message._service_key: message.endpoint,
+            Message._protocol_parts_key: protocol_parts,
         }
-        msg_str = json.dumps(msg_struct)
-        return msg_str
+        ### temp ###
+        msg_struct.update(message.__overhead)
+        ### temp ###
+        return json.dumps(msg_struct)
 
     @staticmethod
-    def unpack(message):
-        msg_obj = Message()
+    def deserialize(message) -> __class__:
         try:
             message = json.loads(message)
-            msg_obj._device_id = message.get(Message._device_id_key)
-            msg_obj._endpoint = message.get(Message._endpoint_key)
-            payload = message.get(Message._payload_key)
-            for item in payload:
-                part = item.get('name')
-                if part == 'body':
-                    msg_obj._payload = item.get('value')
-                elif part == 'header':
-                    msg_obj._payload_header = item.get('value')
         except Exception as ex:
             logger.error(ex)
+        payload = Payload()
+        protocol_parts = message.get(Message._protocol_parts_key)
+        for part in protocol_parts:
+            name = part.get('name')
+            if name == 'body':
+                payload.body = part.get('value')
+            elif name == 'header':
+                payload.header = part.get('value')
+        msg_obj = __class__(message.get(Message._device_id_key), payload, message.get(Message._service_key))
+        #### temp ####
+        del message[Message._protocol_parts_key]
+        del message[Message._device_id_key]
+        del message[Message._service_key]
+        msg_obj.__overhead = message
+        #### temp ####
         return msg_obj
-
-class Prefix:
-    change = 'change:'
-    response = 'response:'
-    update = 'update:'
