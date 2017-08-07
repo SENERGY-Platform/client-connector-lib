@@ -14,21 +14,17 @@ from queue import Queue, Empty
 logger = root_logger.getChild(__name__)
 
 
-class Communication(str):
+class Token(str):
     def __init__(self, token):
         super().__init__()
         self.callback = None
-        self.handler = None
-        self.message = None
-        self.timeout = None
-        self.retries = None
-        self.retry_delay = None
+        self.envelope = None
         self.event = None
 
 
-class CommManager(Thread, metaclass=Singleton):
+class TokenManager(Thread, metaclass=Singleton):
     _async_spawn_input = Queue()
-    _communications = list()
+    _tokens = list()
     _event_loop = None
 
     def __init__(self):
@@ -36,7 +32,7 @@ class CommManager(Thread, metaclass=Singleton):
         self._stop_async = False
 
     @asyncio.coroutine
-    def _commFuture(self, comm: Communication):
+    def _commFuture(self, comm):
         try:
             yield from asyncio.wait_for(comm.event.wait(), comm.timeout)
             logger.debug(comm + ' got response')
@@ -71,47 +67,16 @@ class CommManager(Thread, metaclass=Singleton):
         __class__._event_loop.close()
 
     @staticmethod
-    def add(handler, callback, timeout=10, retries=0, retry_delay=0.5):  ###### remove defaults ######
-        comm = Communication(uuid())
-        comm.handler = handler
-        comm.callback = callback
-        comm.timeout = timeout
-        comm.retries = retries
-        comm.retry_delay = retry_delay
+    def add():
+        comm = Token(uuid())
         comm.event = asyncio.Event(loop=__class__._event_loop)
         __class__._async_spawn_input.put(comm)
-        __class__._communications.append(comm)
+        __class__._tokens.append(comm)
 
     @staticmethod
     def _remove(comm):
-        __class__._communications.remove(comm)
+        __class__._tokens.remove(comm)
 
     @staticmethod
     def _get(comm):
         pass
-
-
-
-
-
-##### test #####
-import random
-fdsd = CommManager()
-fdsd.start()
-
-def doIt():
-    time.sleep(random.uniform(0.0, 1.0))
-    CommManager.add("asdfsdf", None, 10)
-
-for x in range(15):
-    doIt()
-
-
-time.sleep(0.5)
-CommManager._communications[6].event.set()
-CommManager._communications[3].event.set()
-time.sleep(3)
-CommManager._communications[4].event.set()
-CommManager._communications[13].event.set()
-CommManager._communications[2].event.set()
-##### test #####
