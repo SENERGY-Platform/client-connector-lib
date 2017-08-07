@@ -7,7 +7,7 @@ try:
     from modules.http_lib import Methods as http
     from connector.configuration import CONNECTOR_LOOKUP_URL, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_DEVICE_REGISTRATION_PATH
     from connector.websocket import Websocket
-    from connector.message import Message, Prefix
+    from connector.message import Message, Envelope
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, json, time
@@ -36,6 +36,20 @@ class Connector(Thread, metaclass=Singleton):
     _host = str()
     _http_port = int()
     _ws_port = int()
+    _server_handlers = {
+        'listen_to_devices': None,
+        'add_devices': None,
+        'update_device_name': None,
+        'event': None,
+        'response': None,
+        'remove_devices': None,
+        'mute_devices': None,
+    }
+    _client_handlers = {
+        'command': None,
+        'error': None,
+        'response': None
+    }
 
     def __init__(self, con_callbck=None, discon_callbck=None):
         super().__init__()
@@ -87,16 +101,15 @@ class Connector(Thread, metaclass=Singleton):
             time.sleep(30)
 
     @staticmethod
-    def send(message, callback, timeout=10, retries=0, retry_delay=0.5):
-        msg_str = Message.pack(message)
-        OUT_QUEUE.put(msg_str)
+    def _send():
+        pass
 
     @staticmethod
-    def receive():
+    def _receive():
         while True:
             try:
                 message = IN_QUEUE.get(timeout=2)
-                return Message.unpack(message)
+                return Message.deserialize(message)
             except Empty:
                 pass
 
