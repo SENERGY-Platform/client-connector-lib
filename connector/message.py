@@ -13,7 +13,7 @@ logger = root_logger.getChild(__name__)
 
 _device_id_key = 'device_url'
 _service_key = 'service_url'
-_protocol_parts_key = 'protocol_parts'
+_value_key = 'protocol_parts'
 
 
 class Payload:
@@ -43,12 +43,12 @@ class Payload:
 
 
 class Message:
-    def __init__(self, device_id, payload=None, endpoint=None):
-        if type(payload) is not Payload:
+    def __init__(self, device_id=None, payload=None, endpoint=None):
+        if payload and type(payload) is not Payload:
             raise TypeError("payload must be of type 'Payload' but got '{}'".format(type(payload)))
-        self.__device_id = device_id             # device_url
-        self.__endpoint = endpoint               # service_url (sepl)
-        self.__payload = payload or Payload()    # protocol_parts
+        self.__device_id = device_id             # device_uri
+        self.__endpoint = endpoint               # service_uri (sepl)
+        self.__payload = payload or Payload()    # value
         self.__token = None
         self.__overhead = None
 
@@ -82,6 +82,33 @@ class Message:
 def serializeMessage(message: Message):
     if type(message) is not Message:
         raise TypeError("message must be of type 'Message' but got '{}'".format(type(message)))
+    if not message.device_id:
+        raise AssertionError('device id missing')
+    value = (
+        {
+            'name': 'header',
+            'value': message.payload.header
+        },
+        {
+            'name': 'body',
+            'value': message.payload.body
+        }
+    )
+    msg = {
+        _device_id_key: message.device_id,
+        _service_key: message.endpoint,
+        _value_key: value,
+    }
+    if message._Message__overhead:
+        msg.update(message._Message__overhead)
+    return json.dumps(msg)
+
+
+def serializeMessageOld(message: Message):
+    if type(message) is not Message:
+        raise TypeError("message must be of type 'Message' but got '{}'".format(type(message)))
+    if not message.device_id:
+        raise AssertionError('device id missing')
     protocol_parts = (
         {
             'name': 'header',
@@ -95,11 +122,9 @@ def serializeMessage(message: Message):
     msg_struct = {
         _device_id_key: message.device_id,
         _service_key: message.endpoint,
-        _protocol_parts_key: protocol_parts,
+        _value_key: protocol_parts,
     }
-    ### temp ###
     msg_struct.update(message._Message__overhead)
-    ### temp ###
     return json.dumps(msg_struct)
 
 
@@ -109,18 +134,16 @@ def deserializeMessage(message) -> Message:
     except Exception as ex:
         logger.error(ex)
     payload = Payload()
-    protocol_parts = message.get(_protocol_parts_key)
-    for part in protocol_parts:
+    value = message.get(_value_key)
+    for part in value:
         name = part.get('name')
         if name == 'body':
             payload.body = part.get('value')
         elif name == 'header':
             payload.header = part.get('value')
     msg_obj = Message(message.get(_device_id_key), payload, message.get(_service_key))
-    #### temp ####
-    del message[_protocol_parts_key]
-    del message[_device_id_key]
-    del message[_service_key]
+    message[_value_key] = None
+    message[_device_id_key] = None
+    message[_service_key] = None
     msg_obj._Message__overhead = message
-    #### temp ####
     return msg_obj
