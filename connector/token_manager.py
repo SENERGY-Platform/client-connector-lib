@@ -18,13 +18,14 @@ class Token(str):
     def __init__(self, token):
         super().__init__()
         self.callback = None
-        self.envelope = None
+        self.package = None
         self.event = None
+        self.timeout = None
 
 
 class TokenManager(Thread, metaclass=Singleton):
     _async_spawn_input = Queue()
-    _tokens = list()
+    _tokens = set()
     _event_loop = None
 
     def __init__(self):
@@ -32,12 +33,12 @@ class TokenManager(Thread, metaclass=Singleton):
         self._stop_async = False
 
     @asyncio.coroutine
-    def _commFuture(self, comm):
+    def _commFuture(self, token):
         try:
-            yield from asyncio.wait_for(comm.event.wait(), comm.timeout)
-            logger.debug(comm + ' got response')
+            yield from asyncio.wait_for(token.event.wait(), token.timeout)
+            logger.debug(token + ' got response')
         except asyncio.TimeoutError:
-            logger.debug(comm + ' timed out')
+            logger.debug(token + ' timed out')
 
     @asyncio.coroutine
     def _spawnFuture(self):
@@ -67,15 +68,18 @@ class TokenManager(Thread, metaclass=Singleton):
         __class__._event_loop.close()
 
     @staticmethod
-    def add():
-        comm = Token(uuid())
-        comm.event = asyncio.Event(loop=__class__._event_loop)
-        __class__._async_spawn_input.put(comm)
-        __class__._tokens.append(comm)
+    def add(token, package, callback=None, timeout=None):
+        token_obj = Token(token)
+        token_obj.package = package
+        token_obj.callback = callback
+        token_obj.timeout = timeout
+        token_obj.event = asyncio.Event(loop=__class__._event_loop)
+        __class__._async_spawn_input.put(token_obj)
+        __class__._tokens.add(token_obj)
 
     @staticmethod
-    def _remove(comm):
-        __class__._tokens.remove(comm)
+    def _remove(token):
+        __class__._tokens.remove(token)
 
     @staticmethod
     def _get(comm):
