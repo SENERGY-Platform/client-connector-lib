@@ -6,7 +6,7 @@ try:
     from modules.singleton import Singleton
     from modules.http_lib import Methods as http
     from connector.configuration import CONNECTOR_LOOKUP_URL, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_DEVICE_REGISTRATION_PATH
-    #from connector.websocket import Websocket
+    from connector.websocket import Websocket
     from connector.message import Message, serializeMessage, deserializeMessage
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
@@ -30,6 +30,10 @@ def callAndWaitFor(function, *args, timeout=None):
     event.wait(timeout=timeout)
     return event.message
 
+def checkAndCall(function):
+    if function:
+        function()
+
 class Connector(metaclass=Singleton):
     __host = str()
     __http_port = int()
@@ -38,12 +42,15 @@ class Connector(metaclass=Singleton):
     __in_queue = Queue()
     __user_queue = Queue()
 
+
     def __init__(self, con_callbck=None, discon_callbck=None):
-        #super().__init__()
-        self._con_callbck = con_callbck
-        self._discon_callbck = discon_callbck
-        connector_thread = Thread(target=self.run, name="Connector")
-        router_thread = Thread()
+        self.__con_callbck = con_callbck
+        self.__discon_callbck = discon_callbck
+        self.__websocket = None
+        self.__router_thread = Thread(target=self.__router, name="Router")
+        self.__connect_thread = Thread(target=self.__connect(), name="Connect")
+        self.__router_thread.start()
+        self.__connect_thread.start()
 
 
     def __lookup(self):
@@ -54,44 +61,75 @@ class Connector(metaclass=Singleton):
             __class__.__http_port = response.body.split("ws://")[1].split(":")[1]
             return True
         else:
-            logger.error("lookup failed - '{}'".format(response.status))
+            logger.debug("lookup status - '{}'".format(response.status))
             return False
 
-    def __checkAndCall(self, function):
-        if function:
-            function()
 
-    def run(self):
-        logger.info(20*'*'+' Starting SEPL connector client '+20*'*')
-        while True:
-            while not self.__lookup():
-                logger.debug("retry in 10s")
-                time.sleep(10)
-            websocket = Websocket(__class__.__in_queue, __class__.__out_queue, __class__.__host, __class__.__ws_port)
-            if callAndWaitFor(websocket.connect):
-                logger.info("sending credentials")
-                if callAndWaitFor(websocket.send, json.dumps(self._credentials)):
-                    answer = callAndWaitFor(websocket.receive, timeout=10)
-                    if answer:
-                        logger.info("received answer")
-                        logger.debug(answer)
-                        callAndWaitFor(websocket.ioStart)
-                        self.__checkAndCall(self._con_callbck)
-                        websocket.join()
-                        self.__checkAndCall(self._discon_callbck)
+    def __reconnect(self):
+        checkAndCall(self.__discon_callbck)
+        self.__websocket = None
+        reconnect = Thread(target=self.__connect, name='reconnect', args=(30, ))
+        reconnect.start()
+        logger.info("reconnecting in 30s")
+
+
+    def __connect(self, wait=None):
+        if wait:
+            time.sleep(wait)
+        logger.info('looking for SEPL connector')
+        while not self.__lookup():
+            logger.error('lookup failed')
+            time.sleep(10)
+        self.__websocket = Websocket(__class__.__host, __class__.__ws_port, self.__reconnect())
+        logger.info('connecting to SEPL connector')
+        if callAndWaitFor(self.__websocket.connect):
+            logger.info("preparing handshake")
+            credentials = {
+                'user': CONNECTOR_USER,
+                'pw': CONNECTOR_PASSWORD,
+                'token': uuid()
+            }
+            logger.debug(credentials)
+            logger.info('sending credentials')
+            if callAndWaitFor(self.__websocket.send, json.dumps(credentials)):
+                answer = callAndWaitFor(self.__websocket.receive, timeout=10)
+                if answer:
+                    logger.info('received answer')
+                    logger.debug(answer)
+                    status, token, message = __class__.__parsePackage(answer)
+                    if status is 'response' and token is credentials['token']:
+                        logger.info('handshake completed')
+                        callAndWaitFor(self.__websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
+                        checkAndCall(self.__con_callbck)
+                        return True
                     else:
-                        logger.info("no answer")
-                        callAndWaitFor(websocket.shutdown)
-                        websocket.join()
+                        logger.error('handshake failed')
+                else:
+                    logger.error('handshake timed out')
             else:
-                callAndWaitFor(websocket.shutdown)
-                websocket.join()
-            logger.info("reconnecting in 30s")
-            time.sleep(30)
+                logger.error('could start handshake')
+        else:
+            logger.error('could not connect')
+        callAndWaitFor(self.__websocket.shutdown)
+        self.__websocket = None
+        return False
 
-    @staticmethod
-    def __router():
-        pass
+
+
+
+
+    def __router(self):
+        logger.info(20 * '*' + ' Starting SEPL connector client ' + 20 * '*')
+        while True:
+            package = __class__.__in_queue.get()
+            handler, token, message = __class__.__parsePackage(package)
+
+
+
+
+
+
+
 
     @staticmethod
     def __parsePackage(package):
@@ -114,6 +152,10 @@ class Connector(metaclass=Singleton):
         package = __class__.__createPackage(handler, token, message)
         #TokenManager.add(token, package, callback, timeout)
         print(package)
+
+
+
+
 
     @staticmethod
     def send(message: Message, timeout=10, callback=None):
