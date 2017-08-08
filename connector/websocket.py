@@ -23,6 +23,7 @@ class Websocket(Thread):
         self._function_queue = Queue(1)
         self._stop_async = False
         self._websocket = None
+        self._done_callbck = done_callbck
 
 
     def _functionQueuePut(self, function, *args, **kwargs):
@@ -63,6 +64,8 @@ class Websocket(Thread):
         self._event_loop.run_until_complete(self._spawnAsync())
         self._event_loop.stop()
         self._event_loop.close()
+        if self._done_callbck:
+            self._done_callbck()
 
 
     @asyncio.coroutine
