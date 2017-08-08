@@ -6,19 +6,17 @@ try:
     from modules.singleton import Singleton
     from modules.http_lib import Methods as http
     from connector.configuration import CONNECTOR_LOOKUP_URL, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_DEVICE_REGISTRATION_PATH
-    from connector.websocket import Websocket
-    from connector.message import Message, Envelope
+    #from connector.websocket import Websocket
+    from connector.message import Message, serializeMessage, deserializeMessage
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, json, time
 from queue import Queue, Empty
 from threading import Thread, Event
+from uuid import uuid4 as uuid
 
 logger = root_logger.getChild(__name__)
 
-
-OUT_QUEUE = Queue()
-IN_QUEUE = Queue()
 
 
 def callback(event, message=None):
@@ -32,53 +30,44 @@ def callAndWaitFor(function, *args, timeout=None):
     event.wait(timeout=timeout)
     return event.message
 
-class Connector(Thread, metaclass=Singleton):
-    _host = str()
-    _http_port = int()
-    _ws_port = int()
-    _server_handlers = {
-        'listen_to_devices': None,
-        'add_devices': None,
-        'update_device_name': None,
-        'event': None,
-        'response': None,
-        'remove_devices': None,
-        'mute_devices': None,
-    }
-    _client_handlers = {
-        'command': None,
-        'error': None,
-        'response': None
-    }
+class Connector(metaclass=Singleton):
+    __host = str()
+    __http_port = int()
+    __ws_port = int()
+    __out_queue = Queue()
+    __in_queue = Queue()
+    __user_queue = Queue()
 
     def __init__(self, con_callbck=None, discon_callbck=None):
-        super().__init__()
+        #super().__init__()
         self._con_callbck = con_callbck
         self._discon_callbck = discon_callbck
-        self.start()
+        connector_thread = Thread(target=self.run, name="Connector")
+        router_thread = Thread()
 
-    def _lookup(self):
+
+    def __lookup(self):
         response = http.get(CONNECTOR_LOOKUP_URL)
         if response.status == 200:
-            Connector._host = response.body.split("ws://")[1].split(":")[0]
-            Connector._ws_port = response.body.split("ws://")[1].split(":")[1]
-            Connector._http_port = response.body.split("ws://")[1].split(":")[1]
+            __class__.__host = response.body.split("ws://")[1].split(":")[0]
+            __class__.__ws_port = response.body.split("ws://")[1].split(":")[1]
+            __class__.__http_port = response.body.split("ws://")[1].split(":")[1]
             return True
         else:
             logger.error("lookup failed - '{}'".format(response.status))
             return False
 
-    def _checkAndCall(self, function):
+    def __checkAndCall(self, function):
         if function:
             function()
 
     def run(self):
         logger.info(20*'*'+' Starting SEPL connector client '+20*'*')
         while True:
-            while not self._lookup():
+            while not self.__lookup():
                 logger.debug("retry in 10s")
                 time.sleep(10)
-            websocket = Websocket(IN_QUEUE, OUT_QUEUE, Connector._host, Connector._ws_port)
+            websocket = Websocket(__class__.__in_queue, __class__.__out_queue, __class__.__host, __class__.__ws_port)
             if callAndWaitFor(websocket.connect):
                 logger.info("sending credentials")
                 if callAndWaitFor(websocket.send, json.dumps(self._credentials)):
@@ -87,9 +76,9 @@ class Connector(Thread, metaclass=Singleton):
                         logger.info("received answer")
                         logger.debug(answer)
                         callAndWaitFor(websocket.ioStart)
-                        self._checkAndCall(self._con_callbck)
+                        self.__checkAndCall(self._con_callbck)
                         websocket.join()
-                        self._checkAndCall(self._discon_callbck)
+                        self.__checkAndCall(self._discon_callbck)
                     else:
                         logger.info("no answer")
                         callAndWaitFor(websocket.shutdown)
@@ -101,15 +90,47 @@ class Connector(Thread, metaclass=Singleton):
             time.sleep(30)
 
     @staticmethod
-    def _send():
+    def __router():
         pass
 
     @staticmethod
-    def _receive():
+    def __parsePackage(package):
+        handler_and_token, message = package.split(':', maxsplit=1)
+        #### temp ####
+        if '.' in handler_and_token:
+            handler, token = handler_and_token.split('.', maxsplit=1)
+        else:
+            handler = handler_and_token
+            token = uuid()
+        #### temp ####
+        return handler, token, message
+
+    @staticmethod
+    def __createPackage(handler, token, message):
+        return '{}.{}:{}'.format(handler, token, message)
+
+    @staticmethod
+    def __send(handler, token, message, timeout, callback):
+        package = __class__.__createPackage(handler, token, message)
+        #TokenManager.add(token, package, callback, timeout)
+        print(package)
+
+    @staticmethod
+    def send(message: Message, timeout=10, callback=None):
+        if message._Message__token:
+            __class__.__send('response', message._Message__token, serializeMessage(message), timeout, callback)
+        else:
+            __class__.__send('event', uuid(), serializeMessage(message), timeout, callback)
+
+    @staticmethod
+    def receive() -> Message:
         while True:
             try:
-                message = IN_QUEUE.get(timeout=2)
-                return Message.deserialize(message)
+                package = __class__.__user_queue.get(timeout=2)
+                handler, token, message = __class__.__parsePackage(package)
+                message = deserializeMessage(message)
+                message._Message__token = token
+                return message
             except Empty:
                 pass
 
