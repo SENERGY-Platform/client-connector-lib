@@ -4,9 +4,9 @@ if __name__ == '__main__':
 import os
 
 
-CONNECTOR_LOOKUP_URL = os.getenv('CONNECTOR_LOOKUP_URL', 'http://fgseitsrancher.wifa.intern.uni-leipzig.de:8093/lookup')
-CONNECTOR_DEVICE_REGISTRATION_PATH = os.getenv('CONNECTOR_DEVICE_REGISTRATION_PATH', 'discovery')
-CONNECTOR_HTTPS = os.getenv('CONNECTOR_HTTPS', None)
+CONNECTOR_PROTOCOL = os.getenv('CONNECTOR_HTTPS', 'ws')
+CONNECTOR_HOST = os.getenv('CONNECTOR_HOST', 'fgseitsrancher.wifa.intern.uni-leipzig.de')
+CONNECTOR_PORT = os.getenv('CONNECTOR_PORT', 8092)
 CONNECTOR_USER = ''
 CONNECTOR_PASSWORD = ''
 
