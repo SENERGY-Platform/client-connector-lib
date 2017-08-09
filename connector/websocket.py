@@ -76,10 +76,10 @@ class Websocket(Thread):
                 'ws://{}:{}'.format(self._host, self._port),
                 loop=self._event_loop
             )
-            logger.info("connected to '{}' on '{}'".format(self._host, self._port))
+            logger.debug("connected to '{}' on '{}'".format(self._host, self._port))
             callback(True)
         except OSError:
-            logger.error("could not connect to '{}' on '{}'".format(self._host, self._port))
+            logger.debug("could not connect to '{}' on '{}'".format(self._host, self._port))
             callback(False)
 
     def connect(self, callback):
@@ -94,7 +94,7 @@ class Websocket(Thread):
         self._stop_async = True
         try:
             yield from self._websocket.close()
-            logger.info("connection closed")
+            logger.debug("connection closed")
         except:
             pass
         if callback:
@@ -114,8 +114,8 @@ class Websocket(Thread):
             logger.warning("could not send data")
             callback(False)
 
-    def send(self, payload, callback):
-        self._functionQueuePut(self._send, payload, callback)
+    def send(self, callback, payload):
+        self._functionQueuePut(self._send, callback, payload)
 
 
     @asyncio.coroutine
@@ -165,9 +165,9 @@ class Websocket(Thread):
 
 
     @asyncio.coroutine
-    def _ioStart(self, in_queue, out_queue, callback):
+    def _ioStart(self, callback, in_queue, out_queue):
         asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
-        logger.info("starting io operation")
+        logger.debug("starting io operation")
         recv_task = self._event_loop.create_task(self._ioRecv(in_queue))
         send_task = self._event_loop.create_task(self._ioSend(out_queue))
         yield from asyncio.sleep(0.5)
@@ -179,7 +179,7 @@ class Websocket(Thread):
         for task in pending:
             task.cancel()
         yield from self._shutdown()
-        logger.info("io operation stopped")
+        logger.debug("io operation stopped")
 
-    def ioStart(self, in_queue, out_queue, callback):
-        self._functionQueuePut(self._ioStart, in_queue, out_queue, callback)
+    def ioStart(self, callback, in_queue, out_queue):
+        self._functionQueuePut(self._ioStart, callback, in_queue, out_queue)
