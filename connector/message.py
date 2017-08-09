@@ -83,7 +83,7 @@ def serializeMessage(message: Message):
     if type(message) is not Message:
         raise TypeError("message must be of type 'Message' but got '{}'".format(type(message)))
     if not message.device_id:
-        raise AssertionError('device id missing')
+        raise ValueError('device id missing')
     value = (
         {
             'name': 'header',
@@ -108,7 +108,7 @@ def serializeMessageOld(message: Message):
     if type(message) is not Message:
         raise TypeError("message must be of type 'Message' but got '{}'".format(type(message)))
     if not message.device_id:
-        raise AssertionError('device id missing')
+        raise ValueError('device id missing')
     protocol_parts = (
         {
             'name': 'header',
