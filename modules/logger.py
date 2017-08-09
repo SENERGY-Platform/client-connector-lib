@@ -2,7 +2,7 @@ if __name__ == '__main__':
     exit('Please use "client.py"')
 
 try:
-    from connector.configuration import LOGLEVEL, LOCAL_ROTATING_LOG, ROTATING_LOG_BACKUP_COUNT
+    from connector.configuration import LOGGING_LEVEL, LOCAL_ROTATING_LOG, ROTATING_LOG_BACKUP_COUNT
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 from logging.handlers import TimedRotatingFileHandler
@@ -19,7 +19,7 @@ logging_levels = {
 
 
 def debug_switch():
-    if LOGLEVEL == 'debug':
+    if LOGGING_LEVEL == 'debug':
         return 'name'
     else:
         return 'module'
@@ -28,7 +28,7 @@ def debug_switch():
 config_args = {
         'format': '%(asctime)s - %(levelname)s: [%({})s] %(message)s'.format(debug_switch()),
         'datefmt': '%m.%d.%Y %I:%M:%S %p',
-        'level': logging_levels[LOGLEVEL],
+        'level': logging_levels[LOGGING_LEVEL],
 }
 
 
