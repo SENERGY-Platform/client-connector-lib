@@ -50,21 +50,7 @@ class Connector(metaclass=Singleton):
         self.__router_thread = Thread(target=self.__router, name="Router")
         self.__connect_thread = Thread(target=self.__connect, name="Connect")
         self.__router_thread.start()
-        self.__connect_thread.start()
-
-
-    '''
-    def __lookup(self):
-        response = http.get(CONNECTOR_LOOKUP_URL)
-        if response.status == 200:
-            __class__.__host = response.body.split("ws://")[1].split(":")[0]
-            __class__.__ws_port = response.body.split("ws://")[1].split(":")[1]
-            __class__.__http_port = response.body.split("ws://")[1].split(":")[1]
-            return True
-        else:
-            logger.debug("lookup status - '{}'".format(response.status))
-            return False
-    '''
+        #self.__connect_thread.start()
 
 
     def __reconnect(self):
@@ -79,10 +65,6 @@ class Connector(metaclass=Singleton):
     def __connect(self, wait=None):
         if wait:
             time.sleep(wait)
-        #logger.info('looking for SEPL connector')
-        #while not self.__lookup():
-        #    logger.error('lookup failed')
-        #    time.sleep(10)
         self.__websocket = Websocket(CONNECTOR_HOST, CONNECTOR_PORT, self.__reconnect)
         logger.info('connecting to SEPL connector')
         if _callAndWaitFor(self.__websocket.connect):
