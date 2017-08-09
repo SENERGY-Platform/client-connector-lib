@@ -18,26 +18,29 @@ logging_levels = {
 }
 
 
-if not os.path.exists('{}/logs'.format(os.getcwd())):
-    os.makedirs('{}/logs'.format(os.getcwd()))
-filename = os.path.join(os.path.dirname(__file__), '{}/logs/connector-client.log'.format(os.getcwd()))
-rotating_log_handler = TimedRotatingFileHandler(filename, when="midnight", backupCount=ROTATING_LOG_BACKUP_COUNT)
+def debug_switch():
+    if LOGLEVEL == 'debug':
+        return 'name'
+    else:
+        return 'module'
+
+
+config_args = {
+        'format': '%(asctime)s - %(levelname)s: [%({})s] %(message)s'.format(debug_switch()),
+        'datefmt': '%m.%d.%Y %I:%M:%S %p',
+        'level': logging_levels[LOGLEVEL],
+}
 
 
 if LOCAL_ROTATING_LOG:
-
-    logging.basicConfig(
-        format='%(asctime)s - %(levelname)s: [%(module)s] %(message)s',
-        datefmt='%m.%d.%Y %I:%M:%S %p',
-        level=logging_levels[LOGLEVEL],
-        handlers=[rotating_log_handler]
-    )
+    if not os.path.exists('{}/logs'.format(os.getcwd())):
+        os.makedirs('{}/logs'.format(os.getcwd()))
+    filename = os.path.join(os.path.dirname(__file__), '{}/logs/connector-client.log'.format(os.getcwd()))
+    rotating_log_handler = TimedRotatingFileHandler(filename, when="midnight", backupCount=ROTATING_LOG_BACKUP_COUNT)
+    config_args['handlers'] = [rotating_log_handler]
+    logging.basicConfig(**config_args)
 else:
-    logging.basicConfig(
-        format='%(asctime)s - %(levelname)s: [%(module)s] %(message)s',
-        datefmt='%m.%d.%Y %I:%M:%S %p',
-        level=logging_levels[LOGLEVEL]
-    )
+    logging.basicConfig(**config_args)
 
 
 root_logger = logging.getLogger()
