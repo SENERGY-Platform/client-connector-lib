@@ -17,9 +17,9 @@ logger = root_logger.getChild(__name__)
 
 class SessionManager(Thread, metaclass=Singleton):
     _event_loop = None
-    _in = Queue()
+    _session_queue = Queue()
     _map = dict()
-    _inter = Queue()
+    _event_queue = Queue()
 
     def __init__(self):
         super().__init__()
@@ -33,6 +33,7 @@ class SessionManager(Thread, metaclass=Singleton):
             logger.debug('{} interrupted'.format(token))
         except asyncio.TimeoutError:
             logger.debug('timed out')
+        del __class__._map[token]
 
 
     # noinspection PyTupleAssignmentBalance
@@ -43,7 +44,7 @@ class SessionManager(Thread, metaclass=Singleton):
             while True:
                 token, timeout = yield from __class__._event_loop.run_in_executor(
                     executor,
-                    functools.partial(__class__._in.get)
+                    functools.partial(__class__._session_queue.get)
                 )
                 event = asyncio.Event()
                 __class__._map[token] = event
@@ -57,7 +58,7 @@ class SessionManager(Thread, metaclass=Singleton):
             while True:
                 token = yield from __class__._event_loop.run_in_executor(
                     executor,
-                    functools.partial(__class__._inter.get)
+                    functools.partial(__class__._event_queue.get)
                 )
                 while not token in __class__._map:
                     yield
@@ -66,12 +67,12 @@ class SessionManager(Thread, metaclass=Singleton):
 
     @staticmethod
     def new(token, timeout):
-        __class__._in.put((token, timeout))
+        __class__._session_queue.put((token, timeout))
 
 
     @staticmethod
     def interrupt(token):
-        __class__._inter.put(token)
+        __class__._event_queue.put(token)
 
 
     def run(self):
