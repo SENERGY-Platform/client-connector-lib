@@ -40,6 +40,7 @@ class Connector(metaclass=Singleton):
     __out_queue = Queue()
     __in_queue = Queue()
     __user_queue = Queue()
+    #__session_manager = SessionManger()
 
 
     def __init__(self, con_callbck=None, discon_callbck=None):
@@ -83,7 +84,7 @@ class Connector(metaclass=Singleton):
                     logger.info('received answer')
                     logger.debug(answer)
                     status, token, message = __class__.__parsePackage(answer)
-                    if status == 'response' and message == 'ok':
+                    if status == 'response' and token == credentials['token'] and message == 'ok':
                         logger.info('handshake completed')
                         _callAndWaitFor(self.__websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
                         logger.info('connector client ready')
@@ -109,9 +110,8 @@ class Connector(metaclass=Singleton):
         while True:
             package = __class__.__in_queue.get()
             handler, token, message = __class__.__parsePackage(package)
-            logger.info(handler)
-            logger.info(token)
-            logger.info(message)
+            __class__.__session_manager.add()
+
 
 
 
@@ -137,7 +137,7 @@ class Connector(metaclass=Singleton):
     @staticmethod
     def __send(handler, token, message, timeout, callback):
         package = __class__.__createPackage(handler, token, message)
-        #TokenManager.add(token, package, callback, timeout)
+        #SessionManger.add(token, package, callback, timeout)
         print(package)
 
 
@@ -162,14 +162,6 @@ class Connector(metaclass=Singleton):
                 return message
             except Empty:
                 pass
-
-    @staticmethod
-    def register(devices):
-        pass
-
-    @staticmethod
-    def unregister(devices):
-        pass
 
 
 
