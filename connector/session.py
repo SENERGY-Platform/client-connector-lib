@@ -15,6 +15,15 @@ from uuid import uuid4 as uuid
 logger = root_logger.getChild(__name__)
 
 
+class TestDict(dict):
+    def __init__(self):
+        super().__init__()
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        logger.info('key {} and value {}'.format(key, value))
+
+
 class SessionManager(Thread, metaclass=Singleton):
     _event_loop = None
     _session_queue = Queue()
