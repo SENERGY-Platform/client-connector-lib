@@ -6,11 +6,9 @@ try:
     from modules.singleton import Singleton
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
-import functools, asyncio, concurrent.futures, time
+import functools, asyncio, concurrent.futures
 from threading import Thread
-from queue import Queue, Empty
-from uuid import uuid4 as uuid
-
+from queue import Queue
 
 logger = root_logger.getChild(__name__)
 
