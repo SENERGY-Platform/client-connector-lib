@@ -24,6 +24,14 @@ class TestDict(dict):
         logger.info('key {} and value {}'.format(key, value))
 
 
+class Session:
+    def __init__(self, token, timeout, callback):
+        self.token = token
+        self.timeout = timeout
+        self.callback = callback
+        self.event = None
+
+
 class SessionManager(Thread, metaclass=Singleton):
     _event_loop = None
     _session_queue = Queue()
@@ -36,28 +44,29 @@ class SessionManager(Thread, metaclass=Singleton):
 
     @staticmethod
     @asyncio.coroutine
-    def _timer(event, timeout, token):
+    def _timer(session):
         try:
-            yield from asyncio.wait_for(event.wait(), timeout)
-            logger.debug('{} interrupted'.format(token))
+            yield from asyncio.wait_for(session.event.wait(), session.timeout)
+            logger.debug('{} interrupted via timer'.format(session.token))
         except asyncio.TimeoutError:
-            logger.debug('timed out')
-        del __class__._map[token]
+            logger.debug('{} timed out'.format(session.token))
+        del __class__._map[session.token]
 
 
-    # noinspection PyTupleAssignmentBalance
     @staticmethod
     @asyncio.coroutine
     def _spawn():
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             while True:
-                token, timeout = yield from __class__._event_loop.run_in_executor(
+                session = yield from __class__._event_loop.run_in_executor(
                     executor,
                     functools.partial(__class__._session_queue.get)
                 )
-                event = asyncio.Event()
-                __class__._map[token] = event
-                __class__._event_loop.create_task(__class__._timer(event, timeout, token))
+                if not session.event:
+                    session.event = asyncio.Event()
+                    __class__._event_loop.create_task(__class__._timer(session))
+                else:
+                    logger.debug('{} interrupted'.format(session.token))
 
 
     @staticmethod
@@ -65,23 +74,27 @@ class SessionManager(Thread, metaclass=Singleton):
     def _interruptor():
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             while True:
-                token = yield from __class__._event_loop.run_in_executor(
+                session = yield from __class__._event_loop.run_in_executor(
                     executor,
                     functools.partial(__class__._event_queue.get)
                 )
-                while not token in __class__._map:
-                    yield
-                __class__._map[token].set()
+                if type(session.event) is asyncio.Event:
+                    session.event.set()
 
 
     @staticmethod
-    def new(token, timeout):
-        __class__._session_queue.put((token, timeout))
+    def new(token, timeout, callback=None):
+        session = Session(token, timeout, callback)
+        __class__._map[token] = session
+        __class__._session_queue.put(session)
 
 
     @staticmethod
     def interrupt(token):
-        __class__._event_queue.put(token)
+        session = __class__._map[token]
+        if not session.event:
+            session.event = True
+        __class__._event_queue.put(session)
 
 
     def run(self):
