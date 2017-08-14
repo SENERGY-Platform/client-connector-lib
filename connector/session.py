@@ -29,14 +29,13 @@ class SessionManager(Thread, metaclass=Singleton):
 
     def __init__(self):
         super().__init__()
-        self.start()
 
     @staticmethod
     @asyncio.coroutine
     def _timer(session):
         try:
             yield from asyncio.wait_for(session.event.wait(), session.timeout)
-            logger.debug('{} interrupted via timer'.format(session.token))
+            logger.debug('{} caught event via _timer'.format(session.token))
         except asyncio.TimeoutError:
             logger.debug('{} timed out'.format(session.token))
         del __class__._sessions[session.token]
@@ -55,7 +54,7 @@ class SessionManager(Thread, metaclass=Singleton):
                     session.event = asyncio.Event()
                     __class__._event_loop.create_task(__class__._timer(session))
                 else:
-                    logger.debug('{} interrupted'.format(session.token))
+                    logger.debug('{} caught event'.format(session.token))
 
 
     @staticmethod
@@ -72,14 +71,14 @@ class SessionManager(Thread, metaclass=Singleton):
 
 
     @staticmethod
-    def new(token, timeout, callback=None):
+    def new(token, timeout=10, callback=None):
         session = Session(token, timeout, callback)
         __class__._sessions[token] = session
         __class__._session_queue.put(session)
 
 
     @staticmethod
-    def interrupt(token):
+    def raiseEvent(token):
         session = __class__._sessions[token]
         if not session.event:
             session.event = True
