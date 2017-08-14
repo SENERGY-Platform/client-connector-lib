@@ -13,15 +13,6 @@ from queue import Queue
 logger = root_logger.getChild(__name__)
 
 
-class TestDict(dict):
-    def __init__(self):
-        super().__init__()
-
-    def __setitem__(self, key, value):
-        super().__setitem__(key, value)
-        logger.info('key {} and value {}'.format(key, value))
-
-
 class Session:
     def __init__(self, token, timeout, callback):
         self.token = token
@@ -33,7 +24,7 @@ class Session:
 class SessionManager(Thread, metaclass=Singleton):
     _event_loop = None
     _session_queue = Queue()
-    _map = dict()
+    _sessions = dict()
     _event_queue = Queue()
 
     def __init__(self):
@@ -48,7 +39,7 @@ class SessionManager(Thread, metaclass=Singleton):
             logger.debug('{} interrupted via timer'.format(session.token))
         except asyncio.TimeoutError:
             logger.debug('{} timed out'.format(session.token))
-        del __class__._map[session.token]
+        del __class__._sessions[session.token]
 
 
     @staticmethod
@@ -83,13 +74,13 @@ class SessionManager(Thread, metaclass=Singleton):
     @staticmethod
     def new(token, timeout, callback=None):
         session = Session(token, timeout, callback)
-        __class__._map[token] = session
+        __class__._sessions[token] = session
         __class__._session_queue.put(session)
 
 
     @staticmethod
     def interrupt(token):
-        session = __class__._map[token]
+        session = __class__._sessions[token]
         if not session.event:
             session.event = True
         __class__._event_queue.put(session)
