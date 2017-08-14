@@ -6,6 +6,7 @@ try:
     from modules.singleton import Singleton
     from modules.http_lib import Methods as http
     from connector.configuration import CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_HOST, CONNECTOR_PORT
+    from connector.session import SessionManager
     from connector.websocket import Websocket
     from connector.message import Message, serializeMessage, deserializeMessage
 except ImportError as ex:
@@ -40,7 +41,6 @@ class Connector(metaclass=Singleton):
     __out_queue = Queue()
     __in_queue = Queue()
     __user_queue = Queue()
-    #__session_manager = SessionManger()
 
 
     def __init__(self, con_callbck=None, discon_callbck=None):
@@ -48,8 +48,10 @@ class Connector(metaclass=Singleton):
         self.__con_callbck = con_callbck
         self.__discon_callbck = discon_callbck
         self.__websocket = None
+        self.__session_manager_thread = SessionManager()
         self.__router_thread = Thread(target=self.__router, name="Router")
         self.__connect_thread = Thread(target=self.__connect, name="Connect")
+        self.__session_manager_thread.start()
         self.__router_thread.start()
         #self.__connect_thread.start()
 
@@ -110,7 +112,6 @@ class Connector(metaclass=Singleton):
         while True:
             package = __class__.__in_queue.get()
             handler, token, message = __class__.__parsePackage(package)
-            __class__.__session_manager.add()
 
 
 
