@@ -58,77 +58,79 @@ class Message:
         raise TypeError("attribute payload is immutable, use 'payload.body' or 'payload.header' instead")
 
 
-class ConnectorCommand(Message):
-    def __init__(self, device_id, payload, endpoint):
-        super().__init__(payload)
-        self.__device_id = device_id             # device_uri
-        self.__endpoint = endpoint               # service_uri (sepl)
-        self.__overhead = None
+class ConnectorMsg:
+    class Command(Message):
+        def __init__(self, device_id, payload, endpoint):
+            super().__init__(payload)
+            self.__device_id = device_id             # device_uri
+            self.__endpoint = endpoint               # service_uri (sepl)
+            self.__overhead = None
 
-    @property
-    def device_id(self):
-        return self.__device_id
+        @property
+        def device_id(self):
+            return self.__device_id
 
-    @device_id.setter
-    def device_id(self, arg):
-        if type(arg) is not str:
-            raise TypeError("device id must be a string but got '{}'".format(type(arg)))
-        self.__device_id = arg
+        @device_id.setter
+        def device_id(self, arg):
+            if type(arg) is not str:
+                raise TypeError("device id must be a string but got '{}'".format(type(arg)))
+            self.__device_id = arg
 
-    @property
-    def endpoint(self):
-        return self.__endpoint
+        @property
+        def endpoint(self):
+            return self.__endpoint
 
-    @endpoint.setter
-    def endpoint(self, arg):
-        raise TypeError('attribute endpoint is immutable')
-
-
-class ConnectorResponse(Message):
-    def __init__(self, payload):
-        super().__init__(payload)
+        @endpoint.setter
+        def endpoint(self, arg):
+            raise TypeError('attribute endpoint is immutable')
 
 
-class ConnectorError(Message):
-    def __init__(self, payload):
-        super().__init__(payload)
+    class Response(Message):
+        def __init__(self, payload):
+            super().__init__(payload)
 
 
-class ClientResponse():
-    def __init__(self, comm_msg: ConnectorCommand):
-        if type(comm_msg) is not ConnectorCommand:
-            raise TypeError("response must be of type 'ConnectorCommand' but got '{}'".format(type(comm_msg)))
-        self.__comm_msg = comm_msg
-
-    def __getattr__(self, attr):
-        return getattr(self.__comm_msg, attr)
+    class Error(Message):
+        def __init__(self, payload):
+            super().__init__(payload)
 
 
-class ClientEvent(Message):
-    def __init__(self, device_id, payload, endpoint):
-        super().__init__(payload)
-        self.__device_id = device_id             # device_uri
-        self.__endpoint = endpoint               # service_uri (sepl)
+class ClientMsg:
+    class ClientResponse():
+        def __init__(self, comm_msg: ConnectorMsg.Command):
+            if type(comm_msg) is not ConnectorMsg.Command:
+                raise TypeError("response must be of type 'Command' but got '{}'".format(type(comm_msg)))
+            self.__comm_msg = comm_msg
 
-    @property
-    def device_id(self):
-        return self.__device_id
+        def __getattr__(self, attr):
+            return getattr(self.__comm_msg, attr)
 
-    @device_id.setter
-    def device_id(self, arg):
-        if type(arg) is not str:
-            raise TypeError("device id must be a string but got '{}'".format(type(arg)))
-        self.__device_id = arg
 
-    @property
-    def endpoint(self):
-        return self.__endpoint
+    class ClientEvent(Message):
+        def __init__(self, device_id, payload, endpoint):
+            super().__init__(payload)
+            self.__device_id = device_id             # device_uri
+            self.__endpoint = endpoint               # service_uri (sepl)
 
-    @endpoint.setter
-    def endpoint(self, arg):
-        if type(arg) is not str:
-            raise TypeError("device id must be a string but got '{}'".format(type(arg)))
-        self.__endpoint = arg
+        @property
+        def device_id(self):
+            return self.__device_id
+
+        @device_id.setter
+        def device_id(self, arg):
+            if type(arg) is not str:
+                raise TypeError("device id must be a string but got '{}'".format(type(arg)))
+            self.__device_id = arg
+
+        @property
+        def endpoint(self):
+            return self.__endpoint
+
+        @endpoint.setter
+        def endpoint(self, arg):
+            if type(arg) is not str:
+                raise TypeError("device id must be a string but got '{}'".format(type(arg)))
+            self.__endpoint = arg
 
 
 
