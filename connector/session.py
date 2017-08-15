@@ -26,9 +26,18 @@ class SessionManager(Thread, metaclass=Singleton):
     _session_queue = Queue()
     _sessions = dict()
     _event_queue = Queue()
+    callback_queue = Queue()
 
     def __init__(self):
         super().__init__()
+
+
+    @staticmethod
+    def _cleanup(session):
+        if session.callback:
+            __class__.callback_queue.put(session.callback)
+        del __class__._sessions[session.token]
+
 
     @staticmethod
     @asyncio.coroutine
@@ -38,7 +47,7 @@ class SessionManager(Thread, metaclass=Singleton):
             logger.debug('{} caught event via _timer'.format(session.token))
         except asyncio.TimeoutError:
             logger.debug('{} timed out'.format(session.token))
-        del __class__._sessions[session.token]
+        __class__._cleanup(session)
 
 
     @staticmethod
@@ -55,6 +64,7 @@ class SessionManager(Thread, metaclass=Singleton):
                     __class__._event_loop.create_task(__class__._timer(session))
                 else:
                     logger.debug('{} caught event'.format(session.token))
+                    __class__._cleanup(session)
 
 
     @staticmethod
@@ -79,10 +89,11 @@ class SessionManager(Thread, metaclass=Singleton):
 
     @staticmethod
     def raiseEvent(token):
-        session = __class__._sessions[token]
-        if not session.event:
-            session.event = True
-        __class__._event_queue.put(session)
+        session = __class__._sessions.get(token)
+        if session:
+            if not session.event:
+                session.event = True
+            __class__._event_queue.put(session)
 
 
     def run(self):
