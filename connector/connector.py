@@ -111,7 +111,9 @@ class Connector(metaclass=Singleton):
     def __router(self):
         while True:
             package = __class__.__in_queue.get()
-            handler, token, message = __class__.__parsePackage(package)
+            if package:
+                handler, token, message = __class__.__parsePackage(package)
+
 
 
 
@@ -121,15 +123,18 @@ class Connector(metaclass=Singleton):
 
     @staticmethod
     def __parsePackage(package):
-        handler_and_token, message = package.split(':', maxsplit=1)
-        #### temp ####
-        if '.' in handler_and_token:
-            handler, token = handler_and_token.split('.', maxsplit=1)
-        else:
-            handler = handler_and_token
-            token = str(uuid())
-        #### temp ####
-        return handler, token, message
+        try:
+            handler_and_token, message = package.split(':', maxsplit=1)
+            #### temp ####
+            if '.' in handler_and_token:
+                handler, token = handler_and_token.split('.', maxsplit=1)
+            else:
+                handler = handler_and_token
+                token = str(uuid())
+            #### temp ####
+            return handler, token, message
+        except Exception:
+            return None
 
     @staticmethod
     def __createPackage(handler, token, message):
