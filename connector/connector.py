@@ -14,6 +14,7 @@ except ImportError as ex:
 import functools, json, time
 from queue import Queue
 from threading import Thread, Event
+from uuid import uuid4 as uuid
 
 
 logger = root_logger.getChild(__name__)
@@ -52,12 +53,17 @@ def _parsePackage(package):
             token = str(uuid())
         #### temp ####
         return handler, token, message
-    except Exception:
-        return None
+    except ValueError:
+        logger.error('malformed package: {}'.format(package))
+        return False
 
 
-def _createPackage(handler, token, message):
-    return '{}.{}:{}'.format(handler, token, message)
+def _createPackage(message):
+    return '{}.{}:{}'.format(
+        ClientMsg._prefix_map.get(type(message)),
+        message._token,
+        message.__class__._serialize(message)
+    )
 
 
 class Connector(metaclass=Singleton):
@@ -73,11 +79,9 @@ class Connector(metaclass=Singleton):
         self.__websocket = None
         self.__callback_thread = Thread(target=self.__callbackHandler, name="Callback")
         self.__session_manager_thread = SessionManager()
-        self.__router_thread = Thread(target=self.__router, name="Router")
         self.__connect_thread = Thread(target=self.__connect, name="Connect")
         self.__callback_thread.start()
-        self.__session_manager_thread.start()
-        #self.__router_thread.start()
+        #self.__session_manager_thread.start()
         #self.__connect_thread.start()
 
 
@@ -138,22 +142,6 @@ class Connector(metaclass=Singleton):
 
 
 
-    def __router(self):
-        while True:
-            package = __class__.__in_queue.get()
-            if package:
-                handler, token, message = _parsePackage(package)
-                if handler == 'command':
-                    message = ConnectorMsg.Command(message)
-                    message._token = token
-                    __class__.__user_queue.put(message)
-                elif handler == 'error' or handler == 'response':
-                    SessionManager.raiseEvent(token)
-
-
-
-
-
 
 
 
@@ -162,8 +150,10 @@ class Connector(metaclass=Singleton):
 
     @staticmethod
     def __send(message, timeout, retries, callback):
-        package = _createPackage(handler, token, message)
-        SessionManager.new(token, timeout, callback)
+        if not message._token:
+            message._token = str(uuid())
+        package = _createPackage(message)
+        SessionManager.new(message, timeout, retries, callback)
         logger.debug('send: {}'.format(package))
 
 
@@ -183,29 +173,19 @@ class Connector(metaclass=Singleton):
             callback = functools.partial(_callback, event)
             __class__.__send(message, timeout, retries, callback)
             event.wait()
+            return event.message
         else:
             __class__.__send(message, timeout, retries, callback)
 
-
-    __handlers = {
-        'command': ConnectorMsg.Command,
-        'response': ConnectorMsg.Response,
-        'error': ConnectorMsg.Error
-    }
 
     @staticmethod
     def receive():
         package = __class__.__in_queue.get()
         if package:
-            handler, token, message = _parsePackage(package)
-            msg_obj = __class__.__handlers.get(handler)(message)
+            prefix, token, message = _parsePackage(package)
+            msg_obj = ConnectorMsg._prefix_map.get(prefix)(message)
             msg_obj._token = token
-            if handler == 'command':
-                message = ConnectorMsg.Command(message)
-                message._token = token
-                __class__.__user_queue.put(message)
-            elif handler == 'error' or handler == 'response':
-                SessionManager.raiseEvent(token)
+            return msg_obj
 
 
 
