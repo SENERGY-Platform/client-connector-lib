@@ -11,15 +11,10 @@ import json
 logger = root_logger.getChild(__name__)
 
 
-_device_id_key = 'device_url'
-_service_key = 'service_url'
-_value_key = 'protocol_parts'
-
-
-class Payload:
-    def __init__(self, header=None, body=None):
-        self.__header = header or str()
-        self.__body = body or str()
+class _Payload:
+    def __init__(self):
+        self.__header = str()
+        self.__body = str()
 
     @property
     def header(self):
@@ -42,11 +37,11 @@ class Payload:
         self.__body = arg
 
 
-class Message:
-    def __init__(self, payload):
-        if payload and type(payload) is not Payload:
-            raise TypeError("payload must be of type 'Payload' but got '{}'".format(type(payload)))
-        self.__payload = payload or Payload()    # value
+class _Message:
+    def __init__(self, payload=None):
+        if payload and type(payload) is not _Payload:
+            raise TypeError("payload must be of type '_Payload' but got '{}'".format(type(payload)))
+        self.__payload = payload or _Payload()    # value
         self._token = None
 
     @property
@@ -58,13 +53,25 @@ class Message:
         raise TypeError("attribute payload is immutable, use 'payload.body' or 'payload.header' instead")
 
 
-class ConnectorMsg:
-    class Command(Message):
-        def __init__(self, device_id, payload, endpoint):
+class _ConnectorMsg:
+    class Command(_Message):
+        def __init__(self, com_msg):
+            try:
+                com_msg = json.loads(com_msg)
+            except Exception as ex:
+                logger.error(ex)
+            payload = _Payload()
+            value = com_msg.get('protocol_parts')
+            for part in value:
+                name = part.get('name')
+                if name == 'body':
+                    payload.body = part.get('value')
+                elif name == 'header':
+                    payload.header = part.get('value')
             super().__init__(payload)
-            self.__device_id = device_id             # device_uri
-            self.__endpoint = endpoint               # service_uri (sepl)
-            self.__overhead = None
+            self.__device_id = com_msg.get('device_url')
+            self.__service = com_msg.get('service_url')
+            self._overhead = com_msg
 
         @property
         def device_id(self):
@@ -72,45 +79,68 @@ class ConnectorMsg:
 
         @device_id.setter
         def device_id(self, arg):
-            if type(arg) is not str:
-                raise TypeError("device id must be a string but got '{}'".format(type(arg)))
-            self.__device_id = arg
+            raise TypeError('device id is immutable')
 
         @property
-        def endpoint(self):
-            return self.__endpoint
+        def service(self):
+            return self.__service
 
-        @endpoint.setter
-        def endpoint(self, arg):
-            raise TypeError('attribute endpoint is immutable')
+        @service.setter
+        def service(self, arg):
+            raise TypeError('attribute service is immutable')
 
 
-    class Response(Message):
-        def __init__(self, payload):
+    class Response(_Message):
+        def __init__(self, res_msg):
+            payload = _Payload()
+            payload.body = res_msg
             super().__init__(payload)
 
 
-    class Error(Message):
-        def __init__(self, payload):
+    class Error(_Message):
+        def __init__(self, err_msg):
+            payload = _Payload()
+            payload.body = err_msg
             super().__init__(payload)
+
+
+    _prefix_map = {
+        'command': Command,
+        'response': Response,
+        'error': Error
+    }
 
 
 class ClientMsg:
-    class ClientResponse():
-        def __init__(self, comm_msg: ConnectorMsg.Command):
-            if type(comm_msg) is not ConnectorMsg.Command:
+    class Response():
+        def __init__(self, comm_msg):
+            if type(comm_msg) is not _ConnectorMsg.Command:
                 raise TypeError("response must be of type 'Command' but got '{}'".format(type(comm_msg)))
             self.__comm_msg = comm_msg
 
         def __getattr__(self, attr):
             return getattr(self.__comm_msg, attr)
 
+        @staticmethod
+        def _serialize(message):
+            message._overhead['protocol_parts'] = [
+                {
+                    'name': 'header',
+                    'value': message.payload.header
+                },
+                {
+                    'name': 'body',
+                    'value': message.payload.body
+                }
+            ]
+            return json.dumps(message._overhead)
 
-    class ClientEvent(Message):
-        def __init__(self, device_id, payload, endpoint):
-            super().__init__(payload)
-            self.__device_id = device_id             # device_uri
-            self.__endpoint = endpoint               # service_uri (sepl)
+
+    class Event(_Message):
+        def __init__(self, device_id=None, endpoint=None):
+            super().__init__()
+            self.__device_id = device_id
+            self.__endpoint = endpoint
 
         @property
         def device_id(self):
@@ -132,75 +162,26 @@ class ClientMsg:
                 raise TypeError("device id must be a string but got '{}'".format(type(arg)))
             self.__endpoint = arg
 
+        @staticmethod
+        def _serialize(message):
+            msg = {
+                'device_uri': message.device_id,
+                'service_uri': message.endpoint,
+                'value': [
+                    {
+                        'name': 'header',
+                        'value': message.payload.header
+                    },
+                    {
+                        'name': 'body',
+                        'value': message.payload.body
+                    }
+                ]
+            }
+            return json.dumps(msg)
 
 
-
-
-def serializeMessage(message: Message):
-    if type(message) is not Message:
-        raise TypeError("message must be of type 'Message' but got '{}'".format(type(message)))
-    if not message.device_id:
-        raise ValueError('device id missing')
-    value = (
-        {
-            'name': 'header',
-            'value': message.payload.header
-        },
-        {
-            'name': 'body',
-            'value': message.payload.body
-        }
-    )
-    msg = {
-        _device_id_key: message.device_id,
-        _service_key: message.endpoint,
-        _value_key: value,
+    _prefix_map = {
+        Response: 'response',
+        Event: 'event'
     }
-    if message._Message__overhead:
-        msg.update(message._Message__overhead)
-    return json.dumps(msg)
-
-
-def serializeMessageOld(message: Message):
-    if type(message) is not Message:
-        raise TypeError("message must be of type 'Message' but got '{}'".format(type(message)))
-    if not message.device_id:
-        raise ValueError('device id missing')
-    protocol_parts = (
-        {
-            'name': 'header',
-            'value': message.payload.header
-        },
-        {
-            'name': 'body',
-            'value': message.payload.body
-        }
-    )
-    msg_struct = {
-        _device_id_key: message.device_id,
-        _service_key: message.endpoint,
-        _value_key: protocol_parts,
-    }
-    msg_struct.update(message._Message__overhead)
-    return json.dumps(msg_struct)
-
-
-def deserializeMessage(message) -> Message:
-    try:
-        message = json.loads(message)
-    except Exception as ex:
-        logger.error(ex)
-    payload = Payload()
-    value = message.get(_value_key)
-    for part in value:
-        name = part.get('name')
-        if name == 'body':
-            payload.body = part.get('value')
-        elif name == 'header':
-            payload.header = part.get('value')
-    msg_obj = Message(message.get(_device_id_key), payload, message.get(_service_key))
-    message[_value_key] = None
-    message[_device_id_key] = None
-    message[_service_key] = None
-    msg_obj._Message__overhead = message
-    return msg_obj
