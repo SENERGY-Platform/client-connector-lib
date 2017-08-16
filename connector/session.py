@@ -9,15 +9,17 @@ except ImportError as ex:
 import functools, asyncio, concurrent.futures
 from threading import Thread
 from queue import Queue
+from uuid import uuid4 as uuid
 
 logger = root_logger.getChild(__name__)
 
 
 class Session:
-    def __init__(self, token, timeout, callback):
-        self.token = token
+    def __init__(self, message, timeout, retries, callback):
+        self.message = message
         self.timeout = timeout
         self.callback = callback
+        self.retries = retries
         self.event = None
 
 
@@ -81,9 +83,11 @@ class SessionManager(Thread, metaclass=Singleton):
 
 
     @staticmethod
-    def new(token, timeout=10, callback=None):
-        session = Session(token, timeout, callback)
-        __class__._sessions[token] = session
+    def new(message, timeout, retries, callback):
+        if not message._token:
+            message._token = str(uuid())
+        session = Session(message, timeout, retries, callback)
+        __class__._sessions[message._token] = session
         __class__._session_queue.put(session)
 
 
