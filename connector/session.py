@@ -38,7 +38,7 @@ class SessionManager(Thread, metaclass=Singleton):
     def _cleanup(session):
         if session.callback:
             __class__.callback_queue.put(session.callback)
-        del __class__._sessions[session.token]
+        del __class__._sessions[session.message._token]
 
 
     @staticmethod
@@ -46,9 +46,9 @@ class SessionManager(Thread, metaclass=Singleton):
     def _timer(session):
         try:
             yield from asyncio.wait_for(session.event.wait(), session.timeout)
-            logger.debug('{} caught event via _timer'.format(session.token))
+            logger.debug('{} caught event via _timer'.format(session.message._token))
         except asyncio.TimeoutError:
-            logger.debug('{} timed out'.format(session.token))
+            logger.debug('{} timed out'.format(session.message._token))
         __class__._cleanup(session)
 
 
@@ -65,7 +65,7 @@ class SessionManager(Thread, metaclass=Singleton):
                     session.event = asyncio.Event()
                     __class__._event_loop.create_task(__class__._timer(session))
                 else:
-                    logger.debug('{} caught event'.format(session.token))
+                    logger.debug('{} caught event'.format(session.message._token))
                     __class__._cleanup(session)
 
 
@@ -84,8 +84,6 @@ class SessionManager(Thread, metaclass=Singleton):
 
     @staticmethod
     def new(message, timeout, retries, callback):
-        if not message._token:
-            message._token = str(uuid())
         session = Session(message, timeout, retries, callback)
         __class__._sessions[message._token] = session
         __class__._session_queue.put(session)
