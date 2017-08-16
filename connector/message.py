@@ -53,7 +53,7 @@ class _Message:
         raise TypeError("attribute payload is immutable, use 'payload.body' or 'payload.header' instead")
 
 
-class _ConnectorMsg:
+class ConnectorMsg:
     class Command(_Message):
         def __init__(self, com_msg):
             try:
@@ -114,7 +114,7 @@ class _ConnectorMsg:
 class ClientMsg:
     class Response():
         def __init__(self, comm_msg):
-            if type(comm_msg) is not _ConnectorMsg.Command:
+            if type(comm_msg) is not ConnectorMsg.Command:
                 raise TypeError("response must be of type 'Command' but got '{}'".format(type(comm_msg)))
             self.__comm_msg = comm_msg
 
