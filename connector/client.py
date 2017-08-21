@@ -67,7 +67,7 @@ def _createPackage(msg_obj):
     )
 
 
-class Connector(metaclass=Singleton):
+class Client(metaclass=Singleton):
     __out_queue = Queue()
     __in_queue = Queue()
     __client_queue = Queue()
