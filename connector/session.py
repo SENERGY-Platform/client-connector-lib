@@ -4,6 +4,7 @@ if __name__ == '__main__':
 try:
     from modules.logger import root_logger
     from modules.singleton import Singleton
+    from connector.message.connector import Error
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, asyncio, concurrent.futures
@@ -48,6 +49,9 @@ class SessionManager(Thread, metaclass=Singleton):
             logger.debug('{} caught event via _timer'.format(session.message._token))
         except asyncio.TimeoutError:
             logger.debug('{} timed out'.format(session.message._token))
+            err_msg = Error('timeout')
+            err_msg._token = session.message._token
+            session.message = err_msg
         __class__._cleanup(session)
 
 
