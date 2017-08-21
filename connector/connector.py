@@ -79,9 +79,11 @@ class Connector(metaclass=Singleton):
         self.__websocket = None
         self.__callback_thread = Thread(target=self.__callbackHandler, name="Callback")
         self.__session_manager_thread = SessionManager()
+        self.__router_thread = Thread(target=self.__router, name="Router")
         self.__connect_thread = Thread(target=self.__connect, name="Connect")
         self.__callback_thread.start()
-        #self.__session_manager_thread.start()
+        self.__session_manager_thread.start()
+        self.__router_thread.start()
         #self.__connect_thread.start()
 
 
@@ -137,11 +139,25 @@ class Connector(metaclass=Singleton):
 
     def __callbackHandler(self):
         while True:
-            callback = SessionManager.callback_queue.get()
-            callback()
+            callback, msg_obj = SessionManager.callback_queue.get()
+            callback(msg_obj)
 
 
 
+
+
+
+    def __router(self):
+        while True:
+            package = __class__.__in_queue.get()
+            if package:
+                prefix, token, message = _parsePackage(package)
+                msg_obj = ConnectorMsg._prefix_map.get(prefix)(message)
+                msg_obj._token = token
+                if type(msg_obj) is ConnectorMsg.Command:
+                    __class__.__user_queue.put(msg_obj)
+                else:
+                    SessionManager.raiseEvent(msg_obj)
 
 
 
@@ -180,12 +196,7 @@ class Connector(metaclass=Singleton):
 
     @staticmethod
     def receive():
-        package = __class__.__in_queue.get()
-        if package:
-            prefix, token, message = _parsePackage(package)
-            msg_obj = ConnectorMsg._prefix_map.get(prefix)(message)
-            msg_obj._token = token
-            return msg_obj
+        return __class__.__user_queue.get()
 
 
 
