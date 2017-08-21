@@ -8,7 +8,8 @@ try:
     from connector.configuration import CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_HOST, CONNECTOR_PORT
     from connector.session import SessionManager
     from connector.websocket import Websocket
-    from connector.message import ConnectorMsg, ClientMsg
+    from connector.message.client import _client_msg_prefix, Event, Response
+    from connector.message.connector import Command, connector_msg_obj
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, json, time
@@ -58,18 +59,18 @@ def _parsePackage(package):
         return False
 
 
-def _createPackage(message):
+def _createPackage(msg_obj):
     return '{}.{}:{}'.format(
-        ClientMsg._prefix_map.get(type(message)),
-        message._token,
-        message.__class__._serialize(message)
+        _client_msg_prefix.get(type(msg_obj)),
+        msg_obj._token,
+        msg_obj.__class__._serialize(msg_obj)
     )
 
 
 class Connector(metaclass=Singleton):
     __out_queue = Queue()
     __in_queue = Queue()
-    __user_queue = Queue()
+    __client_queue = Queue()
 
 
     def __init__(self, con_callbck=None, discon_callbck=None):
@@ -136,7 +137,6 @@ class Connector(metaclass=Singleton):
         return False
 
 
-
     def __callbackHandler(self):
         while True:
             callback, msg_obj = SessionManager.callback_queue.get()
@@ -152,10 +152,10 @@ class Connector(metaclass=Singleton):
             package = __class__.__in_queue.get()
             if package:
                 prefix, token, message = _parsePackage(package)
-                msg_obj = ConnectorMsg._prefix_map.get(prefix)(message)
+                msg_obj = connector_msg_obj.get(prefix)(message)
                 msg_obj._token = token
-                if type(msg_obj) is ConnectorMsg.Command:
-                    __class__.__user_queue.put(msg_obj)
+                if type(msg_obj) is Command:
+                    __class__.__client_queue.put(msg_obj)
                 else:
                     SessionManager.raiseEvent(msg_obj)
 
@@ -163,13 +163,12 @@ class Connector(metaclass=Singleton):
 
 
 
-
     @staticmethod
-    def __send(message, timeout, retries, callback):
-        if not message._token:
-            message._token = str(uuid())
-        package = _createPackage(message)
-        SessionManager.new(message, timeout, retries, callback)
+    def __send(msg_obj, timeout, retries, callback):
+        if not msg_obj._token:
+            msg_obj._token = str(uuid())
+        package = _createPackage(msg_obj)
+        SessionManager.new(msg_obj, timeout, retries, callback)
         logger.debug('send: {}'.format(package))
 
 
@@ -180,23 +179,23 @@ class Connector(metaclass=Singleton):
 
 
     @staticmethod
-    def send(message, timeout=10, retries=0, callback=None, block=False):
-        if type(message) not in ClientMsg.__dict__.values():
-            raise TypeError("message must be either ClientMsg.Response or ClientMsg.Event but got '{}'".format(type(message)))
+    def send(msg_obj, timeout=10, retries=0, callback=None, block=True):
+        if type(msg_obj) not in (Event, Response):
+            raise TypeError("message must be either ClientMsg.Response or ClientMsg.Event but got '{}'".format(type(msg_obj)))
         if block:
             event = Event()
             event.message = None
             callback = functools.partial(_callback, event)
-            __class__.__send(message, timeout, retries, callback)
+            __class__.__send(msg_obj, timeout, retries, callback)
             event.wait()
             return event.message
         else:
-            __class__.__send(message, timeout, retries, callback)
+            __class__.__send(msg_obj, timeout, retries, callback)
 
 
     @staticmethod
     def receive():
-        return __class__.__user_queue.get()
+        return __class__.__client_queue.get()
 
 
 
