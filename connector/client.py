@@ -143,10 +143,6 @@ class Client(metaclass=Singleton):
             callback(msg_obj)
 
 
-
-
-
-
     def __router(self):
         while True:
             package = __class__.__in_queue.get()
@@ -160,9 +156,6 @@ class Client(metaclass=Singleton):
                     SessionManager.raiseEvent(msg_obj)
 
 
-
-
-
     @staticmethod
     def __send(msg_obj, timeout, retries, callback):
         if not msg_obj._token:
@@ -173,15 +166,13 @@ class Client(metaclass=Singleton):
 
 
 
-
-
     #--------- User methods ---------#
 
 
     @staticmethod
     def send(msg_obj, timeout=10, retries=0, callback=None, block=True):
-        if type(msg_obj) not in (Event, Response):
-            raise TypeError("message must be either ClientMsg.Response or ClientMsg.Event but got '{}'".format(type(msg_obj)))
+        if type(msg_obj) not in _client_msg_prefix.keys():
+            raise TypeError("message must be either 'Response' or 'Event' but got '{}'".format(type(msg_obj)))
         if block:
             event = Event()
             event.message = None
