@@ -9,7 +9,6 @@ except ImportError as ex:
 import functools, asyncio, concurrent.futures
 from threading import Thread
 from queue import Queue
-from uuid import uuid4 as uuid
 
 logger = root_logger.getChild(__name__)
 
@@ -37,7 +36,7 @@ class SessionManager(Thread, metaclass=Singleton):
     @staticmethod
     def _cleanup(session):
         if session.callback:
-            __class__.callback_queue.put(session.callback)
+            __class__.callback_queue.put((session.callback, session.message))
         del __class__._sessions[session.message._token]
 
 
@@ -90,9 +89,10 @@ class SessionManager(Thread, metaclass=Singleton):
 
 
     @staticmethod
-    def raiseEvent(token):
-        session = __class__._sessions.get(token)
+    def raiseEvent(msg_obj):
+        session = __class__._sessions.get(msg_obj._token)
         if session:
+            session.message = msg_obj
             if not session.event:
                 session.event = True
             __class__._event_queue.put(session)
