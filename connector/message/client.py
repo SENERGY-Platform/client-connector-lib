@@ -82,7 +82,57 @@ class Event(Message):
         return json.dumps(msg)
 
 
+class _Listen:
+    def __init__(self, device):
+        self.device = device
+
+    @staticmethod
+    def _serialize(message):
+        pass
+
+
+class _Add:
+    def __init__(self, device):
+        self.device = device
+
+    @staticmethod
+    def _serialize(message):
+        pass
+
+
+class _Update:
+    def __init__(self, device):
+        self.device = device
+
+    @staticmethod
+    def _serialize(message):
+        pass
+
+
+class _Remove:
+    def __init__(self, device):
+        self.device = device
+
+    @staticmethod
+    def _serialize(message):
+        pass
+
+
+class _Mute:
+    def __init__(self, device):
+        self.device = device
+
+    @staticmethod
+    def _serialize(message):
+        pass
+
+
 _client_msg_prefix = {
     Response: 'response',
-    Event: 'event'
+    Event: 'event',
+    _Listen: 'listen_to_devices',
+    _Add: 'add_devices',
+    _Update: 'update_device_name',
+    _Remove: 'remove_devices',
+    _Mute: ''
 }
