@@ -88,7 +88,7 @@ class _Listen:
 
     @staticmethod
     def _serialize(message):
-        pass
+        return json.dumps([message.device.id])
 
 
 class _Add:
@@ -97,7 +97,11 @@ class _Add:
 
     @staticmethod
     def _serialize(message):
-        pass
+        return json.dumps([{
+            'uri': message.device.id,
+            'connector_type': message.device.type,
+            'name': message.device.name
+        }])
 
 
 class _Update:
@@ -106,7 +110,10 @@ class _Update:
 
     @staticmethod
     def _serialize(message):
-        pass
+        return json.dumps({
+            'device_uri': message.device.id,
+            'name': message.device.name
+        })
 
 
 class _Remove:
