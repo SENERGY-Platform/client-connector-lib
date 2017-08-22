@@ -8,8 +8,9 @@ try:
     from connector.configuration import CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_HOST, CONNECTOR_PORT
     from connector.session import SessionManager
     from connector.websocket import Websocket
-    from connector.message.client import _client_msg_prefix, Event, Response
-    from connector.message.connector import Command, connector_msg_obj
+    from connector.message.client import _client_msg_prefix, _Remove, _Mute, _Update, _Add, _Listen
+    from connector.message.connector import Command, Response, connector_msg_obj
+    from connector.device import Device
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, json, time
@@ -188,6 +189,39 @@ class Client(metaclass=Singleton):
     def receive():
         return __class__.__client_queue.get()
 
+
+    @staticmethod
+    def register(device):
+        if type(device) is not Device:
+            raise TypeError("register takes a 'Device' object but got '{}'".format(type(device)))
+        response = __class__.send(_Listen(device))
+        if type(response) is Response:
+            response = json.loads(response.payload.body)
+            unused = response.get('unused')
+            if unused:
+                if device.id in unused:
+                    response = __class__.send(_Add(device))
+                    if type(response) is Response:
+                        return True
+        return False
+
+
+    @staticmethod
+    def deregister(device):
+        if type(device) is not Device:
+            raise TypeError("deregister takes a 'Device' object but got '{}'".format(type(device)))
+
+
+    @staticmethod
+    def update(device):
+        if type(device) is not Device:
+            raise TypeError("update takes a 'Device' object but got '{}'".format(type(device)))
+
+
+    @staticmethod
+    def mute(device):
+        if type(device) is not Device:
+            raise TypeError("mute takes a 'Device' object but got '{}'".format(type(device)))
 
 
 
