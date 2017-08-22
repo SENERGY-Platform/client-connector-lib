@@ -10,7 +10,7 @@ logger = root_logger.getChild(__name__)
 
 
 class Device():
-    def __init__(self, d_id, d_type, d_name):
-        self.id = d_id
-        self.type = d_type
-        self.name = d_name
+    def __init__(self, id, type, name):
+        self.id = id
+        self.type = type
+        self.name = name
