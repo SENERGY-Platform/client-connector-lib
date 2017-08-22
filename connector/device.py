@@ -37,18 +37,18 @@ class DeviceManager(metaclass=Singleton):
                     name=__class__._name_field[0],
                     name_t=__class__._name_field[1]
                 )
-            db_conn = sqlite3.connect(__class__._db_path)
-            self.cursor = db_conn.cursor()
+            self.db_conn = sqlite3.connect(__class__._db_path)
+            self.cursor = self.db_conn.cursor()
             self.cursor.execute(init_query)
             logger.info('created new database')
         else:
             logger.debug("found database at '{}'".format(__class__._db_path))
-            db_conn = sqlite3.connect(__class__._db_path)
-            self.cursor = db_conn.cursor()
+            self.db_conn = sqlite3.connect(__class__._db_path)
+            self.cursor = self.db_conn.cursor()
             logger.info('loaded database')
 
     def add(self, device):
-        query = 'INSERT INTO {table} ({id}, {type}, {name}) VALUES ({id_v}, {type_v}, "{name_v}")'.format(
+        query = 'INSERT INTO {table} ({id}, {type}, {name}) VALUES ("{id_v}", "{type_v}", "{name_v}")'.format(
             table=__class__._devices_table,
             id=__class__._id_field[0],
             id_v=device.id,
@@ -60,6 +60,7 @@ class DeviceManager(metaclass=Singleton):
         try:
             logger.debug(query)
             self.cursor.execute(query)
+            self.db_conn.commit()
         except sqlite3.IntegrityError:
             logger.error("device '{}' already exists".format(device.id))
 
