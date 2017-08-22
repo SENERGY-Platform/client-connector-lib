@@ -40,7 +40,7 @@ class Message:
     def __init__(self, payload=None):
         if payload and type(payload) is not Payload:
             raise TypeError("payload must be of type 'Payload' but got '{}'".format(type(payload)))
-        self.__payload = payload or Payload()    # value
+        self.__payload = payload or Payload()
         self._token = None
 
     @property
