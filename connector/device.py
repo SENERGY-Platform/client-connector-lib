@@ -13,9 +13,17 @@ logger = root_logger.getChild(__name__)
 
 class Device():
     def __init__(self, id, type, name):
-        self.id = id
+        self.__id = id
         self.type = type
         self.name = name
+
+    @property
+    def id(self):
+        return self.__id
+
+    @id.setter
+    def id(self, arg):
+        raise TypeError("attribute id is immutable")
 
 
 class DeviceManager(metaclass=Singleton):
@@ -65,12 +73,50 @@ class DeviceManager(metaclass=Singleton):
             logger.error("device '{}' already exists".format(device.id))
 
     def remove(self, device):
-        pass
+        query = 'DELETE FROM {table} WHERE {id}="{id_v}"'.format(
+            table=__class__._devices_table,
+            id=__class__._id_field[0],
+            id_v=device.id
+        )
+        try:
+            logger.debug(query)
+            self.cursor.execute(query)
+            self.db_conn.commit()
+        except sqlite3.IntegrityError:
+            logger.error("device '{}' not found".format(device.id))
 
     def update(self, device):
-        pass
+        query = 'UPDATE {table} SET {type}="{type_v}", {name}="{name_v}" WHERE {id}="{id_v}"'.format(
+            table=__class__._devices_table,
+            type=__class__._type_field[0],
+            type_v=device.type,
+            name=__class__._name_field[0],
+            name_v=device.name,
+            id=__class__._id_field[0],
+            id_v=device.id
+        )
+        try:
+            logger.debug(query)
+            self.cursor.execute(query)
+            self.db_conn.commit()
+        except sqlite3.IntegrityError:
+            logger.error("device '{}' not found".format(device.id))
 
-    def get(self, id):
-        pass
-
-
+    def get(self, id_str):
+        if type(id_str) is not str:
+            raise TypeError("id must be a string but got '{}'".format(type(id_str)))
+        query = 'SELECT {type}, {name} FROM {table} WHERE {id}="{id_v}"'.format(
+            table=__class__._devices_table,
+            type=__class__._type_field[0],
+            name=__class__._name_field[0],
+            id=__class__._id_field[0],
+            id_v=id_str
+        )
+        try:
+            logger.debug(query)
+            self.cursor.execute(query)
+            self.db_conn.commit()
+            result = self.cursor.fetchone()
+            return Device(id_str, result[0], result[1])
+        except sqlite3.IntegrityError:
+            logger.error("device '{}' not found".format(id_str))
