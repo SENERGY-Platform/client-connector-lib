@@ -87,7 +87,8 @@ class Client(metaclass=Singleton):
         self.__callback_thread.start()
         self.__session_manager_thread.start()
         self.__router_thread.start()
-        #self.__connect_thread.start()
+        self.__connect_thread.start()
+        time.sleep(0.2)
 
 
     def __reconnect(self):
@@ -229,12 +230,3 @@ class Client(metaclass=Singleton):
     def mute(device):
         if type(device) is not Device:
             raise TypeError("mute takes a 'Device' object but got '{}'".format(type(device)))
-
-
-
-
-    # --------- Tests ---------#
-
-    @staticmethod
-    def testPutIn(package):
-        __class__.__in_queue.put(package)
