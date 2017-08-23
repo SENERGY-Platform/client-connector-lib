@@ -21,6 +21,7 @@ from uuid import uuid4 as uuid
 
 logger = root_logger.getChild(__name__)
 
+logger.info(10 * '*' + ' Starting SEPL connector client ' + 10 * '*')
 
 OUT_QUEUE = Queue()
 IN_QUEUE = Queue()
@@ -76,7 +77,6 @@ class Client(metaclass=Singleton):
 
 
     def __init__(self, con_callbck=None, discon_callbck=None):
-        logger.info(10 * '*' + ' Starting SEPL connector client ' + 10 * '*')
         self.__con_callbck = con_callbck
         self.__discon_callbck = discon_callbck
         self.__websocket = None
