@@ -4,8 +4,15 @@ if __name__ == '__main__':
 import os, configparser
 
 
+
 config = configparser.ConfigParser()
-config.read('{}/connector.conf'.format(os.getcwd()))
+
+if os.path.isfile('{}/connector.conf'.format(os.getcwd())):
+    config.read('{}/connector.conf'.format(os.getcwd()))
+elif os.path.isfile('{}/connector_client/connector.conf'.format(os.getcwd())):
+    config.read('{}/connector_client/connector.conf'.format(os.getcwd()))
+else:
+    exit('No config file found')
 
 
 CONNECTOR_PROTOCOL = os.getenv('CONNECTOR_PROTOCOL', config['CONNECTOR']['protocol'])
