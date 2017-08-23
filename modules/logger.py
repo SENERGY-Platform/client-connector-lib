@@ -1,24 +1,12 @@
 if __name__ == '__main__':
     exit('Please use "client.py"')
 
+try:
+    from connector.configuration import LOGGING_LEVEL, LOCAL_ROTATING_LOG, ROTATING_LOG_BACKUP_COUNT
+except ImportError as ex:
+    exit("{} - {}".format(__name__, ex.msg))
 from logging.handlers import TimedRotatingFileHandler
-import logging, os, configparser
-
-
-
-config = configparser.ConfigParser()
-
-if os.path.isfile('{}/connector.conf'.format(os.getcwd())):
-    config.read('{}/connector.conf'.format(os.getcwd()))
-elif os.path.isfile('{}/connector_client/connector.conf'.format(os.getcwd())):
-    config.read('{}/connector_client/connector.conf'.format(os.getcwd()))
-else:
-    exit('No config file found')
-
-LOGGING_LEVEL = os.getenv('LOGGING_LEVEL', config['LOGGER']['level'])
-LOCAL_ROTATING_LOG = os.getenv('LOCAL_ROTATING_LOG', config['LOGGER'].getboolean('rotating_log'))
-ROTATING_LOG_BACKUP_COUNT = os.getenv('ROTATING_LOG_BACKUP_COUNT', config['LOGGER']['rotating_log_backup_count'])
-
+import logging, os
 
 
 logging_levels = {
