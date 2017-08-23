@@ -187,7 +187,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def receive():
+    def receive() -> Command:
         return __class__.__client_queue.get()
 
 
