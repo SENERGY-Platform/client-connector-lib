@@ -110,7 +110,6 @@ class Client(metaclass=Singleton):
             for x in range(0, len(device_ids), batch_size):
                 msg_objs.append(_Listen(None, device_ids[x:x+batch_size]))
             count = 0
-            logger.info(len(msg_objs))
             for obj in msg_objs:
                 response = __class__.send(obj)
                 if type(response) is Response:
