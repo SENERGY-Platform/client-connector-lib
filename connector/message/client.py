@@ -83,13 +83,17 @@ class Event(Message):
 
 
 class _Listen:
-    def __init__(self, device):
+    def __init__(self, device, device_list=None):
         self.device = device
+        self.device_list = device_list
         self._token = None
 
     @staticmethod
     def _serialize(message):
-        return json.dumps([message.device.id])
+        if message.device_list:
+            return json.dumps(message.device_list)
+        else:
+            return json.dumps([message.device.id])
 
 
 class _Add:
