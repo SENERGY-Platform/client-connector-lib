@@ -85,6 +85,7 @@ class Event(Message):
 class _Listen:
     def __init__(self, device):
         self.device = device
+        self._token = None
 
     @staticmethod
     def _serialize(message):
@@ -94,6 +95,7 @@ class _Listen:
 class _Add:
     def __init__(self, device):
         self.device = device
+        self._token = None
 
     @staticmethod
     def _serialize(message):
@@ -107,6 +109,7 @@ class _Add:
 class _Update:
     def __init__(self, device):
         self.device = device
+        self._token = None
 
     @staticmethod
     def _serialize(message):
@@ -119,6 +122,7 @@ class _Update:
 class _Remove:
     def __init__(self, device):
         self.device = device
+        self._token = None
 
     @staticmethod
     def _serialize(message):
@@ -128,6 +132,7 @@ class _Remove:
 class _Mute:
     def __init__(self, device):
         self.device = device
+        self._token = None
 
     @staticmethod
     def _serialize(message):
