@@ -167,6 +167,7 @@ class DeviceManager(metaclass=Singleton):
         try:
             logger.debug(query)
             self.cursor.execute(query)
-            return self.cursor.fetchall()
+            result = self.cursor.fetchall()
+            return result
         except Exception as ex:
             logger.error(ex)
