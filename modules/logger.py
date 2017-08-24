@@ -25,6 +25,7 @@ def debug_switch():
         return 'module'
 
 
+print(LOGGING_LEVEL)
 config_args = {
         'format': '%(asctime)s - %(levelname)s: [%({})s] %(message)s'.format(debug_switch()),
         'datefmt': '%m.%d.%Y %I:%M:%S %p',
