@@ -205,7 +205,12 @@ class Client(metaclass=Singleton):
                 response = __class__.send(_Add(device))
                 if type(response) is Response:
                     __class__.__device_manager.add(device)
-                    return True
+                    response = __class__.send(_Listen(device))
+                    if type(response) is Response:
+                        response = json.loads(response.payload.body)
+                        unused = response.get('unused')
+                        if not device.id in unused:
+                            return True
         return False
 
 
