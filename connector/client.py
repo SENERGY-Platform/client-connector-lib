@@ -101,6 +101,7 @@ class Client(metaclass=Singleton):
 
 
     def __registerAll(self, devices):
+        logger.debug(devices)
         if devices:
             device_ids = [device[0] for device in devices]
             msg_objs= list()
