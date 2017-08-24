@@ -6,7 +6,7 @@ try:
     from modules.singleton import Singleton
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
-import sqlite3, os
+import sqlite3, os, inspect
 
 logger = root_logger.getChild(__name__)
 
@@ -27,7 +27,7 @@ class Device():
 
 
 class DeviceManager(metaclass=Singleton):
-    _db_path = '{}/connector/devices.db'.format(os.getcwd())
+    _db_path = '{}/devices.db'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0])))
     _devices_table = 'devices'
     _id_field = ('id', 'TEXT')
     _type_field = ('type', 'TEXT')

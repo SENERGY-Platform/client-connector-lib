@@ -1,17 +1,15 @@
 if __name__ == '__main__':
     exit('Please use "client.py"')
 
-import os, configparser
+import os, inspect, configparser
 
 
 
 config = configparser.ConfigParser()
 
-if os.path.isfile('{}/connector.conf'.format(os.getcwd())):
-    config.read('{}/connector.conf'.format(os.getcwd()))
-elif os.path.isfile('{}/connector_client/connector.conf'.format(os.getcwd())):
-    config.read('{}/connector_client/connector.conf'.format(os.getcwd()))
-else:
+try:
+    config.read('{}/connector.conf'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))))
+except Exception:
     exit('No config file found')
 
 
