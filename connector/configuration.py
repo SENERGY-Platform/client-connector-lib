@@ -8,7 +8,7 @@ import os, inspect, configparser
 config = configparser.ConfigParser()
 
 try:
-    config.read('{}/connector.conf'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))))
+    config.read('{}/connector.conf'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))))
 except Exception:
     exit('No config file found')
 
