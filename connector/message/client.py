@@ -39,6 +39,7 @@ class Response():
 
 class Event(Message):
     def __init__(self, device_id=None, endpoint=None):
+        logger.info(1234545636)
         super().__init__()
         self.__device_id = device_id
         self.__endpoint = endpoint
