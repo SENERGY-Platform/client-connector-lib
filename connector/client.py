@@ -73,7 +73,6 @@ class Client(metaclass=Singleton):
     __out_queue = Queue()
     __in_queue = Queue()
     __client_queue = Queue()
-    __device_manager = DeviceManager()
 
 
     def __init__(self, con_callbck=None, discon_callbck=None):
@@ -83,7 +82,7 @@ class Client(metaclass=Singleton):
         self.__callback_thread = Thread(target=self.__callbackHandler, name="Callback")
         self.__session_manager_thread = SessionManager()
         self.__router_thread = Thread(target=self.__router, name="Router")
-        self.__connect_thread = Thread(target=self.__connect, name="Connect", args=(__class__.__device_manager.dump(), ))
+        self.__connect_thread = Thread(target=self.__connect, name="Connect")
         self.__callback_thread.start()
         self.__session_manager_thread.start()
         self.__router_thread.start()
@@ -95,12 +94,14 @@ class Client(metaclass=Singleton):
         logger.warning('disconnected')
         _checkAndCall(self.__discon_callbck)
         self.__websocket = None
-        reconnect = Thread(target=self.__connect, name='reconnect', args=(__class__.__device_manager.dump(), 30))
+        reconnect = Thread(target=self.__connect, name='reconnect', args=(30, ))
         logger.info("reconnecting in 30s")
         reconnect.start()
 
 
-    def __registerAll(self, devices):
+    def __registerAll(self):
+        device_manager = DeviceManager()
+        devices = device_manager.dump()
         logger.debug(devices)
         if devices:
             device_ids = [device[0] for device in devices]
@@ -122,7 +123,7 @@ class Client(metaclass=Singleton):
             return True
 
 
-    def __connect(self, devices, wait=None):
+    def __connect(self, wait=None):
         if wait:
             time.sleep(wait)
         self.__websocket = Websocket(CONNECTOR_HOST, CONNECTOR_PORT, self.__reconnect)
@@ -146,7 +147,7 @@ class Client(metaclass=Singleton):
                     if status == 'response' and token == credentials['token'] and message == 'ok':
                         logger.info('handshake completed')
                         _callAndWaitFor(self.__websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
-                        if self.__registerAll(devices):
+                        if self.__registerAll():
                             logger.info('connector client ready')
                             _checkAndCall(self.__con_callbck)
                             return True
@@ -231,11 +232,9 @@ class Client(metaclass=Singleton):
                 if type(response) is Response:
                     response = __class__.send(_Listen(device))
                     if type(response) is Response:
-                        response = json.loads(response.payload.body)
-                        unused = response.get('unused')
-                        if not device.id in unused:
-                            __class__.__device_manager.add(device)
-                            return True
+                        device_manager = DeviceManager()
+                        device_manager.add(device)
+                        return True
         return False
 
 
@@ -243,7 +242,8 @@ class Client(metaclass=Singleton):
     def deregister(device):
         if type(device) is not Device:
             raise TypeError("deregister takes a 'Device' object but got '{}'".format(type(device)))
-        __class__.__device_manager.remove(device)
+        device_manager = DeviceManager()
+        device_manager.remove(device)
 
 
     @staticmethod
@@ -252,7 +252,8 @@ class Client(metaclass=Singleton):
             raise TypeError("update takes a 'Device' object but got '{}'".format(type(device)))
         response = __class__.send(_Update(device))
         if type(response) is Response:
-            __class__.__device_manager.update(device)
+            device_manager = DeviceManager()
+            device_manager.update(device)
             return True
         return False
 
