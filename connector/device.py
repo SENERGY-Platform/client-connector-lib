@@ -52,7 +52,7 @@ class Device:
             raise TypeError("'{}' must be a string but is a '{}'".format(arg, type(arg)))
 
 
-class DeviceManager(metaclass=Singleton):
+class DeviceManager:
     _db_path = '{}/devices.db'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
     _devices_table = 'devices'
     _id_field = ('id', 'TEXT')
@@ -79,7 +79,6 @@ class DeviceManager(metaclass=Singleton):
             logger.debug("found database at '{}'".format(__class__._db_path))
             self.db_conn = sqlite3.connect(__class__._db_path)
             self.cursor = self.db_conn.cursor()
-            logger.info('loaded database')
 
     def add(self, device):
         if type(device) is not Device:
