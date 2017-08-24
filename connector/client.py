@@ -165,6 +165,7 @@ class Client(metaclass=Singleton):
             msg_obj._token = str(uuid())
         package = _createPackage(msg_obj)
         SessionManager.new(msg_obj, timeout, retries, callback)
+        __class__.__out_queue.put(package)
         logger.debug('send: {}'.format(package))
 
 
