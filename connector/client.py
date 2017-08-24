@@ -102,20 +102,24 @@ class Client(metaclass=Singleton):
 
     def __registerAll(self):
         result = __class__.__device_manager.dump()
-        device_ids = [device[0] for device in result]
-        msg_objs= list()
-        batch_size = 4
-        for x in range(0, len(device_ids), batch_size):
-            msg_objs.append(_Listen(None, device_ids[x:x+batch_size]))
-        count = 0
-        logger.info(len(msg_objs))
-        for obj in msg_objs:
-            response = __class__.send(obj)
-            if type(response) is Response:
-                count = count + 1
-        if count == len(msg_objs):
+        if result:
+            device_ids = [device[0] for device in result]
+            msg_objs= list()
+            batch_size = 4
+            for x in range(0, len(device_ids), batch_size):
+                msg_objs.append(_Listen(None, device_ids[x:x+batch_size]))
+            count = 0
+            logger.info(len(msg_objs))
+            for obj in msg_objs:
+                response = __class__.send(obj)
+                if type(response) is Response:
+                    count = count + 1
+            if count == len(msg_objs):
+                return True
+            else:
+                return False
+        else:
             return True
-        return False
 
 
     def __connect(self, wait=None):
