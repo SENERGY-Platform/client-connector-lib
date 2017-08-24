@@ -152,6 +152,7 @@ class DeviceManager(metaclass=Singleton):
             logger.debug(query)
             self.cursor.execute(query)
             result = self.cursor.fetchone()
+            self.db_conn.commit()
             if result:
                 return Device(id_str, result[0], result[1])
             else:
@@ -168,6 +169,7 @@ class DeviceManager(metaclass=Singleton):
             logger.debug(query)
             self.cursor.execute(query)
             result = self.cursor.fetchall()
+            self.db_conn.commit()
             return result
         except Exception as ex:
             logger.error(ex)
