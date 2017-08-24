@@ -100,10 +100,9 @@ class Client(metaclass=Singleton):
         reconnect.start()
 
 
-    def __registerAll(self):
-        result = __class__.__device_manager.dump()
-        if result:
-            device_ids = [device[0] for device in result]
+    def __registerAll(self, devices):
+        if devices:
+            device_ids = [device[0] for device in devices]
             msg_objs= list()
             batch_size = 4
             for x in range(0, len(device_ids), batch_size):
@@ -146,7 +145,7 @@ class Client(metaclass=Singleton):
                     if status == 'response' and token == credentials['token'] and message == 'ok':
                         logger.info('handshake completed')
                         _callAndWaitFor(self.__websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
-                        if self.__registerAll():
+                        if self.__registerAll(__class__.__device_manager.dump()):
                             logger.info('connector client ready')
                             _checkAndCall(self.__con_callbck)
                             return True
