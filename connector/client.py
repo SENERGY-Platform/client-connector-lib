@@ -83,7 +83,7 @@ class Client(metaclass=Singleton):
         self.__callback_thread = Thread(target=self.__callbackHandler, name="Callback")
         self.__session_manager_thread = SessionManager()
         self.__router_thread = Thread(target=self.__router, name="Router")
-        self.__connect_thread = Thread(target=self.__connect, name="Connect")
+        self.__connect_thread = Thread(target=self.__connect, name="Connect", args=(__class__.__device_manager.dump(), ))
         self.__callback_thread.start()
         self.__session_manager_thread.start()
         self.__router_thread.start()
@@ -95,7 +95,7 @@ class Client(metaclass=Singleton):
         logger.warning('disconnected')
         _checkAndCall(self.__discon_callbck)
         self.__websocket = None
-        reconnect = Thread(target=self.__connect, name='reconnect', args=(30, ))
+        reconnect = Thread(target=self.__connect, name='reconnect', args=(__class__.__device_manager.dump(), 30))
         logger.info("reconnecting in 30s")
         reconnect.start()
 
@@ -121,7 +121,7 @@ class Client(metaclass=Singleton):
             return True
 
 
-    def __connect(self, wait=None):
+    def __connect(self, devices, wait=None):
         if wait:
             time.sleep(wait)
         self.__websocket = Websocket(CONNECTOR_HOST, CONNECTOR_PORT, self.__reconnect)
@@ -145,7 +145,7 @@ class Client(metaclass=Singleton):
                     if status == 'response' and token == credentials['token'] and message == 'ok':
                         logger.info('handshake completed')
                         _callAndWaitFor(self.__websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
-                        if self.__registerAll(__class__.__device_manager.dump()):
+                        if self.__registerAll(devices):
                             logger.info('connector client ready')
                             _checkAndCall(self.__con_callbck)
                             return True
