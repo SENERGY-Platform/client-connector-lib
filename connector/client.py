@@ -87,7 +87,7 @@ class Client(metaclass=Singleton):
         self.__callback_thread.start()
         self.__session_manager_thread.start()
         self.__router_thread.start()
-        #self.__connect_thread.start()
+        self.__connect_thread.start()
         time.sleep(0.2)
 
 
