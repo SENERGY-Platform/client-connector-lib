@@ -19,7 +19,7 @@ class Device:
         self.__id = id
         self.__type = type
         self.__name = name
-        self.__std_tags = ['device_name:{}'.format(self.__name), 'device_type:{}'.format(self.__type)]
+        #self.__std_tags = ['device_name:{}'.format(self.__name), 'device_type:{}'.format(self.__type)]
         self.__tags = dict()
 
     @property
@@ -50,13 +50,11 @@ class Device:
 
     @property
     def tags(self):
-        usr_tags = ['{}:{}'.format(key, value) for key, value in self.__tags.items()]
-        return self.__std_tags + usr_tags
+        return ['{}:{}'.format(key, value) for key, value in self.__tags.items()]
 
     @tags.setter
     def tags(self, arg):
         raise TypeError("attribute tags is immutable - use addTag, changeTag or removeTag")
-
 
     def addTag(self, tag_id, tag):
         if type(tag_id) is not str:
@@ -65,6 +63,8 @@ class Device:
             raise TypeError("tag must be a string but got '{}'".format(type(tag)))
         if tag_id in ('device_name', 'device_type'):
             raise TypeError("tag id '{}' already in use".format(type(tag_id)))
+        if ':' in tag_id:
+            raise ValueError("tag id may not contain ':'")
         self.__tags[tag_id] = tag
         return True
 
@@ -96,18 +96,21 @@ class DeviceManager:
     _id_field = ('id', 'TEXT')
     _type_field = ('type', 'TEXT')
     _name_field = ('name', 'TEXT')
+    _tags_field = ('tags', 'TEXT')
 
     def __init__(self):
         if not os.path.isfile(__class__._db_path):
             logger.info('no database found')
-            init_query = 'CREATE TABLE {table} ({id} {id_t} PRIMARY KEY, {type} {type_t}, {name} {name_t})'.format(
+            init_query = 'CREATE TABLE {table} ({id} {id_t} PRIMARY KEY, {type} {type_t}, {name} {name_t}, {tags} {tags_t})'.format(
                     table=__class__._devices_table,
                     id=__class__._id_field[0],
                     id_t=__class__._id_field[1],
                     type=__class__._type_field[0],
                     type_t=__class__._type_field[1],
                     name=__class__._name_field[0],
-                    name_t=__class__._name_field[1]
+                    name_t=__class__._name_field[1],
+                    tags=__class__._tags_field[0],
+                    tags_t=__class__._tags_field[1]
                 )
             self.db_conn = sqlite3.connect(__class__._db_path)
             self.cursor = self.db_conn.cursor()
@@ -122,14 +125,16 @@ class DeviceManager:
     def add(self, device):
         if type(device) is not Device:
             raise TypeError("a Device object must be provided but got a '{}'".format(type(device)))
-        query = 'INSERT INTO {table} ({id}, {type}, {name}) VALUES ("{id_v}", "{type_v}", "{name_v}")'.format(
+        query = 'INSERT INTO {table} ({id}, {type}, {name}, {tags}) VALUES ("{id_v}", "{type_v}", "{name_v}", "{tags_v}")'.format(
             table=__class__._devices_table,
             id=__class__._id_field[0],
             id_v=device.id,
             type=__class__._type_field[0],
             type_v=device.type,
             name=__class__._name_field[0],
-            name_v=device.name
+            name_v=device.name,
+            tags=__class__._tags_field[0],
+            tags_v=device.tags
         )
         try:
             logger.debug(query)
@@ -179,10 +184,11 @@ class DeviceManager:
     def get(self, id_str) -> Device:
         if type(id_str) is not str:
             raise TypeError("id must be a string but got '{}'".format(type(id_str)))
-        query = 'SELECT {type}, {name} FROM {table} WHERE {id}="{id_v}"'.format(
+        query = 'SELECT {type}, {name}, {tags} FROM {table} WHERE {id}="{id_v}"'.format(
             table=__class__._devices_table,
             type=__class__._type_field[0],
             name=__class__._name_field[0],
+            tags=__class__._tags_field[0],
             id=__class__._id_field[0],
             id_v=id_str
         )
@@ -192,7 +198,13 @@ class DeviceManager:
             result = self.cursor.fetchone()
             self.db_conn.commit()
             if result:
-                return Device(id_str, result[0], result[1])
+                device = Device(id_str, result[0], result[1])
+                try:
+                    for key_value in result[2]:
+                        device.addTag(*key_value.split(':', 1))
+                except Exception:
+                    pass
+                return device
             else:
                 logger.error("device '{}' does not exist".format(id_str))
         except Exception as ex:
