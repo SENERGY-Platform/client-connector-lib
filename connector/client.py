@@ -40,11 +40,6 @@ def _callAndWaitFor(function, *args, timeout=None, **kwargs):
     return event.message
 
 
-def _checkAndCall(function):
-    if function:
-        function()
-
-
 def _parsePackage(package):
     try:
         handler_and_token, message = package.split(':', maxsplit=1)
@@ -69,6 +64,11 @@ def _createPackage(msg_obj):
     )
 
 
+def _callInThread(function):
+    thread = Thread(target=function)
+    thread.start()
+
+
 class Client(metaclass=Singleton):
     __out_queue = Queue()
     __in_queue = Queue()
@@ -86,13 +86,14 @@ class Client(metaclass=Singleton):
         self.__callback_thread.start()
         self.__session_manager_thread.start()
         self.__router_thread.start()
-        self.__connect_thread.start()
+        #self.__connect_thread.start()
         time.sleep(0.2)
 
 
     def __reconnect(self):
-        logger.warning('disconnected')
-        _checkAndCall(self.__discon_callbck)
+        logger.warning('no connection to SEPL connector')
+        if self.__discon_callbck:
+            _callInThread(self.__discon_callbck)
         self.__websocket = None
         reconnect = Thread(target=self.__connect, name='reconnect', args=(30, ))
         logger.info("reconnecting in 30s")
@@ -148,7 +149,8 @@ class Client(metaclass=Singleton):
                         _callAndWaitFor(self.__websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
                         if self.__registerAll():
                             logger.info('connector client ready')
-                            _checkAndCall(self.__con_callbck)
+                            if self.__con_callbck:
+                                _callInThread(self.__con_callbck)
                             return True
                         else:
                             logger.error('could not listen to all devices')
