@@ -19,6 +19,8 @@ class Device:
         self.__id = id
         self.__type = type
         self.__name = name
+        self.__std_tags = ['device_name:{}'.format(self.__name), 'device_type:{}'.format(self.__type)]
+        self.__tags = dict()
 
     @property
     def id(self):
@@ -45,6 +47,42 @@ class Device:
         if type(arg) is not str:
             raise TypeError("name must be a string but got '{}'".format(type(arg)))
         self.__name = arg
+
+    @property
+    def tags(self):
+        usr_tags = ['{}:{}'.format(key, value) for key, value in self.__tags.items()]
+        return self.__std_tags + usr_tags
+
+    @tags.setter
+    def tags(self, arg):
+        raise TypeError("attribute tags is immutable - use addTag, changeTag or removeTag")
+
+
+    def addTag(self, tag_id, tag):
+        if type(tag_id) is not str:
+            raise TypeError("tag id must be a string but got '{}'".format(type(tag_id)))
+        if type(tag) is not str:
+            raise TypeError("tag must be a string but got '{}'".format(type(tag)))
+        if tag_id in ('device_name', 'device_type'):
+            raise TypeError("tag id '{}' already in use".format(type(tag_id)))
+        self.__tags[tag_id] = tag
+        return True
+
+    def changeTag(self, tag_id, tag):
+        if type(tag) is not str:
+            raise TypeError("tag must be a string but got '{}'".format(type(tag)))
+        if tag_id in self.__tags:
+            self.__tags[tag_id] = tag
+            return True
+        return False
+
+    def removeTag(self, tag_id):
+        try:
+            del(self.__tags[tag_id])
+            return True
+        except KeyError:
+            logger.error("tag id ‘{}‘ does not exist".format(tag_id))
+            return False
 
     @staticmethod
     def __checkType(arg):
@@ -74,6 +112,7 @@ class DeviceManager:
             self.db_conn = sqlite3.connect(__class__._db_path)
             self.cursor = self.db_conn.cursor()
             self.cursor.execute(init_query)
+            self.db_conn.commit()
             logger.info('created new database')
         else:
             logger.debug("found database at '{}'".format(__class__._db_path))
