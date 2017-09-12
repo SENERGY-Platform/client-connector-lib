@@ -63,14 +63,16 @@ class Device:
             raise TypeError("tag must be a string but got '{}'".format(type(tag)))
         if tag_id in ('device_name', 'device_type'):
             raise TypeError("tag id '{}' already in use".format(type(tag_id)))
-        if ':' in tag_id:
-            raise ValueError("tag id may not contain ':'")
+        if ':' in tag_id or ';' in tag_id:
+            raise ValueError("tag id may not contain ':' or ';'")
+        if ':' in tag or ';' in tag:
+            raise ValueError("tag may not contain ':' or ';'")
         self.__tags[tag_id] = tag
         return True
 
     def changeTag(self, tag_id, tag):
-        if type(tag) is not str:
-            raise TypeError("tag must be a string but got '{}'".format(type(tag)))
+        if ':' in tag or ';' in tag:
+            raise ValueError("tag may not contain ':' or ';'")
         if tag_id in self.__tags:
             self.__tags[tag_id] = tag
             return True
@@ -134,7 +136,7 @@ class DeviceManager:
             name=__class__._name_field[0],
             name_v=device.name,
             tags=__class__._tags_field[0],
-            tags_v=device.tags
+            tags_v=';'.join(device.tags)
         )
         try:
             logger.debug(query)
@@ -165,12 +167,14 @@ class DeviceManager:
     def update(self, device):
         if type(device) is not Device:
             raise TypeError("a Device object must be provided but got a '{}'".format(type(device)))
-        query = 'UPDATE {table} SET {type}="{type_v}", {name}="{name_v}" WHERE {id}="{id_v}"'.format(
+        query = 'UPDATE {table} SET {type}="{type_v}", {name}="{name_v}", {tags}="{tags_v}" WHERE {id}="{id_v}"'.format(
             table=__class__._devices_table,
             type=__class__._type_field[0],
             type_v=device.type,
             name=__class__._name_field[0],
             name_v=device.name,
+            tags=__class__._tags_field[0],
+            tags_v=';'.join(device.tags),
             id=__class__._id_field[0],
             id_v=device.id
         )
@@ -200,7 +204,7 @@ class DeviceManager:
             if result:
                 device = Device(id_str, result[0], result[1])
                 try:
-                    for key_value in result[2]:
+                    for key_value in result[2].split(';'):
                         device.addTag(*key_value.split(':', 1))
                 except Exception:
                     pass
