@@ -8,7 +8,7 @@ try:
     from connector.configuration import CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_HOST, CONNECTOR_PORT
     from connector.session import SessionManager
     from connector.websocket import Websocket
-    from connector.message.client import _client_msg_prefix, _Remove, _Mute, _Update, _Add, _Listen
+    from connector.message.client import _client_msg_prefix, _Remove, _Mute, _UpdateName, _UpdateTags, _Add, _Listen
     from connector.message.connector import Command, Response, connector_msg_obj
     from connector.device import Device, DeviceManager
 except ImportError as ex:
@@ -153,7 +153,7 @@ class Client(metaclass=Singleton):
                                 _callInThread(self.__con_callbck)
                             return True
                         else:
-                            logger.error('could not listen to all devices')
+                            logger.error('could not register all devices')
                     else:
                         logger.error('handshake failed')
                 else:
@@ -251,8 +251,9 @@ class Client(metaclass=Singleton):
     def update(device):
         if type(device) is not Device:
             raise TypeError("update takes a 'Device' object but got '{}'".format(type(device)))
-        response = __class__.send(_Update(device))
-        if type(response) is Response:
+        response = __class__.send(_UpdateName(device))
+        response2 = __class__.send(_UpdateTags(device))
+        if type(response) is Response and type(response2) is Response:
             device_manager = DeviceManager()
             device_manager.update(device)
             return True
