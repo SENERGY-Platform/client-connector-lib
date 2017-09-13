@@ -222,7 +222,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def registerDevice(device):
+    def registerDevice(device) -> bool:
         if type(device) is not Device:
             raise TypeError("register takes a 'Device' object but got '{}'".format(type(device)))
         device_manager = DeviceManager()
@@ -251,7 +251,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def deregisterDevice(device):
+    def deregisterDevice(device) -> bool:
         if type(device) is not Device:
             raise TypeError("deregister takes a 'Device' object but got '{}'".format(type(device)))
         device_manager = DeviceManager()
@@ -259,7 +259,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def updateDevice(device):
+    def updateDevice(device) -> bool:
         if type(device) is not Device:
             raise TypeError("update takes a 'Device' object but got '{}'".format(type(device)))
         response = __class__.send(_UpdateName(device))
@@ -274,18 +274,18 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def muteDevice(device):
+    def muteDevice(device) -> bool:
         if type(device) is not Device:
             raise TypeError("mute takes a 'Device' object but got '{}'".format(type(device)))
 
 
     @staticmethod
-    def getDevice(id):
+    def getDevice(id) -> Device:
         device_manager = DeviceManager()
         return device_manager.get(id)
 
 
     @staticmethod
-    def getAllDevices():
+    def getAllDevices() -> dict:
         device_manager = DeviceManager()
         return device_manager.getAll()
