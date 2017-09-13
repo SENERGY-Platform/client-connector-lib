@@ -208,8 +208,6 @@ class DeviceManager:
                 except Exception:
                     pass
                 return device
-            else:
-                logger.error("device '{}' does not exist".format(id_str))
         except Exception as ex:
             logger.error(ex)
 
