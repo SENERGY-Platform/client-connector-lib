@@ -19,7 +19,6 @@ class Device:
         self.__id = id
         self.__type = type
         self.__name = name
-        #self.__std_tags = ['device_name:{}'.format(self.__name), 'device_type:{}'.format(self.__type)]
         self.__tags = dict()
 
     @property
@@ -102,7 +101,7 @@ class DeviceManager:
 
     def __init__(self):
         if not os.path.isfile(__class__._db_path):
-            logger.info('no database found')
+            logger.debug('no database found')
             init_query = 'CREATE TABLE {table} ({id} {id_t} PRIMARY KEY, {type} {type_t}, {name} {name_t}, {tags} {tags_t})'.format(
                     table=__class__._devices_table,
                     id=__class__._id_field[0],
@@ -118,7 +117,7 @@ class DeviceManager:
             self.cursor = self.db_conn.cursor()
             self.cursor.execute(init_query)
             self.db_conn.commit()
-            logger.info('created new database')
+            logger.debug('created new database')
         else:
             logger.debug("found database at '{}'".format(__class__._db_path))
             self.db_conn = sqlite3.connect(__class__._db_path)
