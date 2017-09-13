@@ -86,7 +86,7 @@ class Client(metaclass=Singleton):
         self.__callback_thread.start()
         self.__session_manager_thread.start()
         self.__router_thread.start()
-        #self.__connect_thread.start()
+        self.__connect_thread.start()
         time.sleep(0.2)
 
 
@@ -100,11 +100,12 @@ class Client(metaclass=Singleton):
         reconnect.start()
 
 
-    def __registerAll(self):
+    def __listenAllDevices(self):
         device_manager = DeviceManager()
         devices = device_manager.dump()
-        logger.debug(devices)
+        logger.debug('loaded devices from db: {}'.format(devices))
         if devices:
+            logger.info('registering known devices')
             device_ids = [device[0] for device in devices]
             msg_objs= list()
             batch_size = 4
@@ -147,19 +148,19 @@ class Client(metaclass=Singleton):
                     if status == 'response' and token == credentials['token'] and message == 'ok':
                         logger.info('handshake completed')
                         _callAndWaitFor(self.__websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
-                        if self.__registerAll():
+                        if self.__listenAllDevices():
                             logger.info('connector client ready')
                             if self.__con_callbck:
                                 _callInThread(self.__con_callbck)
                             return True
                         else:
-                            logger.error('could not register all devices')
+                            logger.error('could not register known devices')
                     else:
                         logger.error('handshake failed')
                 else:
                     logger.error('handshake timed out')
             else:
-                logger.error('could not start handshake')
+                logger.error('could not initiate handshake')
         else:
             logger.error('could not connect')
         _callAndWaitFor(self.__websocket.shutdown)
@@ -193,7 +194,7 @@ class Client(metaclass=Singleton):
         package = _createPackage(msg_obj)
         SessionManager.new(msg_obj, timeout, retries, callback)
         __class__.__out_queue.put(package)
-        logger.debug('send: {}'.format(package))
+        logger.info('send: {}'.format(package))
 
 
 
@@ -224,19 +225,29 @@ class Client(metaclass=Singleton):
     def register(device):
         if type(device) is not Device:
             raise TypeError("register takes a 'Device' object but got '{}'".format(type(device)))
-        response = __class__.send(_Listen(device))
-        if type(response) is Response:
-            response = json.loads(response.payload.body)
-            unused = response.get('unused')
-            if unused and device.id in unused:
-                response = __class__.send(_Add(device))
-                if type(response) is Response:
-                    response = __class__.send(_Listen(device))
+        device_manager = DeviceManager()
+        if not device_manager.get(device.id):
+            response = __class__.send(_Listen(device))
+            if type(response) is Response:
+                response = json.loads(response.payload.body)
+                if response.get('unused'):
+                    response = __class__.send(_Add(device))
                     if type(response) is Response:
-                        device_manager = DeviceManager()
-                        device_manager.add(device)
-                        return True
-        return False
+                        response = __class__.send(_Listen(device))
+                        if type(response) is Response:
+                            response = json.loads(response.payload.body)
+                            if response.get('used'):
+                                device_manager.add(device)
+                                logger.info("registered device '{}'".format(device.name))
+                                return True
+                        logger.warning("could not register device '{}'".format(device.name))
+                        return False
+                logger.info("device '{}' already registered".format(device.name))
+                return True
+            logger.warning("could not register device '{}'".format(device.name))
+            return False
+        logger.debug("device '{}' already in local database".format(device.name))
+        return True
 
 
     @staticmethod
@@ -256,7 +267,9 @@ class Client(metaclass=Singleton):
         if type(response) is Response and type(response2) is Response:
             device_manager = DeviceManager()
             device_manager.update(device)
+            logger.info("updated device '{}'".format(device.name))
             return True
+        logger.warning("could not update device '{}'".format(device.name))
         return False
 
 
