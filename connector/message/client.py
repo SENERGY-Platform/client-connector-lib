@@ -103,10 +103,12 @@ class _Add:
 
     @staticmethod
     def _serialize(message):
+        std_tags = ['device_name:{}'.format(message.device.name), 'device_type:{}'.format(message.device.type)]
         return json.dumps([{
             'uri': message.device.id,
             'connector_type': message.device.type,
-            'name': message.device.name
+            'name': message.device.name,
+            'tags': std_tags + message.device.tags
         }])
 
 
@@ -117,9 +119,11 @@ class _Update:
 
     @staticmethod
     def _serialize(message):
+        std_tags = ['device_name:{}'.format(message.device.name), 'device_type:{}'.format(message.device.type)]
         return json.dumps({
             'device_uri': message.device.id,
-            'name': message.device.name
+            'name': message.device.name,
+            'tags': std_tags + message.device.tags
         })
 
 
