@@ -21,7 +21,7 @@ from uuid import uuid4 as uuid
 
 logger = root_logger.getChild(__name__)
 
-logger.info(10 * '*' + ' Starting SEPL connector client ' + 10 * '*')
+logger.info(10 * '*' + ' Starting SEPL connector-client ' + 10 * '*')
 
 OUT_QUEUE = Queue()
 IN_QUEUE = Queue()
@@ -82,12 +82,10 @@ class Client(metaclass=Singleton):
         self.__callback_thread = Thread(target=self.__callbackHandler, name="Callback")
         self.__session_manager_thread = SessionManager()
         self.__router_thread = Thread(target=self.__router, name="Router")
-        self.__connect_thread = Thread(target=self.__connect, name="Connect")
         self.__callback_thread.start()
         self.__session_manager_thread.start()
         self.__router_thread.start()
-        self.__connect_thread.start()
-        time.sleep(0.2)
+        self.__connect()
 
 
     def __reconnect(self):
@@ -105,7 +103,7 @@ class Client(metaclass=Singleton):
         devices = device_manager.dump()
         logger.debug('loaded devices from db: {}'.format(devices))
         if devices:
-            logger.info('registering known devices')
+            logger.info('checking known devices')
             device_ids = [device[0] for device in devices]
             msg_objs= list()
             batch_size = 4
@@ -116,6 +114,11 @@ class Client(metaclass=Singleton):
                 response = __class__.send(obj)
                 if type(response) is Response:
                     count = count + 1
+                    unused = json.loads(response.payload.body).get('unused')
+                    if unused:
+                        for d_id in unused:
+                            logger.debug("removing unused device ‘{}‘ from local database".format(d_id))
+                            device_manager.remove(d_id)
             if count == len(msg_objs):
                 return True
             else:
@@ -128,28 +131,26 @@ class Client(metaclass=Singleton):
         if wait:
             time.sleep(wait)
         self.__websocket = Websocket(CONNECTOR_HOST, CONNECTOR_PORT, self.__reconnect)
-        logger.info('connecting to SEPL connector')
+        logger.debug('connecting to SEPL connector')
         if _callAndWaitFor(self.__websocket.connect):
-            logger.info("connection established")
-            logger.info("preparing handshake")
+            logger.info("connected to SEPL connector")
+            logger.debug("starting handshake")
             credentials = {
                 'user': CONNECTOR_USER,
                 'pw': CONNECTOR_PASSWORD,
                 'token': str(uuid())
             }
-            logger.debug(credentials)
-            logger.info('sending credentials')
+            logger.debug('sending credentials: {}'.format(credentials))
             if _callAndWaitFor(self.__websocket.send, json.dumps(credentials)):
                 answer = _callAndWaitFor(self.__websocket.receive, timeout=10)
                 if answer:
-                    logger.info('received answer')
-                    logger.debug(answer)
+                    logger.debug('received answer: {}'.format(answer))
                     status, token, message = _parsePackage(answer)
                     if status == 'response' and token == credentials['token'] and message == 'ok':
                         logger.info('handshake completed')
                         _callAndWaitFor(self.__websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
                         if self.__listenAllDevices():
-                            logger.info('connector client ready')
+                            logger.info('connector-client ready')
                             if self.__con_callbck:
                                 _callInThread(self.__con_callbck)
                             return True
@@ -194,7 +195,7 @@ class Client(metaclass=Singleton):
         package = _createPackage(msg_obj)
         SessionManager.new(msg_obj, timeout, retries, callback)
         __class__.__out_queue.put(package)
-        logger.info('send: {}'.format(package))
+        logger.debug('send: {}'.format(package))
 
 
 
