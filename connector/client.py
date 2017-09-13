@@ -100,11 +100,10 @@ class Client(metaclass=Singleton):
 
     def __listenAllDevices(self):
         device_manager = DeviceManager()
-        devices = device_manager.dump()
-        logger.debug('loaded devices from db: {}'.format(devices))
-        if devices:
+        device_ids = device_manager.getIDs()
+        logger.debug('loaded devices from db: {}'.format(device_ids))
+        if device_ids:
             logger.info('checking known devices')
-            device_ids = [device[0] for device in devices]
             msg_objs= list()
             batch_size = 4
             for x in range(0, len(device_ids), batch_size):
@@ -223,7 +222,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def register(device):
+    def registerDevice(device):
         if type(device) is not Device:
             raise TypeError("register takes a 'Device' object but got '{}'".format(type(device)))
         device_manager = DeviceManager()
@@ -252,7 +251,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def deregister(device):
+    def deregisterDevice(device):
         if type(device) is not Device:
             raise TypeError("deregister takes a 'Device' object but got '{}'".format(type(device)))
         device_manager = DeviceManager()
@@ -260,7 +259,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def update(device):
+    def updateDevice(device):
         if type(device) is not Device:
             raise TypeError("update takes a 'Device' object but got '{}'".format(type(device)))
         response = __class__.send(_UpdateName(device))
@@ -275,6 +274,18 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def mute(device):
+    def muteDevice(device):
         if type(device) is not Device:
             raise TypeError("mute takes a 'Device' object but got '{}'".format(type(device)))
+
+
+    @staticmethod
+    def getDevice(id):
+        device_manager = DeviceManager()
+        return device_manager.get(id)
+
+
+    @staticmethod
+    def getAllDevices():
+        device_manager = DeviceManager()
+        return device_manager.getAll()
