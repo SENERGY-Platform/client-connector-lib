@@ -112,7 +112,20 @@ class _Add:
         }])
 
 
-class _Update:
+class _UpdateName:
+    def __init__(self, device):
+        self.device = device
+        self._token = None
+
+    @staticmethod
+    def _serialize(message):
+        return json.dumps({
+            'device_uri': message.device.id,
+            'name': message.device.name
+        })
+
+
+class _UpdateTags:
     def __init__(self, device):
         self.device = device
         self._token = None
@@ -122,7 +135,6 @@ class _Update:
         std_tags = ['device_name:{}'.format(message.device.name), 'device_type:{}'.format(message.device.type)]
         return json.dumps({
             'device_uri': message.device.id,
-            'name': message.device.name,
             'tags': std_tags + message.device.tags
         })
 
