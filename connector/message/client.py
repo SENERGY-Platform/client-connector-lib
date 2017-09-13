@@ -103,12 +103,11 @@ class _Add:
 
     @staticmethod
     def _serialize(message):
-        std_tags = ['device_name:{}'.format(message.device.name), 'device_type:{}'.format(message.device.type)]
         return json.dumps([{
             'uri': message.device.id,
-            'connector_type': message.device.type,
+            'iot_type': message.device.type,
             'name': message.device.name,
-            'tags': std_tags + message.device.tags
+            'tags': message.device.tags
         }])
 
 
@@ -132,10 +131,9 @@ class _UpdateTags:
 
     @staticmethod
     def _serialize(message):
-        std_tags = ['device_name:{}'.format(message.device.name), 'device_type:{}'.format(message.device.type)]
         return json.dumps({
             'device_uri': message.device.id,
-            'tags': std_tags + message.device.tags
+            'tags': message.device.tags
         })
 
 
@@ -164,7 +162,9 @@ _client_msg_prefix = {
     Event: 'event',
     _Listen: 'listen_to_devices',
     _Add: 'add_devices',
-    _Update: 'update_device_name',
+    #_Update: 'update_device_name',
+    _UpdateName: 'update_device_name',
+    _UpdateTags: 'update_device_tags',
     _Remove: 'remove_devices',
     _Mute: ''
 }
