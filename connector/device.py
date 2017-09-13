@@ -211,8 +211,30 @@ class DeviceManager:
         except Exception as ex:
             logger.error(ex)
 
-    def dump(self) -> list:
+    def getAll(self) -> dict:
         query = 'SELECT * FROM {table}'.format(
+            table=__class__._devices_table
+        )
+        try:
+            logger.debug(query)
+            self.cursor.execute(query)
+            result = self.cursor.fetchall()
+            self.db_conn.commit()
+            devices = dict()
+            for item in result:
+                device = Device(item[0], item[1], item[2])
+                try:
+                    for key_value in item[3].split(';'):
+                        device.addTag(*key_value.split(':', 1))
+                except Exception:
+                    pass
+                devices[device.id] = device
+            return devices
+        except Exception as ex:
+            logger.error(ex)
+
+    def getIDs(self) -> list:
+        query = 'SELECT {id} FROM {table}'.format(
             id=__class__._id_field[0],
             table=__class__._devices_table
         )
@@ -221,6 +243,6 @@ class DeviceManager:
             self.cursor.execute(query)
             result = self.cursor.fetchall()
             self.db_conn.commit()
-            return result
+            return [item[0] for item in result]
         except Exception as ex:
             logger.error(ex)
