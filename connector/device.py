@@ -6,7 +6,8 @@ try:
     from modules.singleton import Singleton
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
-import sqlite3, os, inspect
+import sqlite3, os, inspect, hashlib
+from collections import OrderedDict
 
 logger = root_logger.getChild(__name__)
 
@@ -19,10 +20,10 @@ class Device:
         self.__id = id
         self.__type = type
         self.__name = name
-        self.__tags = dict()
+        self.__tags = OrderedDict()
 
     @property
-    def id(self):
+    def id(self) -> str:
         return self.__id
 
     @id.setter
@@ -30,7 +31,7 @@ class Device:
         raise TypeError("attribute id is immutable")
 
     @property
-    def type(self):
+    def type(self) -> str:
         return self.__type
 
     @type.setter
@@ -38,7 +39,7 @@ class Device:
         raise TypeError("attribute type is immutable")
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.__name
 
     @name.setter
@@ -48,7 +49,7 @@ class Device:
         self.__name = arg
 
     @property
-    def tags(self):
+    def tags(self) -> list:
         return ['{}:{}'.format(key, value) for key, value in self.__tags.items()]
 
     @tags.setter
@@ -84,6 +85,9 @@ class Device:
         except KeyError:
             logger.error("tag id ‘{}‘ does not exist".format(tag_id))
             return False
+
+    def hash(self) -> str:
+        return hashlib.sha1(''.join((self.__id, self.__type, self.__name, ''.join(['{}{}'.format(key, value) for key, value in self.__tags.items()]))).encode()).hexdigest()
 
     @staticmethod
     def __checkType(arg):
