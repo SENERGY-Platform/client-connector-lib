@@ -89,7 +89,6 @@ class Client(metaclass=Singleton):
 
 
     def __reconnect(self):
-        logger.warning('no connection to SEPL connector')
         if self.__discon_callbck:
             _callInThread(self.__discon_callbck)
         self.__websocket = None
@@ -130,7 +129,7 @@ class Client(metaclass=Singleton):
         if wait:
             time.sleep(wait)
         self.__websocket = Websocket(CONNECTOR_HOST, CONNECTOR_PORT, self.__reconnect)
-        logger.debug('connecting to SEPL connector')
+        logger.info('trying to connect to SEPL connector')
         if _callAndWaitFor(self.__websocket.connect):
             logger.info("connected to SEPL connector")
             logger.debug("starting handshake")
