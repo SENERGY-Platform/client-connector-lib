@@ -3,7 +3,7 @@ if __name__ == '__main__':
 
 try:
     from modules.logger import root_logger
-    from modules.singleton import Singleton
+    from modules.singleton import SimpleSingleton
     from connector.dm_interface import DeviceManagerInterface
     from connector.device import Device
 except ImportError as ex:
@@ -12,23 +12,22 @@ except ImportError as ex:
 logger = root_logger.getChild(__name__)
 
 
-class DevicePool(metaclass=Singleton, DeviceManagerInterface):
-    def __init__(self):
-        self.__pool = dict()
+class DevicePool(DeviceManagerInterface, SimpleSingleton):
+    __pool = dict()
 
     def add(self, device):
         if type(device) is not Device:
             raise TypeError("a Device object must be provided but got a '{}'".format(type(device)))
-        if device.id not in self.__pool:
-            self.__pool[device.id] = device
+        if device.id not in __class__.__pool:
+            __class__.__pool[device.id] = device
         else:
             logger.warning("device '{}' already in pool".format(device.id))
 
     def update(self, device):
         if type(device) is not Device:
             raise TypeError("a Device object must be provided but got a '{}'".format(type(device)))
-        if device.id in self.__pool:
-            self.__pool[device.id] = device
+        if device.id in __class__.__pool:
+            __class__.__pool[device.id] = device
         else:
             logger.error("can't update device '{}' please add it first".format(device.id))
 
@@ -38,15 +37,15 @@ class DevicePool(metaclass=Singleton, DeviceManagerInterface):
         elif type(d_id) is not str:
             raise TypeError("a string or a Device object must be provided but got a '{}'".format(type(d_id)))
         try:
-            del self.__pool[d_id]
+            del __class__.__pool[d_id]
         except KeyError:
             logger.error("device '{}' does not exist in device pool".format(d_id))
 
     def get(self, id_str) -> Device:
         if type(id_str) is not str:
             raise TypeError("id must be a string but got '{}'".format(type(id_str)))
-        return self.__pool.get(id_str)
+        return __class__.__pool.get(id_str)
 
     @property
     def devices(self) -> dict:
-        return self.__pool.copy()
+        return __class__.__pool.copy()
