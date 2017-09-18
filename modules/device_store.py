@@ -3,15 +3,18 @@ if __name__ == '__main__':
 
 try:
     from modules.logger import root_logger
+    from connector.dm_interface import DeviceManagerInterface
     from connector.device import Device
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
-import sqlite3, os, inspect
+import inspect
+import os
+import sqlite3
 
 logger = root_logger.getChild(__name__)
 
 
-class DeviceStore:
+class DeviceStore(DeviceManagerInterface):
     _db_path = '{}/devices.db'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
     _devices_table = 'devices'
     _id_field = ('id', 'TEXT')
@@ -64,13 +67,11 @@ class DeviceStore:
         except Exception as ex:
             logger.error(ex)
 
-    def remove(self, device):
-        if type(device) is Device:
-            d_id = device.id
-        elif type(device) is str:
-            d_id = device
-        else:
-            raise TypeError("a string or a Device object must be provided but got a '{}'".format(type(device)))
+    def remove(self, d_id):
+        if type(d_id) is Device:
+            d_id = d_id.id
+        elif type(d_id) is not str:
+            raise TypeError("a string or a Device object must be provided but got a '{}'".format(type(d_id)))
         query = 'DELETE FROM {table} WHERE {id}="{id_v}"'.format(
             table=__class__._devices_table,
             id=__class__._id_field[0],
@@ -131,7 +132,8 @@ class DeviceStore:
         except Exception as ex:
             logger.error(ex)
 
-    def getAll(self) -> dict:
+    @property
+    def devices(self) -> dict:
         query = 'SELECT * FROM {table}'.format(
             table=__class__._devices_table
         )
@@ -153,6 +155,7 @@ class DeviceStore:
         except Exception as ex:
             logger.error(ex)
 
+    """
     def getIDs(self) -> list:
         query = 'SELECT {id} FROM {table}'.format(
             id=__class__._id_field[0],
@@ -166,3 +169,4 @@ class DeviceStore:
             return [item[0] for item in result]
         except Exception as ex:
             logger.error(ex)
+    """
