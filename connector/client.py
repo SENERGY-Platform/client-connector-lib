@@ -10,14 +10,14 @@ try:
     from connector.websocket import Websocket
     from connector.message.client import _client_msg_prefix, _Remove, _Mute, _UpdateName, _UpdateTags, _Add, _Listen
     from connector.message.connector import Command, Response, connector_msg_obj
-    from connector.device import Device, DevicePool
+    from connector.dm_interface import DeviceManagerInterface
+    from connector.device import Device
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, json, time
 from queue import Queue
 from threading import Thread, Event
 from uuid import uuid4 as uuid
-
 
 logger = root_logger.getChild(__name__)
 
@@ -73,9 +73,13 @@ class Client(metaclass=Singleton):
     __out_queue = Queue()
     __in_queue = Queue()
     __client_queue = Queue()
+    __device_manager = None
 
 
-    def __init__(self, con_callbck=None, discon_callbck=None):
+    def __init__(self, device_manager, con_callbck=None, discon_callbck=None):
+        if not issubclass(device_manager, DeviceManagerInterface):
+            raise TypeError("provided device manager must subclass DeviceManagerInterface")
+        __class__.__device_manager = device_manager
         self.__con_callbck = con_callbck
         self.__discon_callbck = discon_callbck
         self.__websocket = None
@@ -85,7 +89,7 @@ class Client(metaclass=Singleton):
         self.__callback_thread.start()
         self.__session_manager_thread.start()
         self.__router_thread.start()
-        #self.__connect()
+        self.__connect()
 
 
     def __reconnect(self):
@@ -98,8 +102,8 @@ class Client(metaclass=Singleton):
 
 
     def __listenAllDevices(self):
-        devices = DevicePool.dump()
-        logger.debug('fetched devices from pool: {}'.format(devices))
+        dm = __class__.__device_manager()
+        devices = dm.devices
         if devices:
             id_list = [device.id for device in devices.values()]
             logger.info('checking known devices')
@@ -199,16 +203,6 @@ class Client(metaclass=Singleton):
 
     #--------- User methods ---------#
 
-
-    def init(self, devices=None):
-        if devices:
-            if type(devices) is not list:
-                raise TypeError("Device objects must be provided in a list but got '{}'".format(type(devices)))
-            for device in devices:
-                DevicePool.add(device)
-        self.__connect()
-
-
     @staticmethod
     def send(msg_obj, timeout=10, retries=0, callback=None, block=True):
         if type(msg_obj) not in _client_msg_prefix.keys():
@@ -233,7 +227,8 @@ class Client(metaclass=Singleton):
     def register(device) -> bool:
         if type(device) is not Device:
             raise TypeError("register takes a 'Device' object but got '{}'".format(type(device)))
-        DevicePool.add(device)
+        dm = __class__.__device_manager()
+        dm.add(device)
         response = __class__.send(_Listen(device))
         if type(response) is Response:
             response = json.loads(response.payload.body)
@@ -258,7 +253,8 @@ class Client(metaclass=Singleton):
     def update(device) -> bool:
         if type(device) is not Device:
             raise TypeError("update takes a 'Device' object but got '{}'".format(type(device)))
-        DevicePool.update(device)
+        dm = __class__.__device_manager()
+        dm.update(device)
         response = __class__.send(_UpdateName(device))
         response2 = __class__.send(_UpdateTags(device))
         if type(response) is Response and type(response2) is Response:
@@ -266,31 +262,3 @@ class Client(metaclass=Singleton):
             return True
         logger.warning("could not update device '{}'".format(device.name))
         return False
-
-
-    '''
-    @staticmethod
-    def deregisterDevice(device) -> bool:
-        if type(device) is Device:
-            d_id = device.id
-        elif type(device) is str:
-            d_id = device
-        else:
-            raise TypeError("a string or a Device object must be provided but got a '{}'".format(type(device)))
-        DevicePool.remove(d_id)
-    
-    @staticmethod
-    def muteDevice(device) -> bool:
-        if type(device) is not Device:
-            raise TypeError("mute takes a 'Device' object but got '{}'".format(type(device)))
-
-    @staticmethod
-    def getDevice(id) -> Device:
-        device_manager = DeviceManager()
-        return device_manager.get(id)
-
-    @staticmethod
-    def getAllDevices() -> dict:
-        device_manager = DeviceManager()
-        return device_manager.getAll()
-    '''
