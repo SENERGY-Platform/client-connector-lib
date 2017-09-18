@@ -95,6 +95,56 @@ class Device:
             raise TypeError("'{}' must be a string but is a '{}'".format(arg, type(arg)))
 
 
+class DevicePool(metaclass=Singleton):
+    _pool = dict()
+
+    @staticmethod
+    def add(device):
+        if type(device) is not Device:
+            raise TypeError("a Device object must be provided but got a '{}'".format(type(device)))
+        if device.id not in __class__._pool:
+            __class__._pool[device.id] = device
+        else:
+            logger.warning("device '{}' already in pool".format(device.id))
+
+    @staticmethod
+    def update(device):
+        if type(device) is not Device:
+            raise TypeError("a Device object must be provided but got a '{}'".format(type(device)))
+        if device.id in __class__._pool:
+            __class__._pool[device.id] = device
+        else:
+            logger.error("can't update device '{}' please add it first".format(device.id))
+
+    @staticmethod
+    def remove(d_id):
+        try:
+            del __class__._pool[d_id]
+        except KeyError:
+            logger.error("device '{}' does not exist in device pool".format(d_id))
+
+    @staticmethod
+    def get(id_str) -> Device:
+        if type(id_str) is not str:
+            raise TypeError("id must be a string but got '{}'".format(type(id_str)))
+        return __class__._pool.get(id_str)
+
+    '''
+    @staticmethod
+    def lsIDs() -> list:
+        return [device.id for device in __class__._pool.values()]
+
+    @staticmethod
+    def ls() -> list:
+        return list(__class__._pool.values())
+    '''
+
+    @staticmethod
+    def dump() -> dict:
+        return __class__._pool.copy()
+
+
+'''
 class DeviceManager:
     _db_path = '{}/devices.db'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
     _devices_table = 'devices'
@@ -250,3 +300,4 @@ class DeviceManager:
             return [item[0] for item in result]
         except Exception as ex:
             logger.error(ex)
+'''
