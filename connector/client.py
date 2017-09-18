@@ -10,7 +10,7 @@ try:
     from connector.websocket import Websocket
     from connector.message.client import _client_msg_prefix, _Remove, _Mute, _UpdateName, _UpdateTags, _Add, _Listen
     from connector.message.connector import Command, Response, connector_msg_obj
-    from connector.device import Device, DeviceManager
+    from connector.device import Device, DevicePool
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, json, time
@@ -85,7 +85,7 @@ class Client(metaclass=Singleton):
         self.__callback_thread.start()
         self.__session_manager_thread.start()
         self.__router_thread.start()
-        self.__connect()
+        #self.__connect()
 
 
     def __reconnect(self):
@@ -98,15 +98,15 @@ class Client(metaclass=Singleton):
 
 
     def __listenAllDevices(self):
-        device_manager = DeviceManager()
-        device_ids = device_manager.getIDs()
-        logger.debug('loaded devices from db: {}'.format(device_ids))
-        if device_ids:
+        devices = DevicePool.dump()
+        logger.debug('fetched devices from pool: {}'.format(devices))
+        if devices:
+            id_list = [device.id for device in devices.values()]
             logger.info('checking known devices')
             msg_objs= list()
             batch_size = 4
-            for x in range(0, len(device_ids), batch_size):
-                msg_objs.append(_Listen(None, device_ids[x:x+batch_size]))
+            for x in range(0, len(id_list), batch_size):
+                msg_objs.append(_Listen(None, id_list[x:x+batch_size]))
             count = 0
             for obj in msg_objs:
                 response = __class__.send(obj)
@@ -115,8 +115,8 @@ class Client(metaclass=Singleton):
                     unused = json.loads(response.payload.body).get('unused')
                     if unused:
                         for d_id in unused:
-                            logger.debug("removing unused device ‘{}‘ from local database".format(d_id))
-                            device_manager.remove(d_id)
+                            logger.debug("registering unused device ‘{}‘".format(d_id))
+                            __class__.register(devices[d_id])
             if count == len(msg_objs):
                 return True
             else:
@@ -200,6 +200,15 @@ class Client(metaclass=Singleton):
     #--------- User methods ---------#
 
 
+    def init(self, devices=None):
+        if devices:
+            if type(devices) is not list:
+                raise TypeError("Device objects must be provided in a list but got '{}'".format(type(devices)))
+            for device in devices:
+                DevicePool.add(device)
+        self.__connect()
+
+
     @staticmethod
     def send(msg_obj, timeout=10, retries=0, callback=None, block=True):
         if type(msg_obj) not in _client_msg_prefix.keys():
@@ -221,70 +230,67 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def registerDevice(device) -> bool:
+    def register(device) -> bool:
         if type(device) is not Device:
             raise TypeError("register takes a 'Device' object but got '{}'".format(type(device)))
-        device_manager = DeviceManager()
-        if not device_manager.get(device.id):
-            response = __class__.send(_Listen(device))
-            if type(response) is Response:
-                response = json.loads(response.payload.body)
-                if response.get('unused'):
-                    response = __class__.send(_Add(device))
+        DevicePool.add(device)
+        response = __class__.send(_Listen(device))
+        if type(response) is Response:
+            response = json.loads(response.payload.body)
+            if response.get('unused'):
+                response = __class__.send(_Add(device))
+                if type(response) is Response:
+                    response = __class__.send(_Listen(device))
                     if type(response) is Response:
-                        response = __class__.send(_Listen(device))
-                        if type(response) is Response:
-                            response = json.loads(response.payload.body)
-                            if response.get('used'):
-                                device_manager.add(device)
-                                logger.info("registered device '{}'".format(device.name))
-                                return True
-                        logger.warning("could not register device '{}'".format(device.name))
-                        return False
-                logger.info("device '{}' already registered".format(device.name))
-                return True
-            logger.warning("could not register device '{}'".format(device.name))
-            return False
-        logger.debug("device '{}' already in local database".format(device.name))
-        return True
+                        response = json.loads(response.payload.body)
+                        if response.get('used'):
+                            logger.info("registered device '{}'".format(device.name))
+                            return True
+                    logger.warning("could not register device '{}'".format(device.name))
+                    return False
+            logger.info("device '{}' already registered".format(device.name))
+            return True
+        logger.warning("could not register device '{}'".format(device.name))
+        return False
 
 
     @staticmethod
-    def deregisterDevice(device) -> bool:
-        if type(device) is not Device:
-            raise TypeError("deregister takes a 'Device' object but got '{}'".format(type(device)))
-        device_manager = DeviceManager()
-        device_manager.remove(device)
-
-
-    @staticmethod
-    def updateDevice(device) -> bool:
+    def update(device) -> bool:
         if type(device) is not Device:
             raise TypeError("update takes a 'Device' object but got '{}'".format(type(device)))
+        DevicePool.update(device)
         response = __class__.send(_UpdateName(device))
         response2 = __class__.send(_UpdateTags(device))
         if type(response) is Response and type(response2) is Response:
-            device_manager = DeviceManager()
-            device_manager.update(device)
             logger.info("updated device '{}'".format(device.name))
             return True
         logger.warning("could not update device '{}'".format(device.name))
         return False
 
 
+    '''
+    @staticmethod
+    def deregisterDevice(device) -> bool:
+        if type(device) is Device:
+            d_id = device.id
+        elif type(device) is str:
+            d_id = device
+        else:
+            raise TypeError("a string or a Device object must be provided but got a '{}'".format(type(device)))
+        DevicePool.remove(d_id)
+    
     @staticmethod
     def muteDevice(device) -> bool:
         if type(device) is not Device:
             raise TypeError("mute takes a 'Device' object but got '{}'".format(type(device)))
-
 
     @staticmethod
     def getDevice(id) -> Device:
         device_manager = DeviceManager()
         return device_manager.get(id)
 
-
     @staticmethod
     def getAllDevices() -> dict:
         device_manager = DeviceManager()
         return device_manager.getAll()
+    '''
