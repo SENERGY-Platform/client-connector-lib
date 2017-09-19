@@ -74,15 +74,18 @@ class Client(metaclass=Singleton):
     __in_queue = Queue()
     __client_queue = Queue()
     __device_manager = None
+    __ready = False
 
 
     def __init__(self, device_manager, con_callbck=None, discon_callbck=None):
+        if not device_manager:
+            raise RuntimeError("connector-client must be provided with a device manager class")
         if not issubclass(device_manager, DeviceManagerInterface):
             raise TypeError("provided device manager must subclass DeviceManagerInterface")
         __class__.__device_manager = device_manager
         self.__con_callbck = con_callbck
         self.__discon_callbck = discon_callbck
-        self.__websocket = None
+        #self.__websocket = None
         self.__callback_thread = Thread(target=self.__callbackHandler, name="Callback")
         self.__session_manager_thread = SessionManager()
         self.__router_thread = Thread(target=self.__router, name="Router")
@@ -93,9 +96,10 @@ class Client(metaclass=Singleton):
 
 
     def __reconnect(self):
+        __class__.__ready = False
         if self.__discon_callbck:
             _callInThread(self.__discon_callbck)
-        self.__websocket = None
+        #self.__websocket = None
         reconnect = Thread(target=self.__connect, name='reconnect', args=(30, ))
         logger.info("reconnecting in 30s")
         reconnect.start()
@@ -132,9 +136,9 @@ class Client(metaclass=Singleton):
     def __connect(self, wait=None):
         if wait:
             time.sleep(wait)
-        self.__websocket = Websocket(CONNECTOR_HOST, CONNECTOR_PORT, self.__reconnect)
+        websocket = Websocket(CONNECTOR_HOST, CONNECTOR_PORT, self.__reconnect)
         logger.info('trying to connect to SEPL connector')
-        if _callAndWaitFor(self.__websocket.connect):
+        if _callAndWaitFor(websocket.connect):
             logger.info("connected to SEPL connector")
             logger.debug("starting handshake")
             credentials = {
@@ -143,16 +147,17 @@ class Client(metaclass=Singleton):
                 'token': str(uuid())
             }
             logger.debug('sending credentials: {}'.format(credentials))
-            if _callAndWaitFor(self.__websocket.send, json.dumps(credentials)):
-                answer = _callAndWaitFor(self.__websocket.receive, timeout=10)
+            if _callAndWaitFor(websocket.send, json.dumps(credentials)):
+                answer = _callAndWaitFor(websocket.receive, timeout=10)
                 if answer:
                     logger.debug('received answer: {}'.format(answer))
                     status, token, message = _parsePackage(answer)
                     if status == 'response' and token == credentials['token'] and message == 'ok':
                         logger.info('handshake completed')
-                        _callAndWaitFor(self.__websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
+                        _callAndWaitFor(websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
                         if self.__listenAllDevices():
                             logger.info('connector-client ready')
+                            __class__.__ready = True
                             if self.__con_callbck:
                                 _callInThread(self.__con_callbck)
                             return True
@@ -166,8 +171,8 @@ class Client(metaclass=Singleton):
                 logger.error('could not initiate handshake')
         else:
             logger.error('could not connect')
-        _callAndWaitFor(self.__websocket.shutdown)
-        self.__websocket = None
+        _callAndWaitFor(websocket.shutdown)
+        #self.__websocket = None
         return False
 
 
@@ -192,13 +197,14 @@ class Client(metaclass=Singleton):
 
     @staticmethod
     def __send(msg_obj, timeout, retries, callback):
+        if not __class__.__ready:
+            logger.error("connector-client not ready")
         if not msg_obj._token:
             msg_obj._token = str(uuid())
         package = _createPackage(msg_obj)
-        SessionManager.new(msg_obj, timeout, retries, callback)
+        SessionManager.new(msg_obj, timeout, retries, callback)  ##### vllt ungünstig
         __class__.__out_queue.put(package)
         logger.debug('send: {}'.format(package))
-
 
 
     #--------- User methods ---------#
