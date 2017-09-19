@@ -48,7 +48,7 @@ class SessionManager(Thread, metaclass=Singleton):
             yield from asyncio.wait_for(session.event.wait(), session.timeout)
             logger.debug('{} caught event via _timer'.format(session.message._token))
         except asyncio.TimeoutError:
-            logger.debug('{} timed out'.format(session.message._token))
+            logger.warning('{} timed out'.format(session.message._token))
             err_msg = Error('timeout')
             err_msg._token = session.message._token
             session.message = err_msg
