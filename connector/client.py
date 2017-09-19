@@ -155,9 +155,9 @@ class Client(metaclass=Singleton):
                     if status == 'response' and token == credentials['token'] and message == 'ok':
                         logger.info('handshake completed')
                         _callAndWaitFor(websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
+                        __class__.__ready = True
                         if self.__listenAllDevices():
                             logger.info('connector-client ready')
-                            __class__.__ready = True
                             if self.__con_callbck:
                                 _callInThread(self.__con_callbck)
                             return True
