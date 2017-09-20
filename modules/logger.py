@@ -33,9 +33,11 @@ config_args = {
 
 
 if LOCAL_ROTATING_LOG:
-    if not os.path.exists(os.path.realpath(os.path.abspath('logs'))):
-        os.makedirs(os.path.realpath(os.path.abspath('logs')))
-    filename = os.path.join(os.path.dirname(__file__), '{}/connector-client.log'.format(os.path.realpath(os.path.abspath('logs'))))
+    logger_path = os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))
+    logs_path = '{}/logs'.format(os.path.split(logger_path)[0])
+    if not os.path.exists(logs_path):
+        os.makedirs(logs_path)
+    filename = os.path.join(os.path.dirname(__file__), '{}/connector-client.log'.format(logs_path))
     rotating_log_handler = TimedRotatingFileHandler(filename, when="midnight", backupCount=ROTATING_LOG_BACKUP_COUNT)
     config_args['handlers'] = [rotating_log_handler]
     logging.basicConfig(**config_args)
