@@ -21,7 +21,7 @@ from uuid import uuid4 as uuid
 
 logger = root_logger.getChild(__name__)
 
-logger.info(10 * '*' + ' Starting SEPL connector-client ' + 10 * '*')
+logger.info(20 * '*' + ' Starting SEPL connector-client ' + 20 * '*')
 
 OUT_QUEUE = Queue()
 IN_QUEUE = Queue()
