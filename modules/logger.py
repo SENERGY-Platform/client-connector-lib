@@ -6,7 +6,7 @@ try:
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 from logging.handlers import TimedRotatingFileHandler
-import logging, os
+import logging, os, inspect
 
 
 logging_levels = {
@@ -33,9 +33,9 @@ config_args = {
 
 
 if LOCAL_ROTATING_LOG:
-    if not os.path.exists('{}/logs'.format(os.getcwd())):
-        os.makedirs('{}/logs'.format(os.getcwd()))
-    filename = os.path.join(os.path.dirname(__file__), '{}/logs/connector-client.log'.format(os.getcwd()))
+    if not os.path.exists(os.path.realpath(os.path.abspath('logs'))):
+        os.makedirs(os.path.realpath(os.path.abspath('logs')))
+    filename = os.path.join(os.path.dirname(__file__), '{}/connector-client.log'.format(os.path.realpath(os.path.abspath('logs'))))
     rotating_log_handler = TimedRotatingFileHandler(filename, when="midnight", backupCount=ROTATING_LOG_BACKUP_COUNT)
     config_args['handlers'] = [rotating_log_handler]
     logging.basicConfig(**config_args)
