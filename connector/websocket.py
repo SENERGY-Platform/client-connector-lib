@@ -94,7 +94,7 @@ class Websocket(Thread):
         self._stop_async = True
         try:
             yield from self._websocket.close()
-            logger.debug("connection closed")
+            logger.debug("connection closed via shutdown")
         except:
             pass
         if callback:
@@ -110,8 +110,9 @@ class Websocket(Thread):
         try:
             yield from self._websocket.send(payload)
             callback(True)
-        except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError):
+        except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError) as ex:
             logger.warning("could not send data")
+            logger.error(ex)
             callback(False)
 
     def send(self, callback, payload):
@@ -124,7 +125,8 @@ class Websocket(Thread):
         try:
             payload = yield from self._websocket.recv()
             callback(payload)
-        except websockets.ConnectionClosed:
+        except websockets.ConnectionClosed as ex:
+            logger.error(ex)
             callback(False)
 
     def receive(self, callback):
@@ -140,7 +142,8 @@ class Websocket(Thread):
                 try:
                     payload = yield from self._websocket.recv()
                     yield from self._event_loop.run_in_executor(executor, in_queue.put, payload)
-                except websockets.ConnectionClosed:
+                except websockets.ConnectionClosed as ex:
+                    logger.error(ex)
                     break
 
 
@@ -170,8 +173,9 @@ class Websocket(Thread):
                     )
                     try:
                         yield from self._websocket.send(payload)
-                    except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError):
+                    except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError) as ex:
                         logger.warning("could not send data")
+                        logger.error(ex)
                         break
                 except Empty:
                     pass
