@@ -55,6 +55,14 @@ class Device:
     def tags(self, arg):
         raise TypeError("attribute tags is immutable - use addTag, changeTag or removeTag")
 
+    @property
+    def hash(self) -> str:
+        return hashlib.sha1(''.join((self.__id, self.__type, self.__name, ''.join(['{}{}'.format(key, value) for key, value in self.__tags.items()]))).encode()).hexdigest()
+
+    @hash.setter
+    def hash(self, arg):
+        raise TypeError("attribute hash is immutable")
+
     def addTag(self, tag_id, tag):
         if type(tag_id) is not str:
             raise TypeError("tag id must be a string but got '{}'".format(type(tag_id)))
@@ -84,9 +92,6 @@ class Device:
         except KeyError:
             logger.error("tag id ‘{}‘ does not exist".format(tag_id))
             return False
-
-    def hash(self) -> str:
-        return hashlib.sha1(''.join((self.__id, self.__type, self.__name, ''.join(['{}{}'.format(key, value) for key, value in self.__tags.items()]))).encode()).hexdigest()
 
     @staticmethod
     def __checkType(arg):
