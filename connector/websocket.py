@@ -125,7 +125,7 @@ class Websocket(Thread):
         try:
             payload = yield from self._websocket.recv()
             callback(payload)
-        except websockets.ConnectionClosed as ex:
+        except (websockets.ConnectionClosed, websockets.WebSocketProtocolError) as ex:
             logger.error(ex)
             callback(False)
 
@@ -142,7 +142,7 @@ class Websocket(Thread):
                 try:
                     payload = yield from self._websocket.recv()
                     yield from self._event_loop.run_in_executor(executor, in_queue.put, payload)
-                except websockets.ConnectionClosed as ex:
+                except (websockets.ConnectionClosed, websockets.WebSocketProtocolError) as ex:
                     logger.error(ex)
                     break
 
