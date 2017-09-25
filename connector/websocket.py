@@ -111,7 +111,7 @@ class Websocket(Thread):
         try:
             yield from self._websocket.send(payload)
             callback(True)
-        except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError) as ex:
+        except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError, TypeError) as ex:
             logger.warning("could not send data")
             logger.error(ex)
             callback(False)
@@ -174,7 +174,7 @@ class Websocket(Thread):
                     )
                     try:
                         yield from self._websocket.send(payload)
-                    except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError) as ex:
+                    except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError, TypeError) as ex:
                         logger.warning("could not send data")
                         logger.error(ex)
                         break
