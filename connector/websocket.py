@@ -78,8 +78,9 @@ class Websocket(Thread):
             )
             logger.debug("connected to '{}' on '{}'".format(self._host, self._port))
             callback(True)
-        except OSError:
+        except (OSError, websockets.InvalidHandshake, websockets.InvalidURI) as ex:
             logger.debug("could not connect to '{}' on '{}'".format(self._host, self._port))
+            logger.debug(ex)
             callback(False)
 
     def connect(self, callback):
