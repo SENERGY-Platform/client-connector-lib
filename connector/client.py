@@ -8,7 +8,7 @@ try:
     from connector.configuration import CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_HOST, CONNECTOR_PORT
     from connector.session import SessionManager
     from connector.websocket import Websocket
-    from connector.message import Message, handlers
+    from connector.message import Message, handlers, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
     from connector.dm_interface import DeviceManagerInterface
     from connector.device import Device
 except ImportError as ex:
@@ -76,7 +76,7 @@ class Client(metaclass=Singleton):
         logger.info("reconnecting in 30s")
         reconnect.start()
 
-
+    '''
     def __listenAllDevices(self):
         dm = __class__.__device_manager()
         devices = dm.devices
@@ -103,7 +103,7 @@ class Client(metaclass=Singleton):
                 return False
         else:
             return True
-
+    '''
 
     def __connect(self, wait=None):
         if wait:
@@ -155,39 +155,41 @@ class Client(metaclass=Singleton):
 
     def __router(self):
         while True:
-            message = __class__.__in_queue.get()
-            msg_obj = Message(message)
+            msg_str = __class__.__in_queue.get()
+            msg_obj = unmarshalMsg(msg_str)
             if msg_obj:
-                if getattr(msg_obj, '_{}__handler'.format(msg_obj.__class__.__name__)) == handlers['command_handler']:
+                if getMangledAttr(msg_obj, 'handler') == handlers['command_handler']:
                     __class__.__client_queue.put(msg_obj)
                 else:
-                    SessionManager.raiseEvent(msg_obj)
+                    SessionManager.raiseEvent(msg_obj, getMangledAttr(msg_obj, 'token'))
 
 
     @staticmethod
-    def __send(msg_obj, timeout, retries, callback, block):
+    def __send(msg_obj, timeout=10, callback=None, block=True):
         if not __class__.__ready:
             logger.error("connector-client not ready")
+        msg_str = marshalMsg(msg_obj)
+        token = getMangledAttr(msg_obj, 'token')
         if block:
             event = Event()
             event.message = None
             callback = functools.partial(_callback, event)
-            SessionManager.new(msg_obj, timeout, retries, callback)
-            __class__.__out_queue.put(str(msg_obj))
-            logger.debug('send: {}'.format(msg_obj))
+            SessionManager.new(msg_obj, token, timeout, callback)
+            __class__.__out_queue.put(msg_str)
+            logger.debug('send: {}'.format(msg_str))
             event.wait()
             return event.message
         else:
-            SessionManager.new(msg_obj, timeout, retries, callback)
-            __class__.__out_queue.put(str(msg_obj))
-            logger.debug('send: {}'.format(msg_obj))
+            SessionManager.new(msg_obj, token, timeout, callback)
+            __class__.__out_queue.put(msg_str)
+            logger.debug('send: {}'.format(msg_str))
 
 
     #--------- User methods ---------#
 
 
     @staticmethod
-    def event(device, service, payload, timeout=10, retries=0, callback=None, block=True):
+    def event(device, service, payload, **kwargs):
         if type(device) is Device:
             d_id = device.id
         elif type(device) is str:
@@ -210,23 +212,23 @@ class Client(metaclass=Singleton):
         }
         msg_obj = Message(handler=handlers['event_handler'])
         msg_obj.payload = msg
-        return __class__.__send(msg_obj, timeout, retries, callback, block)
+        return __class__.__send(msg_obj, **kwargs)
 
 
     @staticmethod
-    def response(msg_obj, payload, timeout=10, retries=0, callback=None, block=True):
+    def response(msg_obj, payload, **kwargs):
         if type(msg_obj) is not Message:
             raise TypeError("msg_obj must be Message but got '{}'".format(type(msg_obj)))
         # if type(payload) is not str:
         #    raise TypeError("payload must be string but got '{}'".format(type(payload)))
-        setattr(msg_obj, '_{}__handler'.format(msg_obj.__class__.__name__), handlers['response_handler'])
+        setMangledAttr(msg_obj, 'handler', handlers['response_handler'])
         msg_obj.payload['protocol_parts'] = [
             {
                 'name': 'body',
                 'value': payload
             }
         ]
-        return __class__.__send(msg_obj, timeout, retries, callback, block)
+        return __class__.__send(msg_obj, **kwargs)
 
 
     @staticmethod
@@ -234,6 +236,7 @@ class Client(metaclass=Singleton):
         return __class__.__client_queue.get()
 
 
+    '''
     @staticmethod
     def register(device) -> bool:
         if type(device) is not Device:
@@ -273,3 +276,4 @@ class Client(metaclass=Singleton):
             return True
         logger.warning("could not update device '{}'".format(device.name))
         return False
+    '''
