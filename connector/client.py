@@ -8,8 +8,7 @@ try:
     from connector.configuration import CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_HOST, CONNECTOR_PORT
     from connector.session import SessionManager
     from connector.websocket import Websocket
-    from connector.message.client import _client_msg_prefix, _Remove, _Mute, _UpdateName, _UpdateTags, _Add, _Listen
-    from connector.message.connector import Command, Response, connector_msg_obj
+    from connector.message import Message, handlers
     from connector.dm_interface import DeviceManagerInterface
     from connector.device import Device
 except ImportError as ex:
@@ -17,7 +16,6 @@ except ImportError as ex:
 import functools, json, time
 from queue import Queue
 from threading import Thread, Event
-from uuid import uuid4 as uuid
 
 logger = root_logger.getChild(__name__)
 
@@ -38,30 +36,6 @@ def _callAndWaitFor(function, *args, timeout=None, **kwargs):
     function(functools.partial(_callback, event), *args, **kwargs)
     event.wait(timeout=timeout)
     return event.message
-
-
-def _parsePackage(package):
-    try:
-        handler_and_token, message = package.split(':', maxsplit=1)
-        #### temp ####
-        if '.' in handler_and_token:
-            handler, token = handler_and_token.split('.', maxsplit=1)
-        else:
-            handler = handler_and_token
-            token = str(uuid())
-        #### temp ####
-        return handler, token, message
-    except ValueError:
-        logger.error('malformed package: {}'.format(package))
-        return False
-
-
-def _createPackage(msg_obj):
-    return '{}.{}:{}'.format(
-        _client_msg_prefix.get(type(msg_obj)),
-        msg_obj._token,
-        msg_obj.__class__._serialize(msg_obj)
-    )
 
 
 def _callInThread(function):
@@ -85,21 +59,19 @@ class Client(metaclass=Singleton):
         __class__.__device_manager = device_manager
         self.__con_callbck = con_callbck
         self.__discon_callbck = discon_callbck
-        #self.__websocket = None
         self.__callback_thread = Thread(target=self.__callbackHandler, name="Callback")
         self.__session_manager_thread = SessionManager()
         self.__router_thread = Thread(target=self.__router, name="Router")
         self.__callback_thread.start()
         self.__session_manager_thread.start()
         self.__router_thread.start()
-        self.__connect()
+        #self.__connect()
 
 
     def __reconnect(self):
         __class__.__ready = False
         if self.__discon_callbck:
             _callInThread(self.__discon_callbck)
-        #self.__websocket = None
         reconnect = Thread(target=self.__connect, name='reconnect', args=(30, ))
         logger.info("reconnecting in 30s")
         reconnect.start()
@@ -172,7 +144,6 @@ class Client(metaclass=Singleton):
         else:
             logger.error('could not connect')
         _callAndWaitFor(websocket.shutdown)
-        #self.__websocket = None
         return False
 
 
@@ -184,48 +155,82 @@ class Client(metaclass=Singleton):
 
     def __router(self):
         while True:
-            package = __class__.__in_queue.get()
-            if package:
-                prefix, token, message = _parsePackage(package)
-                msg_obj = connector_msg_obj.get(prefix)(message)
-                msg_obj._token = token
-                if type(msg_obj) is Command:
+            message = __class__.__in_queue.get()
+            msg_obj = Message(message)
+            if msg_obj:
+                if getattr(msg_obj, '_{}__handler'.format(msg_obj.__class__.__name__)) == handlers['command_handler']:
                     __class__.__client_queue.put(msg_obj)
                 else:
                     SessionManager.raiseEvent(msg_obj)
 
 
     @staticmethod
-    def __send(msg_obj, timeout, retries, callback):
+    def __send(msg_obj, timeout, retries, callback, block):
         if not __class__.__ready:
             logger.error("connector-client not ready")
-        if not msg_obj._token:
-            msg_obj._token = str(uuid())
-        package = _createPackage(msg_obj)
-        SessionManager.new(msg_obj, timeout, retries, callback)  ##### vllt ungünstig
-        __class__.__out_queue.put(package)
-        logger.debug('send: {}'.format(package))
-
-
-    #--------- User methods ---------#
-
-    @staticmethod
-    def send(msg_obj, timeout=10, retries=0, callback=None, block=True):
-        if type(msg_obj) not in _client_msg_prefix.keys():
-            raise TypeError("message must be either 'Response' or 'Event' but got '{}'".format(type(msg_obj)))
         if block:
             event = Event()
             event.message = None
             callback = functools.partial(_callback, event)
-            __class__.__send(msg_obj, timeout, retries, callback)
+            SessionManager.new(msg_obj, timeout, retries, callback)
+            __class__.__out_queue.put(str(msg_obj))
+            logger.debug('send: {}'.format(msg_obj))
             event.wait()
             return event.message
         else:
-            __class__.__send(msg_obj, timeout, retries, callback)
+            SessionManager.new(msg_obj, timeout, retries, callback)
+            __class__.__out_queue.put(str(msg_obj))
+            logger.debug('send: {}'.format(msg_obj))
+
+
+    #--------- User methods ---------#
 
 
     @staticmethod
-    def receive() -> Command:
+    def event(device, service, payload, timeout=10, retries=0, callback=None, block=True):
+        if type(device) is Device:
+            d_id = device.id
+        elif type(device) is str:
+            d_id = device
+        else:
+            raise TypeError("device must be string or Device but got '{}'".format(type(device)))
+        if type(service) is not str:
+            raise TypeError("service must be string but got '{}'".format(type(service)))
+        #if type(payload) is not str:
+        #    raise TypeError("payload must be string but got '{}'".format(type(payload)))
+        msg = {
+            'device_uri': d_id,
+            'service_uri': service,
+            'value': [
+                {
+                    'name': 'body',
+                    'value': payload
+                }
+            ]
+        }
+        msg_obj = Message(handler=handlers['event_handler'])
+        msg_obj.payload = msg
+        return __class__.__send(msg_obj, timeout, retries, callback, block)
+
+
+    @staticmethod
+    def response(msg_obj, payload, timeout=10, retries=0, callback=None, block=True):
+        if type(msg_obj) is not Message:
+            raise TypeError("msg_obj must be Message but got '{}'".format(type(msg_obj)))
+        # if type(payload) is not str:
+        #    raise TypeError("payload must be string but got '{}'".format(type(payload)))
+        setattr(msg_obj, '_{}__handler'.format(msg_obj.__class__.__name__), handlers['response_handler'])
+        msg_obj.payload['protocol_parts'] = [
+            {
+                'name': 'body',
+                'value': payload
+            }
+        ]
+        return __class__.__send(msg_obj, timeout, retries, callback, block)
+
+
+    @staticmethod
+    def receive() -> Message:
         return __class__.__client_queue.get()
 
 
