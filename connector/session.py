@@ -4,7 +4,7 @@ if __name__ == '__main__':
 try:
     from modules.logger import root_logger
     from modules.singleton import Singleton
-    from connector.message import Message, handlers
+    from connector.message import Message
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, asyncio, concurrent.futures
@@ -15,11 +15,11 @@ logger = root_logger.getChild(__name__)
 
 
 class Session:
-    def __init__(self, message, timeout, retries, callback):
-        self.message = message
+    def __init__(self, msg_obj, token, timeout, callback):
+        self.msg_obj = msg_obj
+        self.token = token
         self.timeout = timeout
         self.callback = callback
-        self.retries = retries
         self.event = None
 
 
@@ -37,8 +37,8 @@ class SessionManager(Thread, metaclass=Singleton):
     @staticmethod
     def _cleanup(session):
         if session.callback:
-            __class__.callback_queue.put((session.callback, session.message))
-        del __class__._sessions[session.message._token]
+            __class__.callback_queue.put((session.callback, session.msg_obj))
+        del __class__._sessions[session.token]
 
 
     @staticmethod
@@ -46,13 +46,10 @@ class SessionManager(Thread, metaclass=Singleton):
     def _timer(session):
         try:
             yield from asyncio.wait_for(session.event.wait(), session.timeout)
-            logger.debug('{} caught event via _timer'.format(session.message._token))
+            logger.debug('{} caught event (timer)'.format(session.token))
         except asyncio.TimeoutError:
-            logger.warning('{} timed out'.format(session.message._token))
-            err_msg = Message()
-            setattr(err_msg, '_{}__token'.format(err_msg.__class__.__name__), session.message._token)
-            #err_msg._token = session.message._token
-            session.message = err_msg
+            logger.warning('{} timed out'.format(session.token))
+            session.msg_obj.payload = 'timed out'
         __class__._cleanup(session)
 
 
@@ -69,7 +66,7 @@ class SessionManager(Thread, metaclass=Singleton):
                     session.event = asyncio.Event()
                     __class__._event_loop.create_task(__class__._timer(session))
                 else:
-                    logger.debug('{} caught event'.format(session.message._token))
+                    logger.debug('{} caught event'.format(session.token))
                     __class__._cleanup(session)
 
 
@@ -87,17 +84,17 @@ class SessionManager(Thread, metaclass=Singleton):
 
 
     @staticmethod
-    def new(message, timeout, retries, callback):
-        session = Session(message, timeout, retries, callback)
-        __class__._sessions[message._token] = session
+    def new(msg_obj, token, timeout, callback):
+        session = Session(msg_obj, token, timeout, callback)
+        __class__._sessions[token] = session
         __class__._session_queue.put(session)
 
 
     @staticmethod
-    def raiseEvent(msg_obj):
-        session = __class__._sessions.get(msg_obj._token)
+    def raiseEvent(msg_obj, token):
+        session = __class__._sessions.get(token)
         if session:
-            session.message = msg_obj
+            session.msg_obj = msg_obj
             if not session.event:
                 session.event = True
             __class__._event_queue.put(session)
