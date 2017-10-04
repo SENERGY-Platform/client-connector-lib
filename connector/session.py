@@ -32,6 +32,7 @@ class SessionManager(Thread, metaclass=Singleton):
 
     def __init__(self):
         super().__init__()
+        self.start()
 
 
     @staticmethod

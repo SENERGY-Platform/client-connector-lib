@@ -59,11 +59,10 @@ class Client(metaclass=Singleton):
         __class__.__device_manager = device_manager
         self.__con_callbck = con_callbck
         self.__discon_callbck = discon_callbck
+        self.__session_manager = SessionManager()
         self.__callback_thread = Thread(target=self.__callbackHandler, name="Callback")
-        self.__session_manager_thread = SessionManager()
-        self.__router_thread = Thread(target=self.__router, name="Router")
         self.__callback_thread.start()
-        self.__session_manager_thread.start()
+        self.__router_thread = Thread(target=self.__router, name="Router")
         self.__router_thread.start()
         #self.__connect()
 

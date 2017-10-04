@@ -133,7 +133,7 @@ class Websocket(Thread):
     def receive(self, callback):
         self._functionQueuePut(self._receive, callback)
 
-
+    '''
     @asyncio.coroutine
     def _ioRecv(self, in_queue):
         #asyncio.Task.current_task().add_done_callback(self._retrieve_async_result)
@@ -146,19 +146,19 @@ class Websocket(Thread):
                 except (websockets.ConnectionClosed, websockets.WebSocketProtocolError) as ex:
                     logger.error(ex)
                     break
+    '''
 
-
-    """
     @asyncio.coroutine
     def _ioRecv(self, in_queue):
+        # asyncio.Task.current_task().add_done_callback(self._retrieve_async_result)
         logger.debug("io receive task started")
         while not self._stop_async:
             try:
                 payload = yield from self._websocket.recv()
                 in_queue.put(payload)
-            except websockets.ConnectionClosed:
+            except (websockets.ConnectionClosed, websockets.WebSocketProtocolError) as ex:
+                logger.error(ex)
                 break
-    """
 
 
     @asyncio.coroutine
