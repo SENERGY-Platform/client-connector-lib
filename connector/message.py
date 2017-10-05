@@ -20,31 +20,6 @@ handlers = {
     'command_handler': 'command'
 }
 
-
-def getMangledAttr(obj, attr):
-    return getattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr))
-
-
-def setMangledAttr(obj, attr, arg):
-    setattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr), arg)
-
-
-def marshalMsg(msg_obj):
-    return json.dumps({key.replace('_{}__'.format(msg_obj.__class__.__name__), ''): msg_obj.__dict__[key] for key in msg_obj.__dict__})
-
-
-def unmarshalMsg(msg_str):
-    try:
-        msg = json.loads(msg_str)
-        msg_obj = Message()
-        for key in msg:
-            setMangledAttr(msg_obj, key, msg[key])
-        return msg_obj
-    except Exception as ex:
-        logger.error("malformed message: '{}'".format(msg_str))
-        logger.debug(ex)
-
-
 class Message:
     def __init__(self, handler=str()):
         self.__status = int()
@@ -70,6 +45,32 @@ class Message:
         if type(arg) not in (int, str, dict, list, bool, float, type(None)):
             raise TypeError("unsupported type '{}' provided for payload".format(type(arg)))
         self.__payload = arg
+
+
+def getMangledAttr(obj, attr):
+    return getattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr))
+
+
+def setMangledAttr(obj, attr, arg):
+    setattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr), arg)
+
+
+def marshalMsg(msg_obj: Message) -> str:
+    return json.dumps({key.replace('_{}__'.format(msg_obj.__class__.__name__), ''): msg_obj.__dict__[key] for key in msg_obj.__dict__})
+
+
+def unmarshalMsg(msg_str: str) -> Message:
+    try:
+        msg = json.loads(msg_str)
+        msg_obj = Message()
+        for key in msg:
+            setMangledAttr(msg_obj, key, msg[key])
+        return msg_obj
+    except Exception as ex:
+        logger.error("malformed message: '{}'".format(msg_str))
+        logger.debug(ex)
+
+
 
 
 #test_msg = json.dumps({"status":200,"handler":"response","token":"credentials","content_type":"map","payload":{"gid":"iot#d1608369-bdb1-45d6-8d82-78bbc59b5311","hash":""}})
