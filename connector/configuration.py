@@ -13,11 +13,19 @@ except Exception:
     exit('No config file found')
 
 
-CONNECTOR_PROTOCOL = os.getenv('CONNECTOR_PROTOCOL', config['CONNECTOR']['protocol'])
-CONNECTOR_HOST = os.getenv('CONNECTOR_HOST', config['CONNECTOR']['host'])
-CONNECTOR_PORT = os.getenv('CONNECTOR_PORT', config['CONNECTOR']['port'])
+def writeConf(parameter, value, section=None):
+    if section:
+        config[section][parameter] = value
+    else:
+        config[parameter] = value
+
+
+CONNECTOR_PROTOCOL = config['CONNECTOR']['protocol']
+CONNECTOR_HOST = config['CONNECTOR']['host']
+CONNECTOR_PORT = config['CONNECTOR']['port']
 CONNECTOR_USER = config['CONNECTOR']['user']
 CONNECTOR_PASSWORD = config['CONNECTOR']['password']
-LOGGING_LEVEL = os.getenv('LOGGING_LEVEL', config['LOGGER']['level'])
-LOCAL_ROTATING_LOG = os.getenv('LOCAL_ROTATING_LOG', config['LOGGER'].getboolean('rotating_log'))
-ROTATING_LOG_BACKUP_COUNT = os.getenv('ROTATING_LOG_BACKUP_COUNT', config['LOGGER']['rotating_log_backup_count'])
+CONNECTOR_GID = config['CONNECTOR']['gid']
+LOGGING_LEVEL = os.getenv('CONNECTOR_CLIENT_LOG_LEVEL', config['LOGGER']['level'])
+LOCAL_ROTATING_LOG = config['LOGGER'].getboolean('rotating_log')
+ROTATING_LOG_BACKUP_COUNT = config['LOGGER']['rotating_log_backup_count']
