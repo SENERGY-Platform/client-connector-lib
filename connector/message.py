@@ -17,7 +17,10 @@ handlers = {
     'mute_handler': 'mute',
     'event_handler': 'event',
     'response_handler': 'response',
-    'command_handler': 'command'
+    'command_handler': 'command',
+    'clear_handler': 'clear',
+    'commit_handler': 'commit'
+
 }
 
 class Message:
