@@ -5,7 +5,7 @@ try:
     from modules.logger import root_logger
     from modules.singleton import Singleton
     from modules.http_lib import Methods as http
-    from connector.configuration import CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_HOST, CONNECTOR_PORT
+    from connector.configuration import CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_HOST, CONNECTOR_PORT, CONNECTOR_GID, writeConf
     from connector.session import SessionManager
     from connector.websocket import Websocket
     from connector.message import Message, handlers, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
@@ -13,7 +13,7 @@ try:
     from connector.device import Device
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
-import functools, json, time
+import functools, json, time, hashlib
 from queue import Queue
 from threading import Thread, Event
 
@@ -53,7 +53,7 @@ class Client(metaclass=Singleton):
 
     def __init__(self, device_manager, con_callbck=None, discon_callbck=None):
         if not device_manager:
-            raise RuntimeError("connector-client must be provided with a device manager class")
+            raise RuntimeError("connector-client must be provided with a device manager")
         if not issubclass(device_manager, DeviceManagerInterface):
             raise TypeError("provided device manager must subclass DeviceManagerInterface")
         __class__.__device_manager = device_manager
@@ -75,35 +75,7 @@ class Client(metaclass=Singleton):
         logger.info("reconnecting in 30s")
         reconnect.start()
 
-    '''
-    def __listenAllDevices(self):
-        dm = __class__.__device_manager()
-        devices = dm.devices
-        if devices:
-            id_list = [device.id for device in devices.values()]
-            logger.info('checking known devices')
-            msg_objs= list()
-            batch_size = 4
-            for x in range(0, len(id_list), batch_size):
-                msg_objs.append(_Listen(None, id_list[x:x+batch_size]))
-            count = 0
-            for obj in msg_objs:
-                response = __class__.send(obj)
-                if type(response) is Response:
-                    count = count + 1
-                    unused = json.loads(response.payload.body).get('unused')
-                    if unused:
-                        for d_id in unused:
-                            logger.debug("registering unused device ‘{}‘".format(d_id))
-                            __class__.register(devices[d_id])
-            if count == len(msg_objs):
-                return True
-            else:
-                return False
-        else:
-            return True
-    '''
-
+    '''   
     def __connect(self, wait=None):
         if wait:
             time.sleep(wait)
@@ -144,6 +116,100 @@ class Client(metaclass=Singleton):
             logger.error('could not connect')
         _callAndWaitFor(websocket.shutdown)
         return False
+    '''
+
+    def __connect(self, wait=None):
+        if wait:
+            time.sleep(wait)
+        credentials = json.dumps({
+            'user': CONNECTOR_USER,
+            'pw': CONNECTOR_PASSWORD,
+            'gid': CONNECTOR_GID,
+            'token': 'credentials'
+        })
+        websocket = Websocket(CONNECTOR_HOST, CONNECTOR_PORT, self.__reconnect)
+        logger.info('trying to connect to SEPL connector')
+        if _callAndWaitFor(websocket.connect):
+            logger.info("connected to SEPL connector")
+            logger.debug("starting handshake")
+            logger.debug('sending credentials: {}'.format(credentials))
+            if _callAndWaitFor(websocket.send, credentials):
+                initial_response = _callAndWaitFor(websocket.receive, timeout=10)
+                if initial_response:
+                    logger.debug('received initial message: {}'.format(initial_response))
+                    intitial_response = unmarshalMsg(initial_response)
+                    if intitial_response.status == 200 and getMangledAttr(intitial_response, 'token') == 'credentials':
+                        logger.debug('check if gateay ID needs to be synchronised')
+                        self.__synchroniseGid(intitial_response.payload.get('gid'))
+                        logger.info('handshake completed')
+                        _callAndWaitFor(websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
+                        logger.info('checking if devices need to be synchronised')
+                        if self.__synchroniseDevices(intitial_response.payload.get('hash')):
+                            logger.info('synchronised devices')
+                            logger.info('connector-client ready')
+                            if self.__con_callbck:
+                                _callInThread(self.__con_callbck)
+                            return True
+                    else:
+                        logger.error('handshake failed - {} {}'.format(intitial_response.payload, intitial_response.status))
+                else:
+                    logger.error('handshake failed - timed out')
+            else:
+                logger.error('could not initiate handshake')
+        else:
+            logger.error('could not connect')
+        _callAndWaitFor(websocket.shutdown)
+        return False
+
+
+    def __synchroniseGid(self, remote_gid):
+        if not CONNECTOR_GID == remote_gid:
+            logger.debug('local and remote gateway ID differ: {} - {}'.format(CONNECTOR_GID, remote_gid))
+            global CONNECTOR_GID
+            CONNECTOR_GID = remote_gid
+            writeConf(section='CONNECTOR', parameter='gid', value=remote_gid)
+            logger.info("set gateway ID: '{}'".format(remote_gid))
+        else:
+            logger.debug('local and remote gateway ID match')
+
+
+    def __hashDevices(self, devices):
+        if type(devices) not in (dict, list, tuple):
+            raise TypeError("please provide devices via dictionary, list or tuple - got '{}'".format(type(devices)))
+        hashes = list()
+        for device in devices:
+            hashes.append(device.hash)
+        hashes.sort()
+        return hashlib.sha1(''.join(hashes).encode()).hexdigest()
+
+
+    def __synchroniseDevices(self, remote_hash):
+        dm = __class__.__device_manager()
+        devices = dm.devices
+        local_hash = self.__hashDevices(devices)
+        logger.debug('calculated local hash: {}'.format(local_hash))
+        if not local_hash == remote_hash:
+            logger.debug('local and remote hash differ: {} - {}'.format(local_hash, remote_hash))
+            clr_msg = Message(handlers['clear_handler'])
+            response = __class__.__send(clr_msg)
+            response = unmarshalMsg(response)
+            if response.status == 200:
+                for device in devices:
+                    if not __class__.register(device):
+                        logger.error("synchronisation failed - device could not be synchronised")
+                        return False
+                commit_msg = Message(handlers['commit_handler'])
+                response = __class__.__send(commit_msg)
+                if response.status == 200:
+                    return True
+                logger.error("synchronisation failed - could not commit changes")
+                return False
+            else:
+                logger.error("synchronisation could not be initiated - '{} {}'".format(response.payload, response.status))
+                return False
+        else:
+            logger.debug('local and remote hash match')
+        return True
 
 
     def __callbackHandler(self):
@@ -164,7 +230,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def __send(msg_obj, timeout=10, callback=None, block=True):
+    def __send(msg_obj, timeout=10, callback=None, block=True) -> Message:
         if not __class__.__ready:
             logger.error("connector-client not ready")
         msg_str = marshalMsg(msg_obj)
@@ -188,7 +254,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def event(device, service, payload, **kwargs):
+    def event(device, service, payload, **kwargs) -> Message:
         if type(device) is Device:
             d_id = device.id
         elif type(device) is str:
@@ -227,7 +293,32 @@ class Client(metaclass=Singleton):
                 'value': payload
             }
         ]
-        return __class__.__send(msg_obj, **kwargs)
+        return __class__.__send(msg_obj, **kwargs) ######### Ingo Fragen oder vllt Fehler im Session Manager?
+
+
+    @staticmethod
+    def register(device) -> bool:
+        if type(device) is not Device:
+            raise TypeError("register takes a 'Device' object but got '{}'".format(type(device)))
+        dm = __class__.__device_manager()
+        dm.add(device)
+        put_msg = Message(handlers['put_handler'])
+        put_msg.payload = {
+            'uri': device.id,
+            'name': device.name,
+            'tags': device.tags
+        }
+        response = __class__.__send(put_msg)
+        if response.status == 200:
+            logger.info("registered device '{}'".format(device.name))
+            return True
+        logger.warning("could not register device '{}'".format(device.name))
+        return False
+
+
+
+
+
 
 
     @staticmethod
@@ -236,32 +327,6 @@ class Client(metaclass=Singleton):
 
 
     '''
-    @staticmethod
-    def register(device) -> bool:
-        if type(device) is not Device:
-            raise TypeError("register takes a 'Device' object but got '{}'".format(type(device)))
-        dm = __class__.__device_manager()
-        dm.add(device)
-        response = __class__.send(_Listen(device))
-        if type(response) is Response:
-            response = json.loads(response.payload.body)
-            if response.get('unused'):
-                response = __class__.send(_Add(device))
-                if type(response) is Response:
-                    response = __class__.send(_Listen(device))
-                    if type(response) is Response:
-                        response = json.loads(response.payload.body)
-                        if response.get('used'):
-                            logger.info("registered device '{}'".format(device.name))
-                            return True
-                    logger.warning("could not register device '{}'".format(device.name))
-                    return False
-            logger.info("device '{}' already registered".format(device.name))
-            return True
-        logger.warning("could not register device '{}'".format(device.name))
-        return False
-
-
     @staticmethod
     def update(device) -> bool:
         if type(device) is not Device:
