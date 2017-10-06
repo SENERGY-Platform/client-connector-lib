@@ -72,13 +72,3 @@ def unmarshalMsg(msg_str: str) -> Message:
     except Exception as ex:
         logger.error("malformed message: '{}'".format(msg_str))
         logger.debug(ex)
-
-
-
-
-#test_msg = json.dumps({"status":200,"handler":"response","token":"credentials","content_type":"map","payload":{"gid":"iot#d1608369-bdb1-45d6-8d82-78bbc59b5311","hash":""}})
-
-#test = unmarshalMsg(test_msg)
-#print(getattr(test, '_{}__token'.format(test.__class__.__name__)))
-#setattr(test, '_{}__handler'.format(test.__class__.__name__), 'bs')
-#print(marshalMsg(test))
