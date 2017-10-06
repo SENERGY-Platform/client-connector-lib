@@ -20,7 +20,6 @@ handlers = {
     'command_handler': 'command',
     'clear_handler': 'clear',
     'commit_handler': 'commit'
-
 }
 
 class Message:
