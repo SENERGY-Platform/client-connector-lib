@@ -10,7 +10,7 @@ try:
     from connector.websocket import Websocket
     from connector.message import Message, handlers, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
     from connector.dm_interface import DeviceManagerInterface
-    from connector.device import Device
+    from connector.device import Device, _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, json, time, hashlib
@@ -48,9 +48,9 @@ def _interfaceCheck(cls, interface):
 
 
 def _synchroniseGid(remote_gid):
+    global CONNECTOR_GID
     if not CONNECTOR_GID == remote_gid:
         logger.debug('local and remote gateway ID differ: {} - {}'.format(CONNECTOR_GID, remote_gid))
-        global CONNECTOR_GID
         CONNECTOR_GID = remote_gid
         writeConf(section='CONNECTOR', parameter='gid', value=remote_gid)
         logger.info("set gateway ID: '{}'".format(remote_gid))
@@ -256,12 +256,12 @@ class Client(metaclass=Singleton):
 
     @staticmethod
     def event(device, service, payload, **kwargs) -> Message:
-        if type(device) is Device:
+        if _isDevice(device):
             d_id = device.id
         elif type(device) is str:
             d_id = device
         else:
-            raise TypeError("device must be string or Device but got '{}'".format(type(device)))
+            raise TypeError("device must be string, Device or subclass of Device but got '{}'".format(type(device)))
         if type(service) is not str:
             raise TypeError("service must be string but got '{}'".format(type(service)))
         msg = {
@@ -295,8 +295,8 @@ class Client(metaclass=Singleton):
 
     @staticmethod
     def register(device) -> bool:
-        if type(device) is not Device:
-            raise TypeError("register takes a 'Device' object but got '{}'".format(type(device)))
+        if not _isDevice(device):
+            raise TypeError("device must be Device or subclass of Device but got '{}'".format(type(device)))
         __class__.__device_manager.add(device)
         local_hash = _hashDevices(__class__.__device_manager.devices)
         if __class__.__put(device):
@@ -309,8 +309,8 @@ class Client(metaclass=Singleton):
 
     @staticmethod
     def update(device) -> bool:
-        if type(device) is not Device:
-            raise TypeError("update takes a 'Device' object but got '{}'".format(type(device)))
+        if not _isDevice(device):
+            raise TypeError("device must be Device or subclass of Device but got '{}'".format(type(device)))
         __class__.__device_manager.update(device)
         local_hash = _hashDevices(__class__.__device_manager.devices)
         if __class__.__put(device):
@@ -323,17 +323,15 @@ class Client(metaclass=Singleton):
 
     @staticmethod
     def remove(device) -> bool:
-        if type(device) is Device:
-            d_id = device.id
-        elif type(device) is str:
-            d_id = device
-        else:
-            raise TypeError("device must be string or Device but got '{}'".format(type(device)))
-        __class__.__device_manager.remove(d_id)
-        if __class__.__mute(d_id):
-            logger.info("removed device '{}'".format(device.name))
+        if _isDevice(device):
+            device = device.id
+        elif type(device) is not str:
+            raise TypeError("device must be Device, subclass of Device or string (if ID only) but got '{}'".format(type(device)))
+        __class__.__device_manager.remove(device)
+        if __class__.__mute(device):
+            logger.info("removed device '{}'".format(device))
             return True
-        logger.warning("could not remove device '{}'".format(device.name))
+        logger.warning("could not remove device '{}'".format(device))
         return False
 
 
