@@ -4,8 +4,7 @@ if __name__ == '__main__':
 try:
     from modules.logger import root_logger
     from modules.singleton import SimpleSingleton
-    from connector.dm_interface import DeviceManagerInterface
-    from connector.device import Device, _isDevice
+    from connector.device import DeviceManagerInterface, Device, _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 

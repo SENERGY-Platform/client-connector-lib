@@ -7,6 +7,7 @@ except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import hashlib
 from collections import OrderedDict
+from abc import ABCMeta, abstractmethod
 
 logger = root_logger.getChild(__name__)
 
@@ -87,3 +88,50 @@ class Device:
     def __checkType(arg):
         if type(arg) is not str:
             raise TypeError("'{}' must be a string but is a '{}'".format(arg, type(arg)))
+
+
+class DeviceManagerInterface(metaclass=ABCMeta):
+    """
+    Interface class. Device managers must inherit from this class.
+    """
+    @abstractmethod
+    def add(self, device):
+        """
+        add device
+        :param device: takes a Device (or subclass of Device) object.
+        """
+        pass
+
+    @abstractmethod
+    def update(self, device):
+        """
+        update device
+        :param device: takes a Device (or subclass of Device) object.
+        """
+        pass
+
+    @abstractmethod
+    def remove(self, id_str):
+        """
+        add device
+        :param id_str: takes device ID as string.
+        """
+        pass
+
+    @abstractmethod
+    def get(self, id_str):
+        """
+        get device
+        :param id_str: takes device ID as string.
+        :return a Device (or subclass of Device) object.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def devices(self):
+        """
+        all devices
+        :return a dict, list or tuple object.
+        """
+        pass

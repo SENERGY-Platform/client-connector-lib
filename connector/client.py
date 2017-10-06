@@ -9,8 +9,7 @@ try:
     from connector.session import SessionManager
     from connector.websocket import Websocket
     from connector.message import Message, handlers, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
-    from connector.dm_interface import DeviceManagerInterface
-    from connector.device import Device, _isDevice
+    from connector.device import DeviceManagerInterface, Device, _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, json, time, hashlib
