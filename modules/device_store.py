@@ -15,7 +15,7 @@ logger = root_logger.getChild(__name__)
 
 
 class DeviceStore(DeviceManagerInterface, SimpleSingleton):
-    _db_path = '{}/devices.db'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
+    _db_path = '{}/devices.sqlite'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
     _devices_table = 'devices'
     _id_field = ('id', 'TEXT')
     _type_field = ('type', 'TEXT')
