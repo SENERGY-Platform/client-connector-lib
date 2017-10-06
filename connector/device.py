@@ -11,6 +11,12 @@ from collections import OrderedDict
 logger = root_logger.getChild(__name__)
 
 
+def _isDevice(device):
+    if type(device) is Device or issubclass(type(device), Device):
+        return True
+    return False
+
+
 class Device:
     def __init__(self, id, type, name):
         __class__.__checkType(id)
