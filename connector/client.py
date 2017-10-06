@@ -173,8 +173,7 @@ class Client(metaclass=Singleton):
             logger.debug('local and remote hash differ: {} - {}'.format(local_hash, remote_hash))
             clr_msg = Message(handlers['clear_handler'])
             response = __class__.__send(clr_msg)
-            response = unmarshalMsg(response)
-            if response and response.status == 200:
+            if response.status == 200:
                 for device in devices:
                     if not __class__.__put(device):
                         logger.error("synchronisation failed - device '{}' could not be synchronised".format(device.name))
@@ -240,6 +239,18 @@ class Client(metaclass=Singleton):
         return False
 
 
+    @staticmethod
+    def __mute(device_id) -> bool:
+        mute_msg = Message(handlers['mute_handler'])
+        mute_msg.payload = device_id
+        response = __class__.__send(mute_msg)
+        if response.status == 200:
+            logger.debug("muted device '{}'".format(device_id))
+            return True
+        logger.debug("mute device '{}' failed".format(device_id))
+        return False
+
+
     #--------- User methods ---------#
 
 
@@ -253,8 +264,6 @@ class Client(metaclass=Singleton):
             raise TypeError("device must be string or Device but got '{}'".format(type(device)))
         if type(service) is not str:
             raise TypeError("service must be string but got '{}'".format(type(service)))
-        #if type(payload) is not str:
-        #    raise TypeError("payload must be string but got '{}'".format(type(payload)))
         msg = {
             'device_uri': d_id,
             'service_uri': service,
@@ -271,11 +280,9 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def response(msg_obj, payload, **kwargs) -> Message:
+    def response(msg_obj, payload):
         if type(msg_obj) is not Message:
             raise TypeError("msg_obj must be Message but got '{}'".format(type(msg_obj)))
-        # if type(payload) is not str:
-        #    raise TypeError("payload must be string but got '{}'".format(type(payload)))
         setMangledAttr(msg_obj, 'handler', handlers['response_handler'])
         msg_obj.payload['protocol_parts'] = [
             {
@@ -283,7 +290,7 @@ class Client(metaclass=Singleton):
                 'value': payload
             }
         ]
-        return __class__.__send(msg_obj, **kwargs) ######### Ingo Fragen oder vllt Fehler im Session Manager?
+        __class__.__send(msg_obj, block=False)
 
 
     @staticmethod
@@ -323,10 +330,7 @@ class Client(metaclass=Singleton):
         else:
             raise TypeError("device must be string or Device but got '{}'".format(type(device)))
         __class__.__device_manager.remove(d_id)
-        mute_msg = Message(handlers['mute_handler'])
-        response = __class__.__send(mute_msg)
-        response = unmarshalMsg(response)
-        if response and response.status == 200:
+        if __class__.__mute(d_id):
             logger.info("removed device '{}'".format(device.name))
             return True
         logger.warning("could not remove device '{}'".format(device.name))
