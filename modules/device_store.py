@@ -1,6 +1,7 @@
 if __name__ == '__main__':
     exit('Please use "client.py"')
 
+"""
 try:
     from modules.logger import root_logger
     from connector.dm_interface import DeviceManagerInterface
@@ -155,18 +156,4 @@ class DeviceStore(DeviceManagerInterface):
         except Exception as ex:
             logger.error(ex)
 
-    """
-    def getIDs(self) -> list:
-        query = 'SELECT {id} FROM {table}'.format(
-            id=__class__._id_field[0],
-            table=__class__._devices_table
-        )
-        try:
-            logger.debug(query)
-            self.cursor.execute(query)
-            result = self.cursor.fetchall()
-            self.db_conn.commit()
-            return [item[0] for item in result]
-        except Exception as ex:
-            logger.error(ex)
-    """
+"""
