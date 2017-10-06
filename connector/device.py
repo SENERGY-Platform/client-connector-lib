@@ -25,17 +25,9 @@ class Device:
     def id(self) -> str:
         return self.__id
 
-    @id.setter
-    def id(self, arg):
-        raise TypeError("attribute id is immutable")
-
     @property
     def type(self) -> str:
         return self.__type
-
-    @type.setter
-    def type(self, arg):
-        raise TypeError("attribute type is immutable")
 
     @property
     def name(self) -> str:
@@ -51,17 +43,9 @@ class Device:
     def tags(self) -> list:
         return ['{}:{}'.format(key, value) for key, value in self.__tags.items()]
 
-    @tags.setter
-    def tags(self, arg):
-        raise TypeError("attribute tags is immutable - use addTag, changeTag or removeTag")
-
     @property
     def hash(self) -> str:
         return hashlib.sha1(''.join((self.__id, self.__type, self.__name, ''.join(['{}{}'.format(key, value) for key, value in self.__tags.items()]))).encode()).hexdigest()
-
-    @hash.setter
-    def hash(self, arg):
-        raise TypeError("attribute hash is immutable")
 
     def addTag(self, tag_id, tag):
         if type(tag_id) is not str:
