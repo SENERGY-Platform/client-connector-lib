@@ -263,7 +263,8 @@ class Client(metaclass=Singleton):
             raise TypeError("device must be string, Device or subclass of Device but got '{}'".format(type(device)))
         if type(service) is not str:
             raise TypeError("service must be string but got '{}'".format(type(service)))
-        msg = {
+        event_msg = Message(handlers['event_handler'])
+        event_msg.payload = {
             'device_uri': d_id,
             'service_uri': service,
             'value': [
@@ -273,9 +274,7 @@ class Client(metaclass=Singleton):
                 }
             ]
         }
-        msg_obj = Message(handler=handlers['event_handler'])
-        msg_obj.payload = msg
-        return __class__.__send(msg_obj, **kwargs)
+        return __class__.__send(event_msg, **kwargs)
 
 
     @staticmethod
