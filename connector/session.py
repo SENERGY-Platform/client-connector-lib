@@ -36,10 +36,40 @@ class SessionManager(Thread, metaclass=Singleton):
 
 
     @staticmethod
+    def new(msg_obj, token, timeout, callback):
+        session = Session(msg_obj, token, timeout, callback)
+        __class__._sessions[token] = session
+        __class__._session_queue.put(session)
+
+
+    @staticmethod
+    def raiseEvent(msg_obj, token):
+        session = __class__._sessions.get(token)
+        if session:
+            session.msg_obj = msg_obj
+            if not session.event:
+                session.event = True
+            __class__._event_queue.put(session)
+
+
+    @staticmethod
     def _cleanup(session):
         if session.callback:
             __class__.callback_queue.put((session.callback, session.msg_obj))
         del __class__._sessions[session.token]
+
+
+    @staticmethod
+    @asyncio.coroutine
+    def _interruptor():
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            while True:
+                session = yield from __class__._event_loop.run_in_executor(
+                    executor,
+                    functools.partial(__class__._event_queue.get)
+                )
+                if type(session.event) is asyncio.Event:
+                    session.event.set()
 
 
     @staticmethod
@@ -67,38 +97,8 @@ class SessionManager(Thread, metaclass=Singleton):
                     session.event = asyncio.Event()
                     __class__._event_loop.create_task(__class__._timer(session))
                 else:
-                    logger.debug('{} caught event'.format(session.token))
+                    logger.debug('{} caught event (spawn)'.format(session.token))
                     __class__._cleanup(session)
-
-
-    @staticmethod
-    @asyncio.coroutine
-    def _interruptor():
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            while True:
-                session = yield from __class__._event_loop.run_in_executor(
-                    executor,
-                    functools.partial(__class__._event_queue.get)
-                )
-                if type(session.event) is asyncio.Event:
-                    session.event.set()
-
-
-    @staticmethod
-    def new(msg_obj, token, timeout, callback):
-        session = Session(msg_obj, token, timeout, callback)
-        __class__._sessions[token] = session
-        __class__._session_queue.put(session)
-
-
-    @staticmethod
-    def raiseEvent(msg_obj, token):
-        session = __class__._sessions.get(token)
-        if session:
-            session.msg_obj = msg_obj
-            if not session.event:
-                session.event = True
-            __class__._event_queue.put(session)
 
 
     def run(self):
