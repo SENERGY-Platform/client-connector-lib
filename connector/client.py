@@ -78,12 +78,12 @@ class Client(metaclass=Singleton):
     def __init__(self, device_manager, con_callbck=None, discon_callbck=None):
         if not device_manager:
             raise RuntimeError("a device manager must be provided")
-        if isclass(device_manager):
-            if _interfaceCheck(device_manager, DeviceManagerInterface):
-                __class__.__device_manager = device_manager()
-        else:
-            if _interfaceCheck(type(device_manager), DeviceManagerInterface):
-                __class__.__device_manager = device_manager
+        elif isclass(device_manager):
+            if not _interfaceCheck(device_manager, DeviceManagerInterface):
+                raise TypeError("device manager must subclass DeviceManagerInterface but got {}".format(device_manager))
+        elif not _interfaceCheck(type(device_manager), DeviceManagerInterface):
+            raise TypeError("device manager must subclass DeviceManagerInterface but got {}".format(type(device_manager)))
+        __class__.__device_manager = device_manager
         self.__con_callbck = con_callbck
         self.__discon_callbck = discon_callbck
         self.__session_manager = SessionManager()
@@ -165,7 +165,7 @@ class Client(metaclass=Singleton):
 
 
     def __synchroniseDevices(self, remote_hash) -> bool:
-        devices = __class__.__device_manager.devices
+        devices = __class__.__device_manager.devices()
         local_hash = _hashDevices(devices)
         logger.debug('calculated local hash: {}'.format(local_hash))
         if not local_hash == remote_hash:
@@ -296,7 +296,7 @@ class Client(metaclass=Singleton):
         if not _isDevice(device):
             raise TypeError("device must be Device or subclass of Device but got '{}'".format(type(device)))
         __class__.__device_manager.add(device)
-        local_hash = _hashDevices(__class__.__device_manager.devices)
+        local_hash = _hashDevices(__class__.__device_manager.devices())
         if __class__.__put(device):
             if __class__.__commit(local_hash):
                 logger.info("registered device '{}'".format(device.name))
@@ -310,7 +310,7 @@ class Client(metaclass=Singleton):
         if not _isDevice(device):
             raise TypeError("device must be Device or subclass of Device but got '{}'".format(type(device)))
         __class__.__device_manager.update(device)
-        local_hash = _hashDevices(__class__.__device_manager.devices)
+        local_hash = _hashDevices(__class__.__device_manager.devices())
         if __class__.__put(device):
             if __class__.__commit(local_hash):
                 logger.info("updated device '{}'".format(device.name))
