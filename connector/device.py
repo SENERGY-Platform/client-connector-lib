@@ -12,8 +12,13 @@ from abc import ABCMeta, abstractmethod
 logger = root_logger.getChild(__name__)
 
 
-def _isDevice(device):
-    if type(device) is Device or issubclass(type(device), Device):
+def _isDevice(obj):
+    """
+    Check if a object is a Device or instantiated from a Device subclass
+    :param obj: object to check
+    :return: Boolean
+    """
+    if type(obj) is Device or issubclass(type(obj), Device):
         return True
     return False
 
