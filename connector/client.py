@@ -51,7 +51,7 @@ def _synchroniseGid(remote_gid):
     if not CONNECTOR_GID == remote_gid:
         logger.debug('local and remote gateway ID differ: {} - {}'.format(CONNECTOR_GID, remote_gid))
         CONNECTOR_GID = remote_gid
-        writeConf(section='CONNECTOR', parameter='gid', value=remote_gid)
+        writeConf(section='CONNECTOR', option='gid', value=remote_gid)
         logger.info("set gateway ID: '{}'".format(remote_gid))
     else:
         logger.debug('local and remote gateway ID match')
@@ -60,6 +60,8 @@ def _synchroniseGid(remote_gid):
 def _hashDevices(devices) -> str:
     if type(devices) not in (dict, list, tuple):
         raise TypeError("please provide devices via dictionary, list or tuple - got '{}'".format(type(devices)))
+    if type(devices) is dict:
+        devices = list(devices.values())
     hashes = list()
     for device in devices:
         hashes.append(device.hash)
@@ -91,7 +93,7 @@ class Client(metaclass=Singleton):
         self.__callback_thread.start()
         self.__router_thread = Thread(target=self.__router, name="Router")
         self.__router_thread.start()
-        #self.__connect()
+        self.__connect()
 
 
     def __callbackHandler(self):
@@ -136,6 +138,7 @@ class Client(metaclass=Singleton):
                         _synchroniseGid(initial_response.payload.get('gid'))
                         logger.info('handshake completed')
                         _callAndWaitFor(websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
+                        __class__.__ready = True
                         logger.info('checking if devices need to be synchronised')
                         if self.__synchroniseDevices(initial_response.payload.get('hash')):
                             logger.info('synchronised devices')
@@ -166,6 +169,8 @@ class Client(metaclass=Singleton):
 
     def __synchroniseDevices(self, remote_hash) -> bool:
         devices = __class__.__device_manager.devices()
+        if type(devices) is dict:
+            devices = list(devices.values())
         local_hash = _hashDevices(devices)
         logger.debug('calculated local hash: {}'.format(local_hash))
         if not local_hash == remote_hash:
