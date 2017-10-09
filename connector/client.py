@@ -141,7 +141,6 @@ class Client(metaclass=Singleton):
                         __class__.__ready = True
                         logger.info('checking if devices need to be synchronised')
                         if self.__synchroniseDevices(initial_response.payload.get('hash')):
-                            logger.info('synchronised devices')
                             logger.info('connector-client ready')
                             if self.__con_callbck:
                                 _callInThread(self.__con_callbck)
@@ -183,6 +182,7 @@ class Client(metaclass=Singleton):
                         logger.error("synchronisation failed - device '{}' could not be synchronised".format(device.name))
                         return False
                 if __class__.__commit(local_hash):
+                    logger.info('synchronised devices')
                     return True
                 logger.error("synchronisation failed - could not commit changes")
                 return False
@@ -191,6 +191,7 @@ class Client(metaclass=Singleton):
                 return False
         else:
             logger.debug('local and remote hash match')
+        logger.info('devices already synchronised')
         return True
 
 
@@ -221,6 +222,7 @@ class Client(metaclass=Singleton):
         put_msg.payload = {
             'uri': device.id,
             'name': device.name,
+            'iot_type': device.type,
             'tags': device.tags
         }
         response = __class__.__send(put_msg)
