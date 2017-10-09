@@ -134,22 +134,6 @@ class Websocket(Thread):
     def receive(self, callback):
         self._functionQueuePut(self._receive, callback)
 
-    '''
-    @asyncio.coroutine
-    def _ioRecv(self, in_queue):
-        #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
-        logger.debug("io receive task started")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            while not self._stop_async:
-                try:
-                    payload = yield from self._websocket.recv()
-                    yield from self._event_loop.run_in_executor(executor, in_queue.put, payload)
-                except (websockets.ConnectionClosed, websockets.WebSocketProtocolError) as ex:
-                    logger.error(ex)
-                    break
-        logger.debug("_ioRecv done")
-
-    '''
 
     @asyncio.coroutine
     def _ioRecv(self, callback, in_queue):
@@ -190,27 +174,8 @@ class Websocket(Thread):
         if not self._stop_async:
             yield from self._shutdown()
 
-    """
-    @asyncio.coroutine
-    def _ioStart(self, callback, in_queue, out_queue):
-        asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
-        logger.debug("starting io operation")
-        recv_task = self._event_loop.create_task(self._ioRecv(in_queue))
-        send_task = self._event_loop.create_task(self._ioSend(out_queue))
-        yield from asyncio.sleep(0.5)
-        callback()
-        done, pending = yield from asyncio.wait(
-            (recv_task, send_task),
-            return_when=asyncio.FIRST_COMPLETED,
-        )
-        self._stop_io = True
-        for task in pending:
-            yield from asyncio.wait_for(task, timeout=5, loop=self._event_loop)
-        self._stop_spawn = True
-    """
 
     def ioStart(self, callback, in_queue, out_queue):
-        #self._functionQueuePut(self._ioStart, callback, in_queue, out_queue)
         event = Event()
         self._functionQueuePut(self._ioRecv, event.set, in_queue)
         event.wait()
