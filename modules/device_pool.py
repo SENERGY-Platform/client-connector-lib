@@ -11,7 +11,7 @@ except ImportError as ex:
 logger = root_logger.getChild(__name__)
 
 
-class DevicePool(DeviceManagerInterface, SimpleSingleton):
+class DevicePool(DeviceManagerInterface):
     __pool = dict()
 
     @staticmethod
