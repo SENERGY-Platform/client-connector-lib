@@ -10,7 +10,8 @@ import asyncio
 import concurrent.futures
 import functools
 from queue import Queue, Empty
-from threading import Thread
+from threading import Thread, Event
+from time import sleep
 
 logger = root_logger.getChild(__name__)
 
@@ -40,6 +41,7 @@ class Websocket(Thread):
 
     @asyncio.coroutine
     def _spawnAsync(self):
+        tasks = list()
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             while not self._stop_async:
                 try:
@@ -47,10 +49,11 @@ class Websocket(Thread):
                         executor,
                         functools.partial(self._function_queue.get, timeout=1)
                     )
-                    self._event_loop.create_task(function(*args, **kwargs))
+                    tasks.append(self._event_loop.create_task(function(*args, **kwargs)))
                 except Empty:
                     pass
-        logger.debug("spawn_async exited")
+            asyncio.wait_for(asyncio.gather(*tasks), timeout=5)
+        logger.debug("_spawnAsync() exited")
 
 
     def run(self):
@@ -93,11 +96,9 @@ class Websocket(Thread):
         asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         logger.debug("stopping async tasks")
         self._stop_async = True
-        try:
-            yield from self._websocket.close()
-            logger.debug("connection closed via shutdown")
-        except:
-            pass
+        if self._websocket.open:
+            logger.debug("closing connection")
+            yield from self._websocket.close(code=1000, reason='closed by client')
         if callback:
             callback()
 
@@ -136,7 +137,7 @@ class Websocket(Thread):
     '''
     @asyncio.coroutine
     def _ioRecv(self, in_queue):
-        #asyncio.Task.current_task().add_done_callback(self._retrieve_async_result)
+        #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         logger.debug("io receive task started")
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             while not self._stop_async:
@@ -146,12 +147,15 @@ class Websocket(Thread):
                 except (websockets.ConnectionClosed, websockets.WebSocketProtocolError) as ex:
                     logger.error(ex)
                     break
+        logger.debug("_ioRecv done")
+
     '''
 
     @asyncio.coroutine
-    def _ioRecv(self, in_queue):
-        # asyncio.Task.current_task().add_done_callback(self._retrieve_async_result)
+    def _ioRecv(self, callback, in_queue):
+        asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         logger.debug("io receive task started")
+        callback()
         while not self._stop_async:
             try:
                 payload = yield from self._websocket.recv()
@@ -159,12 +163,15 @@ class Websocket(Thread):
             except (websockets.ConnectionClosed, websockets.WebSocketProtocolError) as ex:
                 logger.error(ex)
                 break
+        if not self._stop_async:
+            yield from self._shutdown()
 
 
     @asyncio.coroutine
-    def _ioSend(self, out_queue):
-        #asyncio.Task.current_task().add_done_callback(self._retrieve_async_result)
+    def _ioSend(self, callback, out_queue):
+        asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         logger.debug("io send task started")
+        callback()
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             while not self._stop_async:
                 try:
@@ -180,8 +187,10 @@ class Websocket(Thread):
                         break
                 except Empty:
                     pass
+        if not self._stop_async:
+            yield from self._shutdown()
 
-
+    """
     @asyncio.coroutine
     def _ioStart(self, callback, in_queue, out_queue):
         asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
@@ -194,10 +203,18 @@ class Websocket(Thread):
             (recv_task, send_task),
             return_when=asyncio.FIRST_COMPLETED,
         )
+        self._stop_io = True
         for task in pending:
-            task.cancel()
-        yield from self._shutdown()
-        logger.debug("io operation stopped")
+            yield from asyncio.wait_for(task, timeout=5, loop=self._event_loop)
+        self._stop_spawn = True
+    """
 
     def ioStart(self, callback, in_queue, out_queue):
-        self._functionQueuePut(self._ioStart, callback, in_queue, out_queue)
+        #self._functionQueuePut(self._ioStart, callback, in_queue, out_queue)
+        event = Event()
+        self._functionQueuePut(self._ioRecv, event.set, in_queue)
+        event.wait()
+        event.clear()
+        self._functionQueuePut(self._ioSend, event.set, out_queue)
+        event.wait()
+        callback()
