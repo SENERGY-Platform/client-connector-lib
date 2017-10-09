@@ -13,11 +13,13 @@ except Exception:
     exit('No config file found')
 
 
-def writeConf(parameter, value, section=None):
-    if section:
-        config[section][parameter] = value
-    else:
-        config[parameter] = value
+def writeConf(section, option, value):
+    config.set(section=section, option=option, value=value)
+    try:
+        with open('{}/connector.conf'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))), 'w') as conf_file:
+            config.write(conf_file)
+    except Exception as ex:
+        print(ex)
 
 
 CONNECTOR_PROTOCOL = config['CONNECTOR']['protocol']
