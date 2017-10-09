@@ -122,7 +122,6 @@ class DeviceStore(DeviceManagerInterface, SimpleSingleton):
                 logger.error(ex)
             return device
 
-    @property
     def devices(self) -> dict:
         query = 'SELECT * FROM {table}'.format(
             table=__class__._devices_table
