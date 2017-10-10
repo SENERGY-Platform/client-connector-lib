@@ -96,7 +96,7 @@ class Websocket(Thread):
         asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         logger.debug("stopping async tasks")
         self._stop_async = True
-        if self._websocket.open:
+        if self._websocket:
             logger.debug("closing connection")
             yield from self._websocket.close(code=1000, reason='closed by client')
         if callback:
