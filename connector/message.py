@@ -97,7 +97,8 @@ def unmarshalMsg(msg_str: str) -> Message:
         msg = json.loads(msg_str)
         msg_obj = Message()
         for key in msg:
-            setMangledAttr(msg_obj, key, msg[key])
+            if msg[key]:
+                setMangledAttr(msg_obj, key, msg[key])
         return msg_obj
     except Exception as ex:
         logger.error("malformed message: '{}'".format(msg_str))
