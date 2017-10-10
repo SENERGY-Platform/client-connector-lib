@@ -207,13 +207,13 @@ class Client(metaclass=Singleton):
             callback = functools.partial(_callback, event)
             SessionManager.new(msg_obj, token, timeout, callback)
             __class__.__out_queue.put(msg_str)
-            logger.debug('send: {}'.format(msg_str))
+            #logger.debug('send: {}'.format(msg_str))
             event.wait()
             return event.message
         else:
             SessionManager.new(msg_obj, token, timeout, callback)
             __class__.__out_queue.put(msg_str)
-            logger.debug('send: {}'.format(msg_str))
+            #logger.debug('send: {}'.format(msg_str))
 
 
     @staticmethod
