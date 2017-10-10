@@ -52,7 +52,10 @@ class Websocket(Thread):
                     tasks.append(self._event_loop.create_task(function(*args, **kwargs)))
                 except Empty:
                     pass
-            asyncio.wait_for(asyncio.gather(*tasks), timeout=5)
+            done, pending = yield from asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=30)
+            logger.debug("done tasks: {}".format(done))
+            if pending:
+                logger.error("could not finish tasks: {}".format(pending))
         logger.debug("_spawnAsync() exited")
 
 
@@ -73,7 +76,7 @@ class Websocket(Thread):
 
     @asyncio.coroutine
     def _connect(self, callback):
-        asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
+        #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         try:
             self._websocket = yield from websockets.connect(
                 'ws://{}:{}'.format(self._host, self._port),
@@ -93,7 +96,7 @@ class Websocket(Thread):
 
     @asyncio.coroutine
     def _shutdown(self, callback=None):
-        asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
+        #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         logger.debug("stopping async tasks")
         self._stop_async = True
         if self._websocket:
@@ -108,7 +111,7 @@ class Websocket(Thread):
 
     @asyncio.coroutine
     def _send(self, callback, payload):
-        asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
+        #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         try:
             yield from self._websocket.send(payload)
             callback(True)
@@ -123,7 +126,7 @@ class Websocket(Thread):
 
     @asyncio.coroutine
     def _receive(self, callback):
-        asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
+        #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         try:
             payload = yield from self._websocket.recv()
             callback(payload)
@@ -137,7 +140,7 @@ class Websocket(Thread):
 
     @asyncio.coroutine
     def _ioRecv(self, callback, in_queue):
-        asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
+        #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         logger.debug("io receive task started")
         callback()
         while not self._stop_async:
@@ -153,7 +156,7 @@ class Websocket(Thread):
 
     @asyncio.coroutine
     def _ioSend(self, callback, out_queue):
-        asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
+        #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         logger.debug("io send task started")
         callback()
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
