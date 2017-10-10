@@ -14,7 +14,7 @@ logger = root_logger.getChild(__name__)
 
 def _isDevice(obj):
     """
-    Check if a object is a Device or instantiated from a Device subclass
+    Check if a object is a Device or a Device subclass
     :param obj: object to check
     :return: Boolean
     """
@@ -24,7 +24,18 @@ def _isDevice(obj):
 
 
 class Device:
+    """
+    Use this class to create devices for use with the connector-client.
+    Subclass this class for advanced requirements. Don't forget to call __init__ of this class when subclassing.
+    """
     def __init__(self, id, type, name):
+        """
+        Create a device object. Checks if parameters meet type requirements.
+        :param id: Local device ID.
+        :param type: Device type (create device types via SEPL gui).
+        :param name: Device name.
+        :return: Device object
+        """
         __class__.__checkType(id)
         __class__.__checkType(type)
         __class__.__checkType(name)
@@ -53,13 +64,27 @@ class Device:
 
     @property
     def tags(self) -> list:
+        """
+        Combine tag IDs and tags as key:value pairs.
+        :return: List.
+        """
         return ['{}:{}'.format(key, value) for key, value in self.__tags.items()]
 
     @property
     def hash(self) -> str:
+        """
+        Uses device attributes to calculate a sha1 hash.
+        :return: String.
+        """
         return hashlib.sha1(''.join((self.__id, self.__type, self.__name, ''.join(['{}{}'.format(key, value) for key, value in self.__tags.items()]))).encode()).hexdigest()
 
     def addTag(self, tag_id, tag):
+        """
+        Add a tag to a device.
+        :param: tag_id: ID identifying the tag.
+        :param: tag: Word or combination of Words.
+        :return: Boolean
+        """
         if type(tag_id) is not str:
             raise TypeError("tag id must be a string but got '{}'".format(type(tag_id)))
         if type(tag) is not str:
@@ -74,6 +99,12 @@ class Device:
         return True
 
     def changeTag(self, tag_id, tag):
+        """
+        Change existing tag.
+        :param: tag_id: ID identifying the tag.
+        :param: tag: Word or combination of Words.
+        :return: Boolean
+        """
         if ':' in tag or ';' in tag:
             raise ValueError("tag may not contain ':' or ';'")
         if tag_id in self.__tags:
@@ -82,6 +113,11 @@ class Device:
         return False
 
     def removeTag(self, tag_id):
+        """
+        Remove existing tag.
+        :param: tag_id: ID identifying the tag.
+        :return: Boolean
+        """
         try:
             del(self.__tags[tag_id])
             return True
@@ -91,6 +127,10 @@ class Device:
 
     @staticmethod
     def __checkType(arg):
+        """
+        Check if type is string. Raise exception if not.
+        :param: arg: object to check
+        """
         if type(arg) is not str:
             raise TypeError("'{}' must be a string but is a '{}'".format(arg, type(arg)))
 
