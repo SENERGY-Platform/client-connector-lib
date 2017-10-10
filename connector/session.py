@@ -15,7 +15,17 @@ logger = root_logger.getChild(__name__)
 
 
 class Session:
+    """
+    Stores session data.
+    """
     def __init__(self, msg_obj, token, timeout, callback):
+        """
+        Create a session object.
+        :param msg_obj: Message object.
+        :param token: Message token.
+        :param timeout: Session timeout in sec.
+        :param callback: Function to call on session closure.
+        """
         self.msg_obj = msg_obj
         self.token = token
         self.timeout = timeout
@@ -24,6 +34,12 @@ class Session:
 
 
 class SessionManager(Thread, metaclass=Singleton):
+    """
+    Manages parallel timed sessions.
+    Subclasses Thread and Singleton.
+    Uses queues to encapsulate asyncio event loop and coroutines in thread and inter thread communication.
+    Access via static methods.
+    """
     _event_loop = None
     _session_queue = Queue()
     _sessions = dict()
@@ -31,12 +47,22 @@ class SessionManager(Thread, metaclass=Singleton):
     callback_queue = Queue()
 
     def __init__(self):
+        """
+        Start session manager thread.
+        """
         super().__init__()
         self.start()
 
 
     @staticmethod
     def new(msg_obj, token, timeout, callback):
+        """
+        Create a new Session object and add it to the session manager.
+        :param msg_obj: Message object.
+        :param token: Message token.
+        :param timeout: Session timeout in sec.
+        :param callback: Function to call on session closure.
+        """
         session = Session(msg_obj, token, timeout, callback)
         __class__._sessions[token] = session
         __class__._session_queue.put(session)
@@ -44,6 +70,12 @@ class SessionManager(Thread, metaclass=Singleton):
 
     @staticmethod
     def raiseEvent(msg_obj, token):
+        """
+        Check if a session exists for given token and add new message to session.
+        Set event to True if no Event object is present (race against coroutine creation).
+        :param msg_obj: Message object.
+        :param token: Message token.
+        """
         session = __class__._sessions.get(token)
         if session:
             session.msg_obj = msg_obj
@@ -54,6 +86,11 @@ class SessionManager(Thread, metaclass=Singleton):
 
     @staticmethod
     def _cleanup(session):
+        """
+        Put callback functions in queue to be called by separate thread.
+        Remove session from session manager.
+        :param session: Session object.
+        """
         if session.callback:
             __class__.callback_queue.put((session.callback, session.msg_obj))
         del __class__._sessions[session.token]
@@ -62,6 +99,9 @@ class SessionManager(Thread, metaclass=Singleton):
     @staticmethod
     @asyncio.coroutine
     def _interruptor():
+        """
+        Waits for event and interrupts the session timer coroutine.
+        """
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             while True:
                 session = yield from __class__._event_loop.run_in_executor(
@@ -75,6 +115,11 @@ class SessionManager(Thread, metaclass=Singleton):
     @staticmethod
     @asyncio.coroutine
     def _timer(session):
+        """
+        Timer coroutine for a session.
+        Times out after given time or can be interrupted by an event.
+        :param session: Session object.
+        """
         try:
             yield from asyncio.wait_for(session.event.wait(), session.timeout)
             logger.debug('{} caught event (timer)'.format(session.token))
@@ -87,6 +132,11 @@ class SessionManager(Thread, metaclass=Singleton):
     @staticmethod
     @asyncio.coroutine
     def _spawn():
+        """
+        Creates timer coroutines for sessions.
+        Adds Event objects to sessions or calls cleanup if sessions are already done.
+        (races against event detection)
+        """
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             while True:
                 session = yield from __class__._event_loop.run_in_executor(
@@ -102,6 +152,10 @@ class SessionManager(Thread, metaclass=Singleton):
 
 
     def run(self):
+        """
+        Override run() method of Thread.
+        Creates event loop inside thread on thread start.
+        """
         try:
             __class__._event_loop = asyncio.get_event_loop()
         except AssertionError:
