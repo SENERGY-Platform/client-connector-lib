@@ -35,11 +35,6 @@ def _callAndWaitFor(function, *args, timeout=None, **kwargs):
     return event.message
 
 
-def _callInThread(function):
-    thread = Thread(target=function)
-    thread.start()
-
-
 def _interfaceCheck(cls, interface):
     if issubclass(cls, interface):
         return True
@@ -142,8 +137,6 @@ class Client(metaclass=Singleton):
                         logger.info('checking if devices need to be synchronised')
                         if self.__synchroniseDevices(initial_response.payload.get('hash')):
                             logger.info('connector-client ready')
-                            if self.__con_callbck:
-                                _callInThread(self.__con_callbck)
                             return True
                     else:
                         logger.error('handshake failed - {} {}'.format(initial_response.payload, initial_response.status))
@@ -159,8 +152,6 @@ class Client(metaclass=Singleton):
 
     def __reconnect(self):
         __class__.__ready = False
-        if self.__discon_callbck:
-            _callInThread(self.__discon_callbck)
         reconnect = Thread(target=self.__connect, name='reconnect', args=(30, ))
         logger.info("reconnecting in 30s")
         reconnect.start()
