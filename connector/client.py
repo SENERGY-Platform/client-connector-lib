@@ -132,11 +132,12 @@ class Client(metaclass=Singleton):
                         logger.debug('check if gateay ID needs to be synchronised')
                         _synchroniseGid(initial_response.payload.get('gid'))
                         logger.info('handshake completed')
+                        __class__.__out_queue.empty()
                         _callAndWaitFor(websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
-                        __class__.__ready = True
                         logger.info('checking if devices need to be synchronised')
                         if self.__synchroniseDevices(initial_response.payload.get('hash')):
                             logger.info('connector-client ready')
+                            __class__.__ready = True
                             return True
                     else:
                         logger.error('handshake failed - {} {}'.format(initial_response.payload, initial_response.status))
@@ -188,8 +189,6 @@ class Client(metaclass=Singleton):
 
     @staticmethod
     def __send(msg_obj, timeout=10, callback=None, block=True) -> Message:
-        if not __class__.__ready:
-            logger.error("connector-client not ready")
         msg_str = marshalMsg(msg_obj)
         token = getMangledAttr(msg_obj, 'token')
         if block:
@@ -198,17 +197,14 @@ class Client(metaclass=Singleton):
             callback = functools.partial(_callback, event)
             SessionManager.new(msg_obj, token, timeout, callback)
             __class__.__out_queue.put(msg_str)
-            #logger.debug('send: {}'.format(msg_str))
             event.wait()
             return event.message
         else:
-            SessionManager.new(msg_obj, token, timeout, callback)
-            __class__.__out_queue.put(msg_str)
-            #logger.debug('send: {}'.format(msg_str))
+            __class__.__out_queue.put((msg_str, functools.partial(SessionManager.new, msg_obj, token, timeout, callback)))
 
 
     @staticmethod
-    def __put(device) -> bool:
+    def __put(device, **kwargs) -> bool:
         put_msg = Message(handlers['put_handler'])
         put_msg.payload = {
             'uri': device.id,
@@ -216,7 +212,7 @@ class Client(metaclass=Singleton):
             'iot_type': device.type,
             'tags': device.tags
         }
-        response = __class__.__send(put_msg)
+        response = __class__.__send(put_msg, **kwargs)
         if response.status == 200:
             logger.debug("put device '{}'".format(device.id))
             return True
@@ -225,10 +221,10 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def __commit(local_hash) -> bool:
+    def __commit(local_hash, **kwargs) -> bool:
         commit_msg = Message(handlers['commit_handler'])
         commit_msg.payload = local_hash
-        response = __class__.__send(commit_msg)
+        response = __class__.__send(commit_msg, **kwargs)
         if response.status == 200:
             logger.debug("commit '{}'".format(local_hash))
             return True
@@ -237,10 +233,10 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def __mute(device_id) -> bool:
+    def __mute(device_id, **kwargs) -> bool:
         mute_msg = Message(handlers['mute_handler'])
         mute_msg.payload = device_id
-        response = __class__.__send(mute_msg)
+        response = __class__.__send(mute_msg, **kwargs)
         if response.status == 200:
             logger.debug("muted device '{}'".format(device_id))
             return True
@@ -272,11 +268,13 @@ class Client(metaclass=Singleton):
                 }
             ]
         }
-        return __class__.__send(event_msg, **kwargs)
+        if __class__.__ready:
+            return __class__.__send(event_msg, **kwargs)
+        logger.warning("could not send event: {}".format(event_msg.payload))
 
 
     @staticmethod
-    def response(msg_obj, payload):
+    def response(msg_obj, payload, **kwargs):
         if type(msg_obj) is not Message:
             raise TypeError("msg_obj must be Message but got '{}'".format(type(msg_obj)))
         setMangledAttr(msg_obj, 'handler', handlers['response_handler'])
@@ -286,47 +284,55 @@ class Client(metaclass=Singleton):
                 'value': payload
             }
         ]
-        __class__.__send(msg_obj, block=False)
+        if __class__.__ready:
+            __class__.__send(msg_obj, **kwargs)
+        else:
+            logger.warning("could not send response for: {}".format(getMangledAttr(msg_obj, 'token')))
 
 
     @staticmethod
-    def register(device) -> bool:
+    def register(device, **kwargs) -> bool:
         if not _isDevice(device):
             raise TypeError("device must be Device or subclass of Device but got '{}'".format(type(device)))
         __class__.__device_manager.add(device)
-        local_hash = _hashDevices(__class__.__device_manager.devices())
-        if __class__.__put(device):
-            if __class__.__commit(local_hash):
-                logger.info("registered device '{}'".format(device.name))
-                return True
+        if __class__.__ready:
+            local_hash = _hashDevices(__class__.__device_manager.devices())
+            if __class__.__put(device, **kwargs):
+                if __class__.__commit(local_hash):
+                    logger.info("registered device '{}'".format(device.name))
+                    return True
         logger.warning("could not register device '{}'".format(device.name))
         return False
 
 
     @staticmethod
-    def update(device) -> bool:
+    def update(device, **kwargs) -> bool:
         if not _isDevice(device):
             raise TypeError("device must be Device or subclass of Device but got '{}'".format(type(device)))
         __class__.__device_manager.update(device)
-        local_hash = _hashDevices(__class__.__device_manager.devices())
-        if __class__.__put(device):
-            if __class__.__commit(local_hash):
-                logger.info("updated device '{}'".format(device.name))
-                return True
+        if __class__.__ready:
+            local_hash = _hashDevices(__class__.__device_manager.devices())
+            if __class__.__put(device, **kwargs):
+                if __class__.__commit(local_hash):
+                    logger.info("updated device '{}'".format(device.name))
+                    return True
         logger.warning("could not update device '{}'".format(device.name))
         return False
 
 
     @staticmethod
-    def remove(device) -> bool:
+    def remove(device, **kwargs) -> bool:
         if _isDevice(device):
             device = device.id
         elif type(device) is not str:
             raise TypeError("device must be Device, subclass of Device or string (if ID only) but got '{}'".format(type(device)))
         __class__.__device_manager.remove(device)
-        if __class__.__mute(device):
-            logger.info("removed device '{}'".format(device))
-            return True
+        if __class__.__ready:
+            local_hash = _hashDevices(__class__.__device_manager.devices())
+            if __class__.__mute(device, **kwargs):
+                if __class__.__commit(local_hash):
+                    logger.info("removed device '{}'".format(device))
+                    return True
         logger.warning("could not remove device '{}'".format(device))
         return False
 
