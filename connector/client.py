@@ -233,14 +233,14 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def __mute(device_id, **kwargs) -> bool:
-        mute_msg = Message(handlers['mute_handler'])
-        mute_msg.payload = device_id
-        response = __class__.__send(mute_msg, **kwargs)
+    def __remove(device_id, **kwargs) -> bool:
+        rm_msg = Message(handlers['remove_handler'])
+        rm_msg.payload = device_id
+        response = __class__.__send(rm_msg, **kwargs)
         if response.status == 200:
-            logger.debug("muted device '{}'".format(device_id))
+            logger.debug("remove device '{}'".format(device_id))
             return True
-        logger.debug("mute device '{}' failed".format(device_id))
+        logger.debug("remove device '{}' failed".format(device_id))
         return False
 
 
@@ -329,7 +329,7 @@ class Client(metaclass=Singleton):
         __class__.__device_manager.remove(device)
         if __class__.__ready:
             local_hash = _hashDevices(__class__.__device_manager.devices())
-            if __class__.__mute(device, **kwargs):
+            if __class__.__remove(device, **kwargs):
                 if __class__.__commit(local_hash):
                     logger.info("removed device '{}'".format(device))
                     return True
