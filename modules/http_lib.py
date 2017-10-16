@@ -10,6 +10,7 @@ from socket import timeout as Timeout
 from urllib import parse
 from urllib import request as http
 
+
 logger = root_logger.getChild(__name__)
 
 
@@ -42,11 +43,10 @@ class Response:
                 self._header = dict(ex.headers.items())
                 self._status = ex.code
                 logger.error("{}: {} - {}".format(self.__request.method, self.__request.full_url, self._status))
-            except http.URLError as ex:
-                #self._body = ex.reason
-                logger.error("{}: {} - {}".format(self.__request.method, self.__request.full_url, ex.reason))
             except Timeout:
                 logger.error("{}: {} - {}".format(self.__request.method, self.__request.full_url, 'timed out'))
+            except Exception as ex:
+                logger.error("{}: {} - {}".format(self.__request.method, self.__request.full_url, ex))
             time.sleep(retry_delay)
 
     @property
