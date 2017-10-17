@@ -233,14 +233,26 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def __remove(device_id, **kwargs) -> bool:
-        rm_msg = Message(handlers['remove_handler'])
-        rm_msg.payload = device_id
-        response = __class__.__send(rm_msg, **kwargs)
+    def __disconnect(device_id, **kwargs) -> bool:
+        discon_msg = Message(handlers['disconnect_handler'])
+        discon_msg.payload = device_id
+        response = __class__.__send(discon_msg, **kwargs)
         if response.status == 200:
-            logger.debug("remove device '{}'".format(device_id))
+            logger.debug("disconnect device '{}'".format(device_id))
             return True
-        logger.debug("remove device '{}' failed".format(device_id))
+        logger.debug("disconnect device '{}' failed".format(device_id))
+        return False
+
+
+    @staticmethod
+    def __delete(device_id, **kwargs) -> bool:
+        del_msg = Message(handlers['delete_handler'])
+        del_msg.payload = device_id
+        response = __class__.__send(del_msg, **kwargs)
+        if response.status == 200:
+            logger.debug("delete device '{}'".format(device_id))
+            return True
+        logger.debug("delete device '{}' failed".format(device_id))
         return False
 
 
@@ -321,7 +333,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def remove(device, **kwargs) -> bool:
+    def disconnect(device, **kwargs) -> bool:
         if _isDevice(device):
             device = device.id
         elif type(device) is not str:
@@ -329,11 +341,29 @@ class Client(metaclass=Singleton):
         __class__.__device_manager.remove(device)
         if __class__.__ready:
             local_hash = _hashDevices(__class__.__device_manager.devices())
-            if __class__.__remove(device, **kwargs):
+            if __class__.__disconnect(device, **kwargs):
                 if __class__.__commit(local_hash):
-                    logger.info("removed device '{}'".format(device))
+                    logger.info("disconnected device '{}'".format(device))
                     return True
-        logger.warning("could not remove device '{}'".format(device))
+        logger.warning("could not disconnect device '{}'".format(device))
+        return False
+
+
+    @staticmethod
+    def delete(device, **kwargs) -> bool:
+        if _isDevice(device):
+            device = device.id
+        elif type(device) is not str:
+            raise TypeError(
+                "device must be Device, subclass of Device or string (if ID only) but got '{}'".format(type(device)))
+        __class__.__device_manager.remove(device)
+        if __class__.__ready:
+            local_hash = _hashDevices(__class__.__device_manager.devices())
+            if __class__.__delete(device, **kwargs):
+                if __class__.__commit(local_hash):
+                    logger.info("deleted device '{}'".format(device))
+                    return True
+        logger.warning("could not delete device '{}'".format(device))
         return False
 
 

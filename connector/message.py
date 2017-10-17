@@ -15,7 +15,8 @@ logger = root_logger.getChild(__name__)
 # platform handlers map
 handlers = {
     'put_handler': 'put',
-    'remove_handler': 'remove',
+    'disconnect_handler': 'disconnect',
+    'delete_handler': 'delete',
     'event_handler': 'event',
     'response_handler': 'response',
     'command_handler': 'command',
