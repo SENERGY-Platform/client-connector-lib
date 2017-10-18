@@ -393,12 +393,9 @@ Returns a `Response` object.
 
 **Logger**
 
-**Levels**
 
- `info`, `warning`, `error`, `critical` and `debug`
- 
+Levels: `info`, `warning`, `error`, `critical` and `debug`
 
-**Example**
 
     from modules.logger import root_logger
     
