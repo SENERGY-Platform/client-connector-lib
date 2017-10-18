@@ -75,18 +75,22 @@ Client API
 
 **Receive and respond to a task / command**
 
->       Client.receive()
-> Blocks until a task / command is received from the platform.
-> Returns a `Message` object containing a payload and metadata.
->
->       Client.response(msg_obj, payload, timeout=10, callback=None, block=True)
-> Requires a `Message` object returned by `Client.receive()` and a payload containing the status / result of the executed task / command. 
+       Client.receive()
+Blocks until a task / command is received from the platform.
+Returns a `Message` object containing a payload and metadata.
+
+       Client.response(msg_obj, payload, timeout=10, callback=None, block=True)
+Requires a `Message` object returned by `Client.receive()` and a payload containing the status / result of the executed task / command. 
+
+---
 
 **Push event**
 
->       Client.event(device, service, payload, timeout=10, callback=None, block=True)
-> Requires a device ID (or `Device` object), sepl-service and a payload containing event data.
-> Returns a response `Message`.
+    Client.event(device, service, payload, timeout=10, callback=None, block=True)
+Requires a device ID (or `Device` object), sepl-service and a payload containing event data.
+Returns a response `Message`.
+
+---
 
 **Add device**
 >       Client.add(device, timeout=10, callback=None, block=True)
@@ -140,10 +144,11 @@ Users are not required to instantiate `Message` objects, they are obtained via t
 
 Device Class
 -----------------
-Provides a standard structure for Users to map device attributes.
+Provides a standard structure for Users to map device attributes and manage device tags.
 
-    Device(id, type, name)
-
+>       Device(id, type, name)
+>
+> Requires 
 
 Device Manger Interface
 -----------------
