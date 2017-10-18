@@ -70,7 +70,7 @@ connector-client configuration is done via `connector.conf`
         Client.delete(new_device)
 
 
-API
+Client API
 -----------------
 
 **Receive and respond to a task / command**
@@ -115,9 +115,25 @@ API
 > 
 > Returns true only on successful delete. Devices will always be deleted internally (device manager), regardless of delete success.
 
+Message Class
+-----------------
+
+Device Class
+-----------------
+
+Device Manger Interface
+-----------------
 
 Support Modules
 -----------------
+
+**In memory device management**
+
+---
+
+**Persistent device management**
+
+---
 
 **HTTP Library**
 
