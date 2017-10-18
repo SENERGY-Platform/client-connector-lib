@@ -1,7 +1,7 @@
 connector-client
 ================
 
-A Python client providing a quasi-framework for users wanting to integrate their personal IoT project / device with the SEPL platform.
+Quasi-framework for users wanting to integrate their personal IoT project / device with the SEPL platform.
 
 Written in Python 3.4 and relying on the `websockets` module.
 
@@ -24,7 +24,6 @@ connector-client configuration is done via `connector.conf`
     rotating_log = < yes / no >
     rotating_log_backup_count = < number of backup copies to keep >
 
----
 
 **Quick start**
 
@@ -69,6 +68,51 @@ connector-client configuration is done via `connector.conf`
         
         # Delete device #
         Client.delete(new_device)
+
+
+API
+-----------------
+
+**Receive and respond to a task / command**
+
+>       Client.receive()
+> Blocks until a task / command is received from the platform.
+> Returns a `Message` object containing a payload and metadata.
+>
+>       Client.response(msg_obj, payload, timeout=10, callback=None, block=True)
+> Requires a `Message` object returned by `Client.receive()` and a payload containing the status / result of the executed task / command. 
+
+**Push event**
+
+>       Client.event(device, service, payload, timeout=10, callback=None, block=True)
+> Requires a device ID (or `Device` object), sepl-service and a payload containing event data.
+> Returns a response `Message`.
+
+**Add device**
+>       Client.add(device, timeout=10, callback=None, block=True)
+> Adds a device to the connector-client via the provided device manager and if possible registers the device with the platform.
+>
+> Requires a `Device` object.
+> Returns true only on successful device registration. Devices will always be added to the device manager, regardless of registration success.
+
+**Update device**
+>       Client.update(device, timeout=10, callback=None, block=True)
+> Updates a existing Device on the connector-client and if possible publishes the changes to the platform.
+>
+> Requires a `Device` object.
+> Returns true only on successful publish of changes. Devices will always be updated internally (device manager), regardless of registration success.
+
+**Disconnect device**
+>       Client.disconnect(device, timeout=10, callback=None, block=True)
+> Deletes a device from the connector-client and if possible disconnects it from the platform. Disconnecting a device allows for devices to remain on the platform (in a disconnected state) and thus remain available for further user actions.
+>
+> Requires a device ID (or `Device` object).
+> Returns true only on successful disconnect. Devices will always be deleted internally (device manager), regardless of disconnect success.
+
+**Delete device**
+>       Client.delete(device, timeout=10, callback=None, block=True)
+> Deletes a device from the connector-client and if possible deletes it from the platform. If deleting a device from the platform isn't possible, the device will enter a disconnected state after a connector-client restart and further user action is required.
+> Returns true only on successful delete. Devices will always be deleted internally (device manager), regardless of delete success.
 
 
 Support Modules
@@ -190,7 +234,6 @@ Support Modules
 > 
 >  `info`, `warning`, `error`, `critical` and `debug`
 >  
->  ----------
 > 
 > **Example**
 > 
@@ -198,9 +241,8 @@ Support Modules
 >     
 >     logger = root_logger.getChild(__name__)
 >     
->     
+>     logger.debug('debug message')   
 >     logger.info('info message')
 >     logger.warning('warning message')
 >     logger.error('error message')
 >     logger.critical('critical message')
->     logger.debug('debug message')
