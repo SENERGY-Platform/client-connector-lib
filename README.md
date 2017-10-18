@@ -76,9 +76,7 @@ Client API
 **Receive and respond to a task / command**
 
        Client.receive()
-Blocks until a task / command is received from the platform.
-
-Returns a `Message` object containing a payload and metadata.
+Blocks until a task / command is received from the platform. Returns a `Message` object containing a payload and metadata.
 
        Client.response(msg_obj, payload, timeout=10, callback=None, block=True)
 Requires a `Message` object returned by `Client.receive()` and a payload containing the status / result of the executed task / command. 
@@ -88,6 +86,7 @@ Requires a `Message` object returned by `Client.receive()` and a payload contain
 **Push event**
 
     Client.event(device, service, payload, timeout=10, callback=None, block=True)
+
 Requires a device ID (or `Device` object), sepl-service and a payload containing event data.
 
 Returns a response `Message`.
@@ -97,6 +96,7 @@ Returns a response `Message`.
 **Add device**
 
     Client.add(device, timeout=10, callback=None, block=True)
+    
 Adds a device to the connector-client via the provided device manager and if possible registers the device with the platform.
 
 Requires a `Device` object.
@@ -108,6 +108,7 @@ Returns true only on successful device registration. Devices will always be adde
 **Update device**
 
     Client.update(device, timeout=10, callback=None, block=True)
+    
 Updates a existing Device on the connector-client and if possible publishes the changes to the platform.
 
 Requires a `Device` object.
@@ -119,6 +120,7 @@ Returns true only on successful publish. Devices will always be updated internal
 **Disconnect device**
 
     Client.disconnect(device, timeout=10, callback=None, block=True)
+
 Deletes a device from the connector-client and if possible disconnects it from the platform. Disconnecting a device allows for devices to be retained on the platform (in a disconnected state) and thus remain available for further user actions.
 
 Requires a device ID (or `Device` object).
@@ -130,6 +132,7 @@ Returns true only on successful disconnect. Devices will always be deleted inter
 **Delete device**
 
     Client.delete(device, timeout=10, callback=None, block=True)
+
 Deletes a device from the connector-client and if possible deletes it from the platform. If deleting a device from the platform isn't possible, the device will enter a disconnected state and further user action is required after a successful connector-client reconnect.
 
 Requires a device ID (or `Device` object).
@@ -147,6 +150,7 @@ Callbacks should conform to the following signature with a reserved leading posi
     def your_callback(msg_obj, *your_args, **your_kwargs):
         # your code
 
+   
 Message Class
 -----------------
 Used for communication between connector-client and sepl platform.
@@ -156,19 +160,51 @@ Users are not required to instantiate `Message` objects, they are obtained via t
 
 **Attributes**
 
-> `status` HTTP status codes (set by platform)
->
-> `content_type` type of the data contained in payload (set by platform)
->
-> `payload` contains data
+`status` HTTP status codes (set by platform)
+
+`content_type` type of the data contained in payload (set by platform)
+
+`payload` contains data
+
 
 Device Class
 -----------------
 Provides a standard structure for Users to map device attributes and manage device tags.
 
->       Device(id, type, name)
->
-> Requires 
+    Device(id, type, name)
+
+Requires device ID, type and name.
+
+---
+
+**Attributes**
+
+`id` local device ID
+
+`type` device type
+
+`name` device name
+
+`tags` device tags
+
+`hash` SHA1 hash calculated from above attributes
+
+---
+
+**Methods**
+
+    addTag(tag_id, tag)
+    
+Create new tag.
+
+    changeTag(tag_id, tag)
+
+Change existing tag.
+
+    removeTag(tag_id)
+    
+Remove existing tag.
+
 
 Device Manger Interface
 -----------------
