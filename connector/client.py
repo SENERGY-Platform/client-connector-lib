@@ -72,7 +72,7 @@ class Client(metaclass=Singleton):
     __ready = False
 
 
-    def __init__(self, device_manager, con_callbck=None, discon_callbck=None):
+    def __init__(self, device_manager):
         if not device_manager:
             raise RuntimeError("a device manager must be provided")
         elif isclass(device_manager):
@@ -81,8 +81,6 @@ class Client(metaclass=Singleton):
         elif not _interfaceCheck(type(device_manager), DeviceManagerInterface):
             raise TypeError("device manager must subclass DeviceManagerInterface but got {}".format(type(device_manager)))
         __class__.__device_manager = device_manager
-        self.__con_callbck = con_callbck
-        self.__discon_callbck = discon_callbck
         self.__session_manager = SessionManager()
         self.__callback_thread = Thread(target=self.__callbackHandler, name="Callback")
         self.__callback_thread.start()
@@ -303,7 +301,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def register(device, **kwargs) -> bool:
+    def add(device, **kwargs) -> bool:
         if not _isDevice(device):
             raise TypeError("device must be Device or subclass of Device but got '{}'".format(type(device)))
         __class__.__device_manager.add(device)
