@@ -115,20 +115,35 @@ Client API
 > 
 > Returns true only on successful delete. Devices will always be deleted internally (device manager), regardless of delete success.
 
----
 
-All methods block by default. If asynchronous behaviour is desired set `block=False` and if required provide a callback method to collect results.
+All methods block by default with a 10s timeout. If asynchronous behaviour is desired set `block=False` and if required provide a callback method to collect results. During asynchronous  
 
-Callbacks should implement the following signature with a reserved leading positional argument:
+Callbacks should conform to the following signature with a reserved leading positional argument:
 
     def your_callback(msg_obj, *your_args, **your_kwargs):
         # your code
 
 Message Class
 -----------------
+Used for communication between connector-client and sepl platform.
+
+**Important:**
+Users are not required to instantiate `Message` objects, they are obtained via the methods described in the 'Client API' section above.
+
+**Attributes**
+
+> `status` HTTP status codes (set by platform)
+>
+> `content_type` type of the data contained in payload (set by platform)
+>
+> `payload` contains data
 
 Device Class
 -----------------
+Provides a standard structure for Users to map device attributes.
+
+    Device(id, type, name)
+
 
 Device Manger Interface
 -----------------
