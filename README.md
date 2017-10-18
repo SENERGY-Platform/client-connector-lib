@@ -284,11 +284,11 @@ Device manager storing and managing devices in a sqlite database. (Singleton ins
  
 `url` requires a fully qualified URL string.   
 
-Optional:
-
-`query` takes a dictionary with query arguments.
-
-`headers` takes a dictionary with header fields.
+> Optional:
+>
+> `query` takes a dictionary with query arguments.
+> 
+> `headers` takes a dictionary with header fields.
 
 Returns a `Response` object.
 
@@ -299,9 +299,7 @@ Returns a `Response` object.
 
 `body` should be provided as a string.
 
-Optional:
-
-`headers` takes a dictionary with header fields.
+> Optional: `headers` takes a dictionary with header fields.
 
 Returns a `Response` object.
 
@@ -312,9 +310,7 @@ Returns a `Response` object.
 
 `body` should be provided as a string.
 
-Optional:
-
-`headers` takes a dictionary with header fields.
+> Optional: `headers` takes a dictionary with header fields.
 
 Returns a `Response` object.
 
@@ -323,9 +319,7 @@ Returns a `Response` object.
 
 `url` requires a fully qualified URL string. 
  
-Optional:
-
-`headers` takes a dictionary with header fields.
+> Optional: `headers` takes a dictionary with header fields.
 
 Returns a `Response` object.
 
@@ -334,31 +328,31 @@ Returns a `Response` object.
 
 `url` requires a fully qualified URL string.
  
-Optional:
-
-`query` takes a dictionary with query arguments.
-
-`headers` takes a dictionary with header fields.
+> Optional:
+>
+> `query` takes a dictionary with query arguments.
+>
+> `headers` takes a dictionary with header fields.
 
 Returns a `Response` object.
 
 
-**Global optional arguments**
+Global optional arguments
+>
+> `timeout` time to pass until a request fails in seconds. (default: 3)
+>
+> `retries` number of retries for a failed request. (default: 0)
+>
+> `retry_delay` delay between retries in seconds. (default: 0.5) 
 
-`timeout` time to pass until a request fails in seconds. (default: 3)
 
-`retries` number of retries for a failed request. (default: 0)
-
-`retry_delay` delay between retries in seconds. (default: 0.5) 
-
-
-**Response object structure**
-
-`status` response status.
-
-`header` response header.
-
-`body` response body.
+Response object structure
+>
+> `status` response status.
+>
+> `header` response header.
+>
+> `body` response body.
 
 
 **Example**
