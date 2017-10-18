@@ -175,7 +175,7 @@ Provides a standard structure for Users to map device attributes and manage devi
 
 Requires device ID, type and name.
 
----
+Users requiring more advanced structures / behavior can subclass this class but must not forget to call `super().__init__(id, type, name)` during instantiation.
 
 **Attributes**
 
@@ -188,8 +188,6 @@ Requires device ID, type and name.
 `tags` device tags
 
 `hash` SHA1 hash calculated from above attributes
-
----
 
 **Methods**
 
@@ -209,15 +207,75 @@ Remove existing tag.
 Device Manger Interface
 -----------------
 
+Users wanting to implement their own device manager must use the provided interface `DeviceManagerInterface`.
+
+    from connector.device import DeviceManagerInterface
+    
+    class YourDeviceManager(DeviceManagerInterface):
+        # your code
+
+**Required methods**
+
+Required methods can be normal, class or static methods.
+
+    def add(device):
+        # your code
+  
+Add a device to the device manager. Requires a `Device` (or subclass of `Device`) object.
+
+    def update(device):
+        # your code
+
+Update existing device. Requires a `Device` (or subclass of `Device`) object.
+
+    def remove(id_str):
+        # your code
+        
+Remove device from device manager. Requires device ID as string.
+
+    def get(id_str):
+        # your code
+
+Get a device from the device manager. Requires device ID as string and return a `Device` (or subclass of `Device`) object.
+
+    def devices():
+        # your code
+
+Retrieve all devices from the device manager. Return a `dict`, `list` or `tuple` object.
+
+
 Support Modules
 -----------------
 
 **In memory device management**
 
+Device manager storing and managing devices via a `dict` in memory. Uses static methods, no instantiation required.
+
+    from modules.device_pool import DevicePool
+    
+    for device in your_devices:
+        DevicePool.add(device)
+    
+    if __name__ == '__main__':
+        connector_client = Client(device_manager=DevicePool)
+     
+
 ---
 
 **Persistent device management**
 
+Device manager storing and managing devices in a sqlite database. (Singleton instance)
+
+    from modules.device_pool import DeviceStore
+    
+    device_manager = DeviceStore()
+    
+    for device in your_devices:
+        device_manager.add(device)
+    
+    if __name__ == '__main__':
+        connector_client = Client(device_manager=device_manager)
+     
 ---
 
 **HTTP Library**
