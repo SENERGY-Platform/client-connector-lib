@@ -100,18 +100,19 @@ API
 > Updates a existing Device on the connector-client and if possible publishes the changes to the platform.
 >
 > Requires a `Device` object.
-> Returns true only on successful publish of changes. Devices will always be updated internally (device manager), regardless of registration success.
+> Returns true only on successful publish. Devices will always be updated internally (device manager), regardless of publish success.
 
 **Disconnect device**
 >       Client.disconnect(device, timeout=10, callback=None, block=True)
-> Deletes a device from the connector-client and if possible disconnects it from the platform. Disconnecting a device allows for devices to remain on the platform (in a disconnected state) and thus remain available for further user actions.
+> Deletes a device from the connector-client and if possible disconnects it from the platform. Disconnecting a device allows for devices to be retained on the platform (in a disconnected state) and thus remain available for further user actions.
 >
 > Requires a device ID (or `Device` object).
 > Returns true only on successful disconnect. Devices will always be deleted internally (device manager), regardless of disconnect success.
 
 **Delete device**
 >       Client.delete(device, timeout=10, callback=None, block=True)
-> Deletes a device from the connector-client and if possible deletes it from the platform. If deleting a device from the platform isn't possible, the device will enter a disconnected state after a connector-client restart and further user action is required.
+> Deletes a device from the connector-client and if possible deletes it from the platform. If deleting a device from the platform isn't possible, the device will enter a disconnected state and further user action is required after a successful connector-client reconnect.
+> 
 > Returns true only on successful delete. Devices will always be deleted internally (device manager), regardless of delete success.
 
 
