@@ -3,9 +3,72 @@ connector-client
 
 A Python client providing a quasi-framework for users wanting to integrate their personal IoT project / device with the SEPL platform.
 
-Written in Python3 and relying on the `websockets` module.
+Written in Python 3.4 and relying on the `websockets` module.
 
 ----------
+
+**Configuration**
+
+connector-client configuration is done via `connector.conf`
+
+    [CONNECTOR]
+    protocol = < ws / wss >
+    host = < your-websocket-host.com / 123.128.12.45 >
+    port = < websocket port >
+    user = < sepl username >
+    password = < sepl password >
+    gid = < set by sepl platform >
+    
+    [LOGGER]
+    level = < debug / info / warning / error / critical >
+    rotating_log = < yes / no >
+    rotating_log_backup_count = < number of backup copies to keep >
+
+---
+
+**Quick start**
+
+    from connector.client import Client
+    from connector.device import Device
+    
+    ## initiation phase ##
+    
+    # collect devices #
+    for device in your_devices:
+        your_device_manager.add(device)
+
+
+    if __name__ == '__main__':
+        connector_client = Client(device_manager=your_device_manager)
+        
+        ## runtime phase ##
+
+        # Receive command and respond #
+        task = Client.receive()
+        # do something
+        Client.response(task, status)
+        
+        
+        # Push event #
+        Client.event(your_device, 'service', payload)
+        
+        
+        # Register new device #
+        new_device = Device('id', 'type', 'name')
+        Client.register(new_device)
+        
+        
+        # Update device #
+        new_device.name = 'new name'
+        Client.update(new_device)
+        
+        
+        # Disconnect device #
+        Client.disconnect('your_device_id')
+        
+        
+        # Delete device #
+        Client.delete(new_device)
 
 
 Support Modules
