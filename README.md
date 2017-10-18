@@ -292,7 +292,6 @@ Optional:
 
 Returns a `Response` object.
 
-----------
 
      post(url, body)
 
@@ -306,7 +305,6 @@ Optional:
 
 Returns a `Response` object.
 
-----------
 
      put(url, body)
 
@@ -320,7 +318,6 @@ Optional:
 
 Returns a `Response` object.
 
-----------
 
       delete(url)
 
@@ -332,7 +329,6 @@ Optional:
 
 Returns a `Response` object.
 
-----------
 
       header(url)
 
@@ -346,7 +342,6 @@ Optional:
 
 Returns a `Response` object.
 
-----------
 
 **Global optional arguments**
 
@@ -356,7 +351,6 @@ Returns a `Response` object.
 
 `retry_delay` delay between retries in seconds. (default: 0.5) 
 
-----------
 
 **Response object structure**
 
@@ -366,7 +360,6 @@ Returns a `Response` object.
 
 `body` response body.
 
-----------
 
 **Example**
         
