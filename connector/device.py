@@ -140,7 +140,7 @@ class DeviceManagerInterface(metaclass=ABCMeta):
     Interface class. Device managers must inherit from this class.
     """
     @abstractmethod
-    def add(*args, device):
+    def add(*sc, device):
         """
         add device
         :param device: takes a Device (or subclass of Device) object.
@@ -148,7 +148,7 @@ class DeviceManagerInterface(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def update(*args, device):
+    def update(*sc, device):
         """
         update device
         :param device: takes a Device (or subclass of Device) object.
@@ -156,15 +156,15 @@ class DeviceManagerInterface(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def remove(*args, id_str):
+    def remove(*sc, id_str):
         """
-        add device
+        remove device
         :param id_str: takes device ID as string.
         """
         pass
 
     @abstractmethod
-    def get(*args, id_str):
+    def get(*sc, id_str):
         """
         get device
         :param id_str: takes device ID as string.
@@ -173,7 +173,7 @@ class DeviceManagerInterface(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def devices(*args, _):
+    def devices(*sc, _):
         """
         all devices
         :param _: don't use
