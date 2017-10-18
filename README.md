@@ -77,6 +77,7 @@ Client API
 
        Client.receive()
 Blocks until a task / command is received from the platform.
+
 Returns a `Message` object containing a payload and metadata.
 
        Client.response(msg_obj, payload, timeout=10, callback=None, block=True)
@@ -88,39 +89,58 @@ Requires a `Message` object returned by `Client.receive()` and a payload contain
 
     Client.event(device, service, payload, timeout=10, callback=None, block=True)
 Requires a device ID (or `Device` object), sepl-service and a payload containing event data.
+
 Returns a response `Message`.
 
 ---
 
 **Add device**
->       Client.add(device, timeout=10, callback=None, block=True)
-> Adds a device to the connector-client via the provided device manager and if possible registers the device with the platform.
->
-> Requires a `Device` object.
-> Returns true only on successful device registration. Devices will always be added to the device manager, regardless of registration success.
+
+    Client.add(device, timeout=10, callback=None, block=True)
+Adds a device to the connector-client via the provided device manager and if possible registers the device with the platform.
+
+Requires a `Device` object.
+
+Returns true only on successful device registration. Devices will always be added to the device manager, regardless of registration success.
+
+---
 
 **Update device**
->       Client.update(device, timeout=10, callback=None, block=True)
-> Updates a existing Device on the connector-client and if possible publishes the changes to the platform.
->
-> Requires a `Device` object.
-> Returns true only on successful publish. Devices will always be updated internally (device manager), regardless of publish success.
+
+    Client.update(device, timeout=10, callback=None, block=True)
+Updates a existing Device on the connector-client and if possible publishes the changes to the platform.
+
+Requires a `Device` object.
+
+Returns true only on successful publish. Devices will always be updated internally (device manager), regardless of publish success.
+
+---
 
 **Disconnect device**
->       Client.disconnect(device, timeout=10, callback=None, block=True)
-> Deletes a device from the connector-client and if possible disconnects it from the platform. Disconnecting a device allows for devices to be retained on the platform (in a disconnected state) and thus remain available for further user actions.
->
-> Requires a device ID (or `Device` object).
-> Returns true only on successful disconnect. Devices will always be deleted internally (device manager), regardless of disconnect success.
+
+    Client.disconnect(device, timeout=10, callback=None, block=True)
+Deletes a device from the connector-client and if possible disconnects it from the platform. Disconnecting a device allows for devices to be retained on the platform (in a disconnected state) and thus remain available for further user actions.
+
+Requires a device ID (or `Device` object).
+
+Returns true only on successful disconnect. Devices will always be deleted internally (device manager), regardless of disconnect success.
+
+---
 
 **Delete device**
->       Client.delete(device, timeout=10, callback=None, block=True)
-> Deletes a device from the connector-client and if possible deletes it from the platform. If deleting a device from the platform isn't possible, the device will enter a disconnected state and further user action is required after a successful connector-client reconnect.
-> 
-> Returns true only on successful delete. Devices will always be deleted internally (device manager), regardless of delete success.
 
+    Client.delete(device, timeout=10, callback=None, block=True)
+Deletes a device from the connector-client and if possible deletes it from the platform. If deleting a device from the platform isn't possible, the device will enter a disconnected state and further user action is required after a successful connector-client reconnect.
 
-All methods block by default with a 10s timeout. If asynchronous behaviour is desired set `block=False` and if required provide a callback method to collect results. During asynchronous  
+Requires a device ID (or `Device` object).
+
+Returns true only on successful delete. Devices will always be deleted internally (device manager), regardless of delete success.
+
+---
+
+**Asynchronous calls**
+
+All methods block by default with a 10s timeout. If asynchronous behaviour is desired set `block=False` and if required provide a callback method to retrieve results. Asynchronous calls honor the timeout argument and provide a result upon timeout.
 
 Callbacks should conform to the following signature with a reserved leading positional argument:
 
