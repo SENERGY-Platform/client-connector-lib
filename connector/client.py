@@ -72,7 +72,7 @@ class Client(metaclass=Singleton):
     __ready = False
 
 
-    def __init__(self, device_manager):
+    def __init__(self, device_manager, con_callbck=None, discon_callbck=None):
         if not device_manager:
             raise RuntimeError("a device manager must be provided")
         elif isclass(device_manager):
@@ -80,6 +80,8 @@ class Client(metaclass=Singleton):
                 raise TypeError("device manager must subclass DeviceManagerInterface but got {}".format(device_manager))
         elif not _interfaceCheck(type(device_manager), DeviceManagerInterface):
             raise TypeError("device manager must subclass DeviceManagerInterface but got {}".format(type(device_manager)))
+        self.__con_callbck = con_callbck
+        self.__discon_callbck = discon_callbck
         __class__.__device_manager = device_manager
         self.__session_manager = SessionManager()
         self.__callback_thread = Thread(target=self.__callbackHandler, name="Callback")
@@ -108,6 +110,8 @@ class Client(metaclass=Singleton):
 
     def __connect(self, wait=None) -> bool:
         if wait:
+            if self.__discon_callbck:
+                self.__discon_callbck()
             time.sleep(wait)
         credentials = json.dumps({
             'user': CONNECTOR_USER,
@@ -136,6 +140,8 @@ class Client(metaclass=Singleton):
                         if self.__synchroniseDevices(initial_response.payload.get('hash')):
                             logger.info('connector-client ready')
                             __class__.__ready = True
+                            if self.__con_callbck:
+                                self.__con_callbck()
                             return True
                     else:
                         logger.error('handshake failed - {} {}'.format(initial_response.payload, initial_response.status))
