@@ -7,30 +7,13 @@ Written in Python 3.4 and relying on the `websockets` module.
 
 ----------
 
-**Configuration**
-
-connector-client configuration is done via `connector.conf`
-
-    [CONNECTOR]
-    protocol = < ws / wss >
-    host = < your-websocket-host.com / 123.128.12.45 >
-    port = < websocket port >
-    user = < sepl username >
-    password = < sepl password >
-    gid = < set by sepl platform >
-    
-    [LOGGER]
-    level = < debug / info / warning / error / critical >
-    rotating_log = < yes / no >
-    rotating_log_backup_count = < number of backup copies to keep >
-
 
 **Quick start**
 
 Start a connector-client by instantiating a `Client` object with a device manager object or class. 
-To avoid multiple instantiations the connector-client implements the singleton pattern.
-The client API uses static methods, thus allowing calls directly from the class or an object. 
-Because threading is managed internally, wrapping the connector-client in a thread is not necessary.
++ To avoid multiple instantiations the connector-client implements the singleton pattern.
++ The client API uses static methods, thus allowing calls directly from the class or an object. 
++ Threading is managed internally, wrapping the connector-client in a thread is not necessary.
 
 Note the _'initiation phase'_ and _'runtime phase'_ in the example below. 
 During initiation the user can collect available devices and store them in a device manager.
@@ -81,6 +64,23 @@ During runtime users can execute their own code and make use of the client API.
         # Delete device #
         Client.delete(new_device)
 
+
+**Configuration**
+
+connector-client configuration is done via `connector.conf`
+
+    [CONNECTOR]
+    protocol = < ws / wss >
+    host = < your-websocket-host.com / 123.128.12.45 >
+    port = < websocket port >
+    user = < sepl username >
+    password = < sepl password >
+    gid = < set by sepl platform >
+    
+    [LOGGER]
+    level = < debug / info / warning / error / critical >
+    rotating_log = < yes / no >
+    rotating_log_backup_count = < number of backup copies to keep >
 
 
 Client API
