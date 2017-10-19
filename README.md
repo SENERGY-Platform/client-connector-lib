@@ -280,73 +280,50 @@ Device manager storing and managing devices in a sqlite database. (Singleton ins
 
 **HTTP Library**
 
-     get(url)
- 
-`url` requires a fully qualified URL string.   
-
-> Optional:
+    get(url, query=None, headers=None, timeout=3, retries=0, retry_delay=0.5)
+> 
+> `url` requires a fully qualified URL string.   
 >
 > `query` takes a dictionary with query arguments.
 > 
 > `headers` takes a dictionary with header fields.
 
-Returns a `Response` object.
 
+     post(url, body, headers=None, timeout=3, retries=0, retry_delay=0.5)
 
-     post(url, body)
-
-`url` requires a fully qualified URL string. 
-
-`body` should be provided as a string.
-
-> Optional: `headers` takes a dictionary with header fields.
-
-Returns a `Response` object.
-
-
-     put(url, body)
-
-`url` requires a fully qualified URL string. 
-
-`body` should be provided as a string.
-
-> Optional: `headers` takes a dictionary with header fields.
-
-Returns a `Response` object.
-
-
-      delete(url)
-
-`url` requires a fully qualified URL string. 
- 
-> Optional: `headers` takes a dictionary with header fields.
-
-Returns a `Response` object.
-
-
-      header(url)
-
-`url` requires a fully qualified URL string.
- 
-> Optional:
+> `url` requires a fully qualified URL string. 
 >
+> `body` should be provided as a string.
+>
+> `headers` takes a dictionary with header fields.
+
+
+     put(url, body, headers=None, timeout=3, retries=0, retry_delay=0.5)
+
+> `url` requires a fully qualified URL string. 
+> 
+> `body` should be provided as a string.
+> 
+> `headers` takes a dictionary with header fields.
+
+
+      delete(url, headers=None, timeout=3, retries=0, retry_delay=0.5)
+
+> `url` requires a fully qualified URL string. 
+>  
+> `headers` takes a dictionary with header fields.
+
+
+      header(url, query=None, headers=None, timeout=3, retries=0, retry_delay=0.5)
+
+> `url` requires a fully qualified URL string.
+> 
 > `query` takes a dictionary with query arguments.
 >
 > `headers` takes a dictionary with header fields.
 
-Returns a `Response` object.
 
-
-Global optional arguments
->
-> `timeout` time to pass until a request fails in seconds. (default: 3)
->
-> `retries` number of retries for a failed request. (default: 0)
->
-> `retry_delay` delay between retries in seconds. (default: 0.5) 
-
-
-Response object structure
+**Response object returned by above methods**
 >
 > `status` response status.
 >
