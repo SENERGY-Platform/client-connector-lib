@@ -42,24 +42,19 @@ During runtime users can execute their own code and make use of the client API.
         # do something
         Client.response(task, status)
         
-        
         # Push event #
         Client.event(your_device, 'service', payload)
-        
         
         # Register new device #
         new_device = Device('id', 'type', 'name')
         Client.register(new_device)
         
-        
         # Update device #
         new_device.name = 'new name'
         Client.update(new_device)
         
-        
         # Disconnect device #
         Client.disconnect('your_device_id')
-        
         
         # Delete device #
         Client.delete(new_device)
