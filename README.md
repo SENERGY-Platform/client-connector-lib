@@ -361,3 +361,27 @@ Levels: `info`, `warning`, `error`, `critical` and `debug`
     logger.warning('warning message')
     logger.error('error message')
     logger.critical('critical message')
+
+
+---------
+
+
+**Singleton Pattern**
+
+
+If the instantiation of a class is to be restricted to only one object this module provides two classes that can be subclassed by the user.
+
+Use `Singleton` for most cases:
+
+    from modules.singleton import Singleton
+    
+    YourClass(Singleton):
+        # your code
+
+Use `SimpleSingleton` if your class inherits from abstract classes:
+
+    from modules.singleton import SimpleSingleton
+    
+    YourClass(DeviceManagerInterface, SimpleSingleton):
+        # your code
+
