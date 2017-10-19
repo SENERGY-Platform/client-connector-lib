@@ -108,10 +108,10 @@ Client API
 
 ##### Receive and respond to a task / command
 
-       Client.receive()
+    Client.receive()
 Blocks until a task / command is received from the platform. Returns a `Message` object containing a payload and metadata.
 
-       Client.response(msg_obj, payload, timeout=10, callback=None, block=True)
+    Client.response(msg_obj, payload, timeout=10, callback=None, block=True)
 Requires a `Message` object returned by `Client.receive()` and a payload containing the status / result of the executed task / command. 
 
 ---
