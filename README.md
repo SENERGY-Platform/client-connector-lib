@@ -30,7 +30,7 @@ Written in Python 3.4 and relying on the `websockets` module.
 ----------
 
 
-#####Quick start
+##### Quick start
 
 Start a connector-client by instantiating a `Client` object with a device manager object or class. 
 + To avoid multiple instantiations the connector-client implements the singleton pattern.
@@ -82,7 +82,7 @@ During runtime users can execute their own code and make use of the client API.
         Client.delete(new_device)
 
 
-#####Configuration
+##### Configuration
 
 connector-client configuration is done via `connector.conf`
 
@@ -103,7 +103,7 @@ connector-client configuration is done via `connector.conf`
 Client API
 -----------------
 
-#####Receive and respond to a task / command
+##### Receive and respond to a task / command
 
        Client.receive()
 Blocks until a task / command is received from the platform. Returns a `Message` object containing a payload and metadata.
@@ -113,7 +113,7 @@ Requires a `Message` object returned by `Client.receive()` and a payload contain
 
 ---
 
-#####Push event
+##### Push event
 
     Client.event(device, service, payload, timeout=10, callback=None, block=True)
 
@@ -123,7 +123,7 @@ Returns a response `Message`.
 
 ---
 
-#####Add device
+##### Add device
 
     Client.add(device, timeout=10, callback=None, block=True)
     
