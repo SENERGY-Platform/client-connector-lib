@@ -27,6 +27,18 @@ connector-client configuration is done via `connector.conf`
 
 **Quick start**
 
+Start a connector-client by instantiating a `Client` object with a device manager object or class. 
+To avoid multiple instantiations the connector-client implements the singleton pattern.
+The client API uses static methods, thus allowing calls directly from the class or an object. 
+Because threading is managed internally, wrapping the connector-client in a thread is not necessary.
+
+Note the _'initiation phase'_ and _'runtime phase'_ in the example below. 
+During initiation the user can collect available devices and store them in a device manager.
+After all devices have been found the user can instantiate the connector-client and provide it with the collected devices.
+The connector-client will try to connect to the SEPL platform and synchronise the provided devices.
+Regardless of the success of the internal connection and synchronisation phase, the connector-client will return control to _'runtime phase'_.
+During runtime users can execute their own code and make use of the client API.
+
     from connector.client import Client
     from connector.device import Device
     
@@ -68,6 +80,7 @@ connector-client configuration is done via `connector.conf`
         
         # Delete device #
         Client.delete(new_device)
+
 
 
 Client API
