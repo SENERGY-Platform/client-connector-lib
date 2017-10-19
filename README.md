@@ -10,7 +10,7 @@ Written in Python 3.4 and relying on the `websockets` module.
 + [Quickstart](#quick-start)
 + [Configuration](#configuration)
 + [Client API](#client-api)
-    + [Receive and respond](#client-api)
+    + [Receive and respond](#receive-and-respond-to-a-task-command)
     + [Push event](#push-event)
     + [Add device](#add-device)
     + [Update device](#update-device)
@@ -135,7 +135,7 @@ Returns true only on successful device registration. Devices will always be adde
 
 ---
 
-**Update device**
+##### Update device
 
     Client.update(device, timeout=10, callback=None, block=True)
     
@@ -147,7 +147,7 @@ Returns true only on successful publish. Devices will always be updated internal
 
 ---
 
-**Disconnect device**
+##### Disconnect device
 
     Client.disconnect(device, timeout=10, callback=None, block=True)
 
@@ -159,7 +159,7 @@ Returns true only on successful disconnect. Devices will always be deleted inter
 
 ---
 
-**Delete device**
+##### Delete device
 
     Client.delete(device, timeout=10, callback=None, block=True)
 
@@ -171,7 +171,7 @@ Returns true only on successful delete. Devices will always be deleted internall
 
 ---
 
-**Asynchronous calls**
+##### Asynchronous calls
 
 All methods block by default with a 10s timeout. If asynchronous behaviour is desired set `block=False` and if required provide a callback method to retrieve results. Asynchronous calls honor the timeout argument and provide a result upon timeout.
 
@@ -271,7 +271,7 @@ Retrieve all devices from the device manager. Return a `dict`, `list` or `tuple`
 Support Modules
 -----------------
 
-**In memory device management**
+##### In memory device management
 
 Device manager storing and managing devices via a `dict` in memory. Uses static methods, no instantiation required.
 
@@ -286,7 +286,7 @@ Device manager storing and managing devices via a `dict` in memory. Uses static 
 
 ---
 
-**Persistent device management**
+##### Persistent device management
 
 Device manager storing and managing devices in a sqlite database. (Singleton instance)
 
@@ -302,7 +302,7 @@ Device manager storing and managing devices in a sqlite database. (Singleton ins
      
 ---
 
-**HTTP Library**
+##### HTTP Library
 
     get(url, query=None, headers=None, timeout=3, retries=0, retry_delay=0.5)
  
@@ -376,7 +376,7 @@ Device manager storing and managing devices in a sqlite database. (Singleton ins
 ----------
 
 
-**Logger**
+##### Logger
 
 
 Levels: `info`, `warning`, `error`, `critical` and `debug`
@@ -396,7 +396,7 @@ Levels: `info`, `warning`, `error`, `critical` and `debug`
 ---------
 
 
-**Singleton Pattern**
+##### Singleton Pattern
 
 
 If the instantiation of a class is to be restricted to only one object this module provides two classes that can be subclassed by the user.
