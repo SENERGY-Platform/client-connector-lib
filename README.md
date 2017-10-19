@@ -34,7 +34,7 @@ Written in Python 3.4 and relying on the `websockets` module.
 
 Start a connector-client by instantiating a `Client` object with a device manager object or class.
 
-    class Client(device_manager)
+    class connector.client.Client(device_manager)
 
 + To avoid multiple instantiations the connector-client implements the singleton pattern.
 + The client API uses static methods, thus allowing calls directly from the class or an object. 
@@ -202,7 +202,7 @@ Device Class
 -----------------
 Provides a standard structure for Users to map device attributes and manage device tags.
 
-    class Device(id, type, name)
+    class connector.device.Device(id, type, name)
 
 > Requires device ID, type and name.
 
