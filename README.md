@@ -281,21 +281,17 @@ Device manager storing and managing devices in a sqlite database. (Singleton ins
 **HTTP Library**
 
     get(url, query=None, headers=None, timeout=3, retries=0, retry_delay=0.5)
-> 
-> `url` requires a fully qualified URL string.   
->
-> `query` takes a dictionary with query arguments.
-> 
-> `headers` takes a dictionary with header fields.
+ 
++ `url` requires a fully qualified URL string.   
++ `query` takes a dictionary with query arguments.
++ `headers` takes a dictionary with header fields.
 
 
      post(url, body, headers=None, timeout=3, retries=0, retry_delay=0.5)
 
-> `url` requires a fully qualified URL string. 
->
-> `body` should be provided as a string.
->
-> `headers` takes a dictionary with header fields.
++ `url` requires a fully qualified URL string. 
++ `body` should be provided as a string.
++ `headers` takes a dictionary with header fields.
 
 
      put(url, body, headers=None, timeout=3, retries=0, retry_delay=0.5)
