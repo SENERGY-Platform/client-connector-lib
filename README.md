@@ -58,7 +58,7 @@ During runtime users can execute their own code and make use of the client API.
 
 
     if __name__ == '__main__':
-        connector_client = Client(device_manager=your_device_manager)
+        connector_client = Client(your_device_manager)
         
         ## runtime phase ##
 
