@@ -1,7 +1,7 @@
 connector-client
 ================
 
-Quasi-framework for users wanting to integrate their personal IoT project / device with the SEPL platform.
+Framework for users wanting to integrate their personal IoT project / device with the SEPL platform.
 
 Written in Python 3.4 and relying on the `websockets` module.
 
