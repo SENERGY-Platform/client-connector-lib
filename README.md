@@ -171,7 +171,7 @@ Provides a standard structure for Users to map device attributes and manage devi
 
     Device(id, type, name)
 
-Requires device ID, type and name.
+> Requires device ID, type and name.
 
 Users requiring more advanced structures / behavior can subclass this class but must not forget to call `super().__init__(id, type, name)` during instantiation.
 
