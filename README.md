@@ -324,13 +324,15 @@ Device manager storing and managing devices in a sqlite database. (Singleton ins
 
 
 **Response object returned by above methods**
-+ `status` response status.
-+ `header` response header.
-+ `body` response body.
+
+`status` response status.
+
+`header` response header.
+
+`body` response body.
 
 
     from modules.http_lib import Methods as http
-    
     
     # get http://www.yourdomain.com/path?id=1&lang=en
     response = http.get(
