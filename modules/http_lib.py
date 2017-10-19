@@ -53,49 +53,37 @@ class Response:
     def body(self):
         return self._body
 
-    @body.setter
-    def body(self, arg):
-        raise TypeError('object does not support item assignment')
-
     @property
     def header(self):
         return self._header
-
-    @header.setter
-    def header(self, arg):
-        raise TypeError('object does not support item assignment')
 
     @property
     def status(self):
         return self._status
 
-    @status.setter
-    def status(self, arg):
-        raise TypeError('object does not support item assignment')
-
 
 class Methods:
     @staticmethod
-    def get(url, query={}, headers={}, **kwargs):
-        request = build_request("GET", url, query=query, headers=headers)
+    def get(url, query=None, headers=None, **kwargs):
+        request = build_request("GET", url, query=query or dict(), headers=headers or dict())
         return Response(request, **kwargs)
 
     @staticmethod
-    def post(url, body, headers={}, **kwargs):
-        request = build_request("POST", url, body, headers=headers)
+    def post(url, body, headers=None, **kwargs):
+        request = build_request("POST", url, body, headers=headers or dict())
         return Response(request, **kwargs)
 
     @staticmethod
-    def put(url, body, headers={}, **kwargs):
-        request = build_request("PUT", url, body, headers=headers)
+    def put(url, body, headers=None, **kwargs):
+        request = build_request("PUT", url, body, headers=headers or dict())
         return Response(request, **kwargs)
 
     @staticmethod
-    def delete(url, headers={}, **kwargs):
-        request = build_request("DELETE", url, headers=headers)
+    def delete(url, headers=None, **kwargs):
+        request = build_request("DELETE", url, headers=headers or dict())
         return Response(request, **kwargs)
 
     @staticmethod
-    def header(url, query={}, headers={}, **kwargs):
-        request = build_request("HEADER", url, query=query, headers=headers)
+    def header(url, query=None, headers=None, **kwargs):
+        request = build_request("HEADER", url, query=query or dict(), headers=headers or dict())
         return Response(request, **kwargs)
