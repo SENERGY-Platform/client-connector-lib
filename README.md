@@ -160,11 +160,9 @@ Users are not required to instantiate `Message` objects, they are obtained via t
 
 **Attributes**
 
-`status` HTTP status codes (set by platform)
-
-`content_type` type of the data contained in payload (set by platform)
-
-`payload` contains data
++ `status` HTTP status codes (set by platform)
++ `content_type` type of the data contained in payload (set by platform)
++ `payload` contains data
 
 
 Device Class
@@ -179,29 +177,25 @@ Users requiring more advanced structures / behavior can subclass this class but 
 
 **Attributes**
 
-`id` local device ID
-
-`type` device type
-
-`name` device name
-
-`tags` device tags
-
-`hash` SHA1 hash calculated from above attributes
++ `id` local device ID
++ `type` device type
++ `name` device name
++ `tags` device tags
++ `hash` SHA1 hash calculated from above attributes
 
 **Methods**
 
     addTag(tag_id, tag)
-    
-Create new tag.
+
+> Create new tag.
 
     changeTag(tag_id, tag)
 
-Change existing tag.
+> Change existing tag.
 
     removeTag(tag_id)
-    
-Remove existing tag.
+
+> Remove existing tag.
 
 
 Device Manger Interface
@@ -282,16 +276,20 @@ Device manager storing and managing devices in a sqlite database. (Singleton ins
 
     get(url, query=None, headers=None, timeout=3, retries=0, retry_delay=0.5)
  
-+ `url` requires a fully qualified URL string.   
-+ `query` takes a dictionary with query arguments.
-+ `headers` takes a dictionary with header fields.
+> `url` requires a fully qualified URL string.   
+>
+> `query` takes a dictionary with query arguments.
+> 
+> `headers` takes a dictionary with header fields.
 
 
      post(url, body, headers=None, timeout=3, retries=0, retry_delay=0.5)
 
-+ `url` requires a fully qualified URL string. 
-+ `body` should be provided as a string.
-+ `headers` takes a dictionary with header fields.
+> `url` requires a fully qualified URL string. 
+>
+> `body` should be provided as a string.
+>
+> `headers` takes a dictionary with header fields.
 
 
      put(url, body, headers=None, timeout=3, retries=0, retry_delay=0.5)
