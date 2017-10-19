@@ -34,7 +34,13 @@ Written in Python 3.4 and relying on the `websockets` module.
 
 Start a connector-client by instantiating a `Client` object with a device manager object or class.
 
-    class connector.client.Client(device_manager)
+    class connector.client.Client(device_manager, con_callbck=None, discon_callbck=None)
+
+> `con_callbck` provided method will be called after successful connection to SEPL platform
+>
+> `discon_callbck` provided method will be called upon disconnect event
+>
+> **Important:** Methods must never block!
 
 + To avoid multiple instantiations the connector-client implements the singleton pattern.
 + The client API uses static methods, thus allowing calls directly from the class or an object. 
