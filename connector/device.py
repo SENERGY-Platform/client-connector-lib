@@ -110,6 +110,7 @@ class Device:
         if tag_id in self.__tags:
             self.__tags[tag_id] = tag
             return True
+        logger.error("tag id ‘{}‘ does not exist".format(tag_id))
         return False
 
     def removeTag(self, tag_id):
