@@ -15,6 +15,8 @@ id_2 = '3g46h4h6h436h'
 id_3 = '46j5j67j6rt'
 id_4 = '3h6j6i8i7rer5'
 
+logger.info('------ populate device manager ------')
+
 DevicePool.add(Device(id_1, 'iot#9d5a8a4e-8f98-46fa-931a-a8598353fe04', 'Dummy Light 1'))
 device_2 = Device(id_2, 'iot#9d5a8a4e-8f98-46fa-931a-a8598353fe04', 'Dummy Light 2')
 device_2.addTag('type', 'Dummy')
