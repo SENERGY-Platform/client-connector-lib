@@ -17,11 +17,13 @@ id_4 = '3h6j6i8i7rer5'
 
 logger.info('------ populate device manager ------')
 
-DevicePool.add(Device(id_1, 'iot#9d5a8a4e-8f98-46fa-931a-a8598353fe04', 'Dummy Light 1'))
+device_manager = DevicePool
+
+device_manager.add(Device(id_1, 'iot#9d5a8a4e-8f98-46fa-931a-a8598353fe04', 'Dummy Light 1'))
 device_2 = Device(id_2, 'iot#9d5a8a4e-8f98-46fa-931a-a8598353fe04', 'Dummy Light 2')
 device_2.addTag('type', 'Dummy')
-DevicePool.add(device_2)
-DevicePool.add(Device(id_3, 'iot#9d5a8a4e-8f98-46fa-931a-a8598353fe04', 'Dummy Light 3'))
+device_manager.add(device_2)
+device_manager.add(Device(id_3, 'iot#9d5a8a4e-8f98-46fa-931a-a8598353fe04', 'Dummy Light 3'))
 
 scenario = {
     1: [1, 2, 3, 4],
@@ -34,33 +36,33 @@ scenario = {
 tests = scenario[1]
 
 if __name__ == '__main__':
-    connector_client = Client(DevicePool)
+    connector_client = Client(device_manager)
 
     if 1 in tests:
         time.sleep(0.5)
         logger.info('------ add tag to existing device ------')
-        device = DevicePool.get(id_1)
+        device = device_manager.get(id_1)
         device.addTag('type', 'Dummy')
         Client.update(device)
 
     if 2 in tests:
         time.sleep(0.5)
         logger.info('------ change tag on existing device ------')
-        device = DevicePool.get(id_1)
+        device = device_manager.get(id_1)
         device.changeTag('type', 'dummy device')
         Client.update(device)
 
     if 3 in tests:
         time.sleep(0.5)
         logger.info('------ remove tag on existing device ------')
-        device = DevicePool.get(id_2)
+        device = device_manager.get(id_2)
         device.removeTag('type')
         Client.update(device)
 
     if 4 in tests:
         time.sleep(0.5)
         logger.info('------ change name of existing device ------')
-        device = DevicePool.get(id_3)
+        device = device_manager.get(id_3)
         device.name = 'Dummy Smart Bulb'
         Client.update(device)
 
@@ -113,11 +115,11 @@ if __name__ == '__main__':
     if 13 in tests:
         time.sleep(0.5)
         logger.info('------ remove unknown tag on existing device ------')
-        device = DevicePool.get(id_1)
+        device = device_manager.get(id_1)
         device.removeTag('type')
 
     if 14 in tests:
         time.sleep(0.5)
         logger.info('------ change unknown tag on existing device ------')
-        device = DevicePool.get(id_1)
+        device = device_manager.get(id_1)
         device.changeTag('type', 'Dummy')
