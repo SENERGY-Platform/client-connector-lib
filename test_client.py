@@ -10,6 +10,9 @@ import time
 logger = root_logger.getChild(__name__)
 
 
+logger.info('###### initiation phase ######')
+
+
 id_1 = 'asdsdfsf24t'
 id_2 = '3g46h4h6h436h'
 id_3 = '46j5j67j6rt'
@@ -37,6 +40,8 @@ tests = scenario[1]
 
 if __name__ == '__main__':
     connector_client = Client(device_manager)
+
+    logger.info('###### runtime phase ######')
 
     if 1 in tests:
         time.sleep(0.5)
