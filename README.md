@@ -172,7 +172,7 @@ Returns true only on successful disconnect. Devices will always be deleted inter
 
     Client.delete(device, timeout=10, callback=None, block=True)
 
-Deletes a device from the connector-client and if possible deletes it from the platform. If deleting a device from the platform isn't possible, the device will enter a disconnected state and further user action is required after a successful connector-client reconnect.
+Deletes a device from the connector-client and if possible deletes it from the platform. If deleting a device from the platform isn't possible, the device will enter a disconnected state after a successful connector-client reconnect and further user action is required.
 
 Requires a device ID (or `Device` object).
 
