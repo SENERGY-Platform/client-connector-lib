@@ -19,8 +19,6 @@ from inspect import isclass
 
 logger = root_logger.getChild(__name__)
 
-logger.info(20 * '*' + ' Starting SEPL connector-client ' + 20 * '*')
-
 
 def _callback(event, message=None):
     """
@@ -122,6 +120,7 @@ class Client(metaclass=Singleton):
                 raise TypeError("device manager must subclass DeviceManagerInterface but got {}".format(device_manager))
         elif not _interfaceCheck(type(device_manager), DeviceManagerInterface):
             raise TypeError("device manager must subclass DeviceManagerInterface but got {}".format(type(device_manager)))
+        logger.info(20 * '*' + ' Starting SEPL connector-client ' + 20 * '*')
         self.__con_callbck = con_callbck
         self.__discon_callbck = discon_callbck
         __class__.__device_manager = device_manager
