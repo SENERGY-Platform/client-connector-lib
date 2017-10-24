@@ -36,7 +36,7 @@ Start a connector-client by instantiating a `Client` object with a device manage
 
     class connector.client.Client(device_manager, con_callbck=None, discon_callbck=None)
 
-> `device_manager` required (class or object), must implement `DeviceManagerInterface`.
+> `device_manager` required (class or object), must implement `DeviceManagerInterface`
 > 
 > `con_callbck` provided method will be called after successful connection to SEPL platform
 >
