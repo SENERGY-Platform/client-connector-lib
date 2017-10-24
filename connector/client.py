@@ -117,9 +117,9 @@ class Client(metaclass=Singleton):
             raise RuntimeError("a device manager must be provided")
         elif isclass(device_manager):
             if not _interfaceCheck(device_manager, DeviceManagerInterface):
-                raise TypeError("device manager must subclass DeviceManagerInterface but got {}".format(device_manager))
+                raise TypeError("'{}' must subclass DeviceManagerInterface".format(device_manager.__name__))
         elif not _interfaceCheck(type(device_manager), DeviceManagerInterface):
-            raise TypeError("device manager must subclass DeviceManagerInterface but got {}".format(type(device_manager)))
+            raise TypeError("'{}' must subclass DeviceManagerInterface".format(type(device_manager).__name__))
         logger.info(20 * '*' + ' Starting SEPL connector-client ' + 20 * '*')
         self.__con_callbck = con_callbck
         self.__discon_callbck = discon_callbck
