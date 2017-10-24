@@ -38,11 +38,11 @@ Start a connector-client by instantiating a `Client` object with a device manage
 
 > `device_manager` required (class or object), must implement `DeviceManagerInterface`
 > 
-> `con_callbck` provided method will be called after successful connection to SEPL platform
+> `con_callbck` called after successful connection to SEPL platform
 >
-> `discon_callbck` provided method will be called upon disconnect event
+> `discon_callbck` called upon disconnect event
 >
-> **Important:** Methods must never block!
+> **Important:** Provided callbacks must never block!
 
 + To avoid multiple instantiations the connector-client implements the singleton pattern.
 + The client API uses static methods, thus allowing calls directly from the class or an object. 
