@@ -299,7 +299,8 @@ Device manager storing and managing devices via a `dict` in memory. Uses static 
 
 ##### Persistent device management
 
-Device manager storing and managing devices in a sqlite database. (Singleton instance)
+Device manager storing and managing devices in a sqlite database (Singleton instance). 
+Only supports `Device` objects.
 
     from modules.device_pool import DeviceStore
     
