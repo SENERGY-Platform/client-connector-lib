@@ -276,7 +276,7 @@ Get a device from the device manager. Requires device ID as string and return a 
     def devices():
         # your code
 
-Retrieve all devices from the device manager. Return a `dict`, `list` or `tuple` object.
+Retrieve all devices from the device manager. Return a `dict` _(id:device)_, `list` or `tuple` containing `Device` (or subclass of `Device`) objects.
 
 
 Support Modules
