@@ -38,9 +38,9 @@ Start a connector-client by instantiating a `Client` object with a device manage
 
 > `device_manager` required (class or object), must implement `DeviceManagerInterface`
 > 
-> `con_callbck` called after successful connection to SEPL platform
+> `con_callbck` callback after successful connection to SEPL platform
 >
-> `discon_callbck` called upon disconnect event
+> `discon_callbck` callback on disconnect event
 >
 > **Important:** Provided callbacks must never block!
 
