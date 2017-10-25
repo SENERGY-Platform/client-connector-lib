@@ -7,16 +7,38 @@ import os, inspect, configparser
 
 config = configparser.ConfigParser()
 
+conf_file_path = '{}/connector.conf'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
+
+if not os.path.isfile(conf_file_path):
+    print('No config file found')
+    config['CONNECTOR'] = {
+        'protocol': 'ws',
+        'host': '',
+        'port': '',
+        'user': '',
+        'password': '',
+        'gid': ''
+    }
+    config['LOGGER'] = {
+        'level': 'debug',
+        'rotating_log': 'no',
+        'rotating_log_backup_count': 14
+    }
+    with open(conf_file_path, 'w') as conf_file:
+        config.write(conf_file)
+    exit('Created blank config file')
+
+
 try:
-    config.read('{}/connector.conf'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))))
-except Exception:
-    exit('No config file found')
+    config.read(conf_file_path)
+except Exception as ex:
+    exit(ex)
 
 
 def writeConf(section, option, value):
     config.set(section=section, option=option, value=value)
     try:
-        with open('{}/connector.conf'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))), 'w') as conf_file:
+        with open(conf_file_path, 'w') as conf_file:
             config.write(conf_file)
     except Exception as ex:
         print(ex)
