@@ -95,7 +95,7 @@ During runtime users can execute their own code and make use of the client API.
 
 ##### Configuration
 
-connector-client configuration is done via `connector.conf`
+connector-client configuration is done via `connector.conf`, if no conf file is found a new file will be generated.
 
     [CONNECTOR]
     protocol = < ws / wss >
