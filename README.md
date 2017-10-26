@@ -440,7 +440,7 @@ The `standard-connector` protocol consists of:
 + `metadata`
 + `data`
 
-A _command / task_ payload received from the SEPL platform will have the following structure:
+A _'command / task'_ payload received from the SEPL platform will have the following structure:
 
     [
         {
@@ -452,3 +452,10 @@ A _command / task_ payload received from the SEPL platform will have the followi
             'value': < ... >
         }
     ]
+
+Users can currently access the above data via the key `protocol_parts`:
+
+    msg_obj = Client.receive()
+    command = msg_obj.payload.get('protocol_parts')
+    
+For further information see test `9` in `test_client.py`.
