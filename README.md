@@ -26,6 +26,7 @@ Written in Python 3.4 and relying on the `websockets` module.
     + [HTTP Library](#http-library)
     + [Logger](#logger)
     + [Singleton Pattern](#singleton-pattern)
++ [Platform Specific Info](#platform-specific-info)
 
 ----------
 
@@ -120,9 +121,7 @@ Client API
 Blocks until a task / command is received from the platform. Returns a `Message` object containing a payload and metadata.
 
     Client.response(msg_obj, payload, timeout=10, callback=None, block=True)
-Requires a `Message` object returned by `Client.receive()` and a payload containing the status / result of the executed task / command. 
-
-Both methods use the `standard-connector` protocol.
+Requires a `Message` object returned by `Client.receive()` and a payload containing the status / result of the executed task / command.
 
 ---
 
@@ -133,8 +132,6 @@ Both methods use the `standard-connector` protocol.
 Requires a device ID (or `Device` object), sepl-service and a payload containing event data.
 
 Returns a response `Message`.
-
-Uses `standard-connector` protocol.
 
 ---
 
@@ -431,3 +428,27 @@ Use `SimpleSingleton` if your class inherits from abstract classes:
     YourClass(DeviceManagerInterface, SimpleSingleton):
         # your code
 
+
+Platform Specific Info
+-----------------
+
+The connector-client uses the `standard-connector` protocol.
+Please be sure to select the right protocol when creating new device types.
+
+The `standard-connector` protocol consists of:
+
++ `metadata`
++ `data`
+
+A _command / task_ payload received from the SEPL platform will have the following structure:
+
+    [
+        {
+            'name': 'metadata',
+            'value': < ... >
+        },
+        {
+            'name': 'data',
+            'value': < ... >
+        }
+    ]
