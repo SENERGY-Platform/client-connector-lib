@@ -122,6 +122,8 @@ Blocks until a task / command is received from the platform. Returns a `Message`
     Client.response(msg_obj, payload, timeout=10, callback=None, block=True)
 Requires a `Message` object returned by `Client.receive()` and a payload containing the status / result of the executed task / command. 
 
+Both methods use the `standard-connector` protocol.
+
 ---
 
 ##### Push event
@@ -131,6 +133,8 @@ Requires a `Message` object returned by `Client.receive()` and a payload contain
 Requires a device ID (or `Device` object), sepl-service and a payload containing event data.
 
 Returns a response `Message`.
+
+Uses `standard-connector` protocol.
 
 ---
 
