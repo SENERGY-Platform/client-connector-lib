@@ -8,7 +8,7 @@ try:
     from connector.configuration import CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_HOST, CONNECTOR_PORT, CONNECTOR_GID, writeConf
     from connector.session import SessionManager
     from connector.websocket import Websocket
-    from connector.message import Message, handlers, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
+    from connector.message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
     from connector.device import DeviceManagerInterface, Device, _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
@@ -18,6 +18,19 @@ from threading import Thread, Event
 from inspect import isclass
 
 logger = root_logger.getChild(__name__)
+
+
+# platform handlers map
+handlers = {
+    'put_handler': 'put',
+    'disconnect_handler': 'disconnect',
+    'delete_handler': 'delete',
+    'event_handler': 'event',
+    'response_handler': 'response',
+    'command_handler': 'command',
+    'clear_handler': 'clear',
+    'commit_handler': 'commit'
+}
 
 
 def _callback(event, message=None):
@@ -357,12 +370,13 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def event(device, service, payload, **kwargs) -> Message:
+    def event(device, service, data, metadata=None, **kwargs) -> Message:
         """
         User method for pushing events to the SEPL platform.
         :param device: Device ID or a Device (or subclass of Device) object.
         :param service: SEPL service.
-        :param payload: Event payload as string.
+        :param data: Event data as string.
+        :param metadata: Event metadata.
         :param kwargs: timeout=10, callback=None, block=True.
         :return: Message object.
         """
@@ -380,8 +394,12 @@ class Client(metaclass=Singleton):
             'service_uri': service,
             'value': [
                 {
-                    'name': 'body',
-                    'value': payload
+                    'name': 'metadata',
+                    'value': metadata
+                },
+                {
+                    'name': 'data',
+                    'value': data
                 }
             ]
         }
@@ -391,11 +409,12 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def response(msg_obj, payload, **kwargs):
+    def response(msg_obj, data, metadata=None, **kwargs):
         """
         User method for responding to a task / command from the SEPL platform.
         :param msg_obj: Original Message object from a task / command.
-        :param payload: Data concerning the completion of a task / command.
+        :param data: Data concerning the completion of a task / command.
+        :param metadata: Response metadata.
         :param kwargs: timeout=10, callback=None, block=True.
         """
         if type(msg_obj) is not Message:
@@ -403,8 +422,12 @@ class Client(metaclass=Singleton):
         setMangledAttr(msg_obj, 'handler', handlers['response_handler'])
         msg_obj.payload['protocol_parts'] = [
             {
-                'name': 'body',
-                'value': payload
+                'name': 'metadata',
+                'value': metadata
+            },
+            {
+                'name': 'data',
+                'value': data
             }
         ]
         if __class__.__ready:
