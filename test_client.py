@@ -5,7 +5,7 @@ try:
     from modules.device_pool import DevicePool
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
-import time
+import time, json
 
 logger = root_logger.getChild(__name__)
 
@@ -91,15 +91,22 @@ if __name__ == '__main__':
         time.sleep(0.5)
         logger.info('------ push 5 events ------')
         for event in range(5):
-            response = Client.event(id_4, 'dummy-event', 'dummy data {}'.format(event), 'dummy metadata {}'.format(event))
+            data = json.dumps(
+                {
+                    'str_field': 'dummy event',
+                    'int_field': event
+                }
+            )
+            response = Client.event(id_4, 'dummy-event', data, 'dummy metadata {}'.format(event))
             logger.info("event response '{}'".format(response.payload))
 
     if 9 in tests:
         time.sleep(0.5)
         logger.info('------ receive command and respond ------')
         command = Client.receive()
-        logger.info('command: '.format(command.payload))
+        logger.info('received command: {}'.format(command.payload.get('protocol_parts')))
         Client.response(command, '200', 'status')
+        logger.info('sent response')
 
     if 10 in tests:
         time.sleep(0.5)
