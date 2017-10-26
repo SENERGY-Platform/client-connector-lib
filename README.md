@@ -120,16 +120,16 @@ Client API
     Client.receive()
 Blocks until a task / command is received from the platform. Returns a `Message` object containing a payload and metadata.
 
-    Client.response(msg_obj, payload, timeout=10, callback=None, block=True)
-Requires a `Message` object returned by `Client.receive()` and a payload containing the status / result of the executed task / command.
+    Client.response(msg_obj, data, metadata=None, timeout=10, callback=None, block=True)
+Requires a `Message` object returned by `Client.receive()` and data concerning the execution of the task / command.
 
 ---
 
 ##### Push event
 
-    Client.event(device, service, payload, timeout=10, callback=None, block=True)
+    Client.event(device, service, data, metadata=None, timeout=10, callback=None, block=True)
 
-Requires a device ID (or `Device` object), sepl-service and a payload containing event data.
+Requires a device ID (or `Device` object), sepl-service and event data.
 
 Returns a response `Message`.
 
