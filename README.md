@@ -458,4 +458,4 @@ Users can currently access the above data via the key `protocol_parts`:
     msg_obj = Client.receive()
     command = msg_obj.payload.get('protocol_parts')
     
-For further information see test `9` in `test_client.py`.
+For further information see test `9` in `test_client.py` and the [connector](https://gitlab.wifa.uni-leipzig.de/fg-seits/connector) project.
