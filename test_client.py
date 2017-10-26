@@ -36,7 +36,7 @@ scenario = {
     5: [10, 11, 12, 13, 14]
 }
 
-tests = scenario[1]
+tests = scenario[4]
 
 if __name__ == '__main__':
     connector_client = Client(device_manager)
@@ -104,8 +104,11 @@ if __name__ == '__main__':
         time.sleep(0.5)
         logger.info('------ receive command and respond ------')
         msg_obj = Client.receive()
+        device_id = msg_obj.payload.get('device_url')
+        service = msg_obj.payload.get('service_url')
         command = msg_obj.payload.get('protocol_parts')
-        logger.info('received command: {}'.format(command))
+        logger.info("received command for device '{}' on service '{}':".format(device_id, service))
+        logger.info(command)
         Client.response(msg_obj, '200', 'status')
         logger.info('sent response')
 
