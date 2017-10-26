@@ -220,7 +220,7 @@ Users requiring more advanced structures / behavior can subclass this class but 
 **Attributes**
 
 + `id` local device ID
-+ `type` device type (must be defined beforehand via platform)
++ `type` device type _(must be defined beforehand via platform)_
 + `name` device name
 + `tags` device tags
 + `hash` SHA1 hash calculated from above attributes
