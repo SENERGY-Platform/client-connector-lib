@@ -103,9 +103,10 @@ if __name__ == '__main__':
     if 9 in tests:
         time.sleep(0.5)
         logger.info('------ receive command and respond ------')
-        command = Client.receive()
-        logger.info('received command: {}'.format(command.payload.get('protocol_parts')))
-        Client.response(command, '200', 'status')
+        msg_obj = Client.receive()
+        command = msg_obj.payload.get('protocol_parts')
+        logger.info('received command: {}'.format(command))
+        Client.response(msg_obj, '200', 'status')
         logger.info('sent response')
 
     if 10 in tests:
