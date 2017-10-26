@@ -22,11 +22,11 @@ logger.info('------ populate device manager ------')
 
 device_manager = DevicePool
 
-device_manager.add(Device(id_1, 'iot#9d5a8a4e-8f98-46fa-931a-a8598353fe04', 'Dummy Light 1'))
-device_2 = Device(id_2, 'iot#9d5a8a4e-8f98-46fa-931a-a8598353fe04', 'Dummy Light 2')
+device_manager.add(Device(id_1, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 1'))
+device_2 = Device(id_2, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 2')
 device_2.addTag('type', 'Dummy')
 device_manager.add(device_2)
-device_manager.add(Device(id_3, 'iot#9d5a8a4e-8f98-46fa-931a-a8598353fe04', 'Dummy Light 3'))
+device_manager.add(Device(id_3, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 3'))
 
 scenario = {
     1: [1, 2, 3, 4],
@@ -84,14 +84,14 @@ if __name__ == '__main__':
     if 7 in tests:
         time.sleep(0.5)
         logger.info('------ add new device ------')
-        new_device = Device(id_4, 'iot#40c41048-3910-468f-ae74-7425dde90963', 'Dummy Smart Meter')
+        new_device = Device(id_4, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 4')
         Client.add(new_device)
 
     if 8 in tests:
         time.sleep(0.5)
         logger.info('------ push 5 events ------')
         for event in range(5):
-            response = Client.event(id_4, 'sepl_get', 'dummy data {}'.format(event))
+            response = Client.event(id_4, 'dummy-event', 'dummy data {}'.format(event), 'dummy metadata {}'.format(event))
             logger.info("event response '{}'".format(response.payload))
 
     if 9 in tests:
@@ -99,12 +99,12 @@ if __name__ == '__main__':
         logger.info('------ receive command and respond ------')
         command = Client.receive()
         logger.info('command: '.format(command.payload))
-        Client.response(command, '200')
+        Client.response(command, '200', 'status')
 
     if 10 in tests:
         time.sleep(0.5)
         logger.info('------ add existing device ------')
-        new_device = Device(id_1, 'iot#9d5a8a4e-8f98-46fa-931a-a8598353fe04', 'Dummy Light 1')
+        new_device = Device(id_1, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 1')
         Client.add(new_device)
 
     if 11 in tests:
