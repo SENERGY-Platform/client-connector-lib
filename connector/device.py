@@ -141,13 +141,13 @@ class Device:
         :param kwargs: User attributes provided from subclass.
         :return: String.
         """
-        attributes = {
+        attributes = OrderedDict({
             'id': self.id,
             'type': self.type,
             'name': self.name,
             'tags': self.tags,
             'hash': self.hash
-        }
+        })
         if kwargs:
             for key, arg in kwargs.items():
                 attributes[key] = arg
