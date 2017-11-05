@@ -141,17 +141,17 @@ class Device:
         :param kwargs: User attributes provided from subclass.
         :return: String.
         """
-        attributes = OrderedDict([
+        attributes = [
             ('id', self.id),
             ('type', self.type),
             ('name', self.name),
             ('tags', self.tags),
             ('hash', self.hash)
-        ])
+        ]
         if kwargs:
             for arg, value in kwargs.items():
-                attributes[arg] = value
-        return "{}({})".format(type(self).__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes.items()]))
+                attributes.append((arg, value))
+        return "{}({})".format(type(self).__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
 
 
 class DeviceManagerInterface(metaclass=ABCMeta):

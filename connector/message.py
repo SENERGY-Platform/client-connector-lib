@@ -7,7 +7,6 @@ except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import json
 from uuid import uuid4 as uuid
-from collections import OrderedDict
 
 
 logger = root_logger.getChild(__name__)
@@ -52,12 +51,12 @@ class Message:
         Provide a string representation.
         :return: String.
         """
-        attributes = OrderedDict([
+        attributes = [
             ('status', self.status),
             ('content_type', self.content_type),
             ('payload', self.payload),
-        ])
-        return "{}({})".format(__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes.items()]))
+        ]
+        return "{}({})".format(__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
 
 
 def getMangledAttr(obj, attr):
