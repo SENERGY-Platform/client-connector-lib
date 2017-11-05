@@ -151,7 +151,8 @@ class Device:
         if kwargs:
             for key, arg in kwargs.items():
                 attributes[key] = arg
-        return "{}()".format(__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes.items()]))
+        return "{}({})".format(type(self).__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes.items()]))
+
 
 class DeviceManagerInterface(metaclass=ABCMeta):
     """
