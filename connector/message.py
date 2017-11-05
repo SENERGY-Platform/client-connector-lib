@@ -7,6 +7,7 @@ except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import json
 from uuid import uuid4 as uuid
+from collections import OrderedDict
 
 
 logger = root_logger.getChild(__name__)
@@ -45,6 +46,18 @@ class Message:
         if type(arg) not in (int, str, dict, list, bool, float, type(None)):
             raise TypeError("unsupported type '{}' provided for payload".format(type(arg)))
         self.__payload = arg
+
+    def __repr__(self):
+        """
+        Provide a string representation.
+        :return: String.
+        """
+        attributes = OrderedDict([
+            ('status', self.status),
+            ('content_type', self.content_type),
+            ('payload', self.payload),
+        ])
+        return "{}({})".format(__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes.items()]))
 
 
 def getMangledAttr(obj, attr):
