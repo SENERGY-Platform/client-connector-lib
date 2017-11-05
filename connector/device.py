@@ -135,6 +135,23 @@ class Device:
         if type(arg) is not str:
             raise TypeError("'{}' must be a string but is a '{}'".format(arg, type(arg)))
 
+    def __repr__(self, **kwargs):
+        """
+        Provide a string representation.
+        :param kwargs: User attributes provided from subclass.
+        :return: String.
+        """
+        attributes = {
+            'id': self.id,
+            'type': self.type,
+            'name': self.name,
+            'tags': self.tags,
+            'hash': self.hash
+        }
+        if kwargs:
+            for key, arg in kwargs.items():
+                attributes[key] = arg
+        return "{}()".format(__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes.items()]))
 
 class DeviceManagerInterface(metaclass=ABCMeta):
     """
