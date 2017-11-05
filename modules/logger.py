@@ -18,15 +18,8 @@ logging_levels = {
 }
 
 
-def debug_switch():
-    if LOGGING_LEVEL == 'debug':
-        return 'name'
-    else:
-        return 'module'
-
-
 config_args = {
-        'format': '%(asctime)s - %(levelname)s: [%({})s] %(message)s'.format(debug_switch()),
+        'format': '%(asctime)s - %(levelname)s: [%(name)s] %(message)s',
         'datefmt': '%m.%d.%Y %I:%M:%S %p',
         'level': logging_levels[LOGGING_LEVEL],
 }
