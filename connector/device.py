@@ -149,8 +149,8 @@ class Device:
             ('hash', self.hash)
         ])
         if kwargs:
-            for key, arg in kwargs.items():
-                attributes[key] = arg
+            for arg, value in kwargs.items():
+                attributes[arg] = value
         return "{}({})".format(type(self).__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes.items()]))
 
 
