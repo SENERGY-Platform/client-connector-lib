@@ -36,7 +36,7 @@ scenario = {
     5: [10, 11, 12, 13, 14]
 }
 
-tests = scenario[4]
+tests = scenario[1]
 
 if __name__ == '__main__':
     connector_client = Client(device_manager)
