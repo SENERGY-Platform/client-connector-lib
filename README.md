@@ -317,47 +317,57 @@ Only supports `Device` objects.
 
 ##### HTTP Library
 
-    get(url, query=None, headers=None, timeout=3, retries=0, retry_delay=0.5)
+    get(url, query=None, headers=None, auth=None, timeout=3, retries=0, retry_delay=0.5)
  
 > `url` requires a fully qualified URL string.   
 >
 > `query` takes a dictionary with query arguments.
 > 
 > `headers` takes a dictionary with header fields.
+>
+> `auth` takes (username, password) tuple
 
 
-     post(url, body, headers=None, timeout=3, retries=0, retry_delay=0.5)
+     post(url, body, headers=None, auth=None, timeout=3, retries=0, retry_delay=0.5)
 
 > `url` requires a fully qualified URL string. 
 >
 > `body` should be provided as a string.
 >
 > `headers` takes a dictionary with header fields.
+>
+> `auth` takes (username, password) tuple
 
 
-     put(url, body, headers=None, timeout=3, retries=0, retry_delay=0.5)
+     put(url, body, headers=None, auth=None, timeout=3, retries=0, retry_delay=0.5)
 
 > `url` requires a fully qualified URL string. 
 > 
 > `body` should be provided as a string.
 > 
 > `headers` takes a dictionary with header fields.
+>
+> `auth` takes (username, password) tuple
 
 
-      delete(url, headers=None, timeout=3, retries=0, retry_delay=0.5)
+      delete(url, headers=None, auth=None, timeout=3, retries=0, retry_delay=0.5)
 
 > `url` requires a fully qualified URL string. 
 >  
 > `headers` takes a dictionary with header fields.
+>
+> `auth` takes (username, password) tuple
 
 
-      header(url, query=None, headers=None, timeout=3, retries=0, retry_delay=0.5)
+      header(url, query=None, headers=None, auth=None, timeout=3, retries=0, retry_delay=0.5)
 
 > `url` requires a fully qualified URL string.
 > 
 > `query` takes a dictionary with query arguments.
 >
 > `headers` takes a dictionary with header fields.
+>
+> `auth` takes (username, password) tuple
 
 
 **Response object returned by above methods**
