@@ -286,7 +286,8 @@ class Client(metaclass=Singleton):
             event.wait()
             return event.message
         else:
-            __class__.__out_queue.put((msg_str, functools.partial(SessionManager.new, msg_obj, token, timeout, callback)))
+            SessionManager.new(msg_obj, token, timeout, callback)
+            __class__.__out_queue.put(msg_str)
 
 
     @staticmethod
