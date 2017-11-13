@@ -438,7 +438,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def add(device, **kwargs) -> bool:
+    def add(device) -> bool:
         """
         User method for adding devices.
         :param device: Device (or subclass of Device) object.
@@ -450,7 +450,7 @@ class Client(metaclass=Singleton):
         __class__.__device_manager.add(device)
         if __class__.__ready:
             local_hash = _hashDevices(__class__.__device_manager.devices())
-            if __class__.__put(device, **kwargs):
+            if __class__.__put(device):
                 if __class__.__commit(local_hash):
                     logger.info("registered device '{}'".format(device.name))
                     return True
@@ -459,7 +459,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def update(device, **kwargs) -> bool:
+    def update(device) -> bool:
         """
         User method for updating devices.
         :param device: Device (or subclass of Device) object.
@@ -471,7 +471,7 @@ class Client(metaclass=Singleton):
         __class__.__device_manager.update(device)
         if __class__.__ready:
             local_hash = _hashDevices(__class__.__device_manager.devices())
-            if __class__.__put(device, **kwargs):
+            if __class__.__put(device):
                 if __class__.__commit(local_hash):
                     logger.info("updated device '{}'".format(device.name))
                     return True
@@ -480,7 +480,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def disconnect(device, **kwargs) -> bool:
+    def disconnect(device) -> bool:
         """
         User method for disconnecting devices.
         :param device: Device ID or a Device (or subclass of Device) object.
@@ -494,7 +494,7 @@ class Client(metaclass=Singleton):
         __class__.__device_manager.remove(device)
         if __class__.__ready:
             local_hash = _hashDevices(__class__.__device_manager.devices())
-            if __class__.__disconnect(device, **kwargs):
+            if __class__.__disconnect(device):
                 if __class__.__commit(local_hash):
                     logger.info("disconnected device '{}'".format(device))
                     return True
@@ -503,7 +503,7 @@ class Client(metaclass=Singleton):
 
 
     @staticmethod
-    def delete(device, **kwargs) -> bool:
+    def delete(device) -> bool:
         """
         User method for deleting devices.
         :param device: Device ID or a Device (or subclass of Device) object.
@@ -518,7 +518,7 @@ class Client(metaclass=Singleton):
         __class__.__device_manager.remove(device)
         if __class__.__ready:
             local_hash = _hashDevices(__class__.__device_manager.devices())
-            if __class__.__delete(device, **kwargs):
+            if __class__.__delete(device):
                 if __class__.__commit(local_hash):
                     logger.info("deleted device '{}'".format(device))
                     return True
