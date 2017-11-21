@@ -158,7 +158,7 @@ class SessionManager(Thread, metaclass=Singleton):
         """
         try:
             __class__._event_loop = asyncio.get_event_loop()
-        except AssertionError:
+        except RuntimeError:
             logger.debug("no event loop found")
             __class__._event_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(__class__._event_loop)
