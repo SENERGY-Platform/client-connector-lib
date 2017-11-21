@@ -22,21 +22,22 @@ logger.info('------ populate device manager ------')
 
 device_manager = DevicePool
 
-device_manager.add(Device(id_1, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 1'))
-device_2 = Device(id_2, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 2')
+device_manager.add(Device(id_1, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 1'))
+device_2 = Device(id_2, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 2')
 device_2.addTag('type', 'Dummy')
 device_manager.add(device_2)
-device_manager.add(Device(id_3, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 3'))
+device_manager.add(Device(id_3, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 3'))
 
 scenario = {
     1: [1, 2, 3, 4],
     2: [5, 6],
     3: [7, 8],
     4: [9],
-    5: [10, 11, 12, 13, 14]
+    5: [10, 11, 12, 13, 14],
+    6: []
 }
 
-tests = scenario[1]
+tests = scenario[6]
 
 if __name__ == '__main__':
     connector_client = Client(device_manager)
