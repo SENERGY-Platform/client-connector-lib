@@ -56,7 +56,7 @@ class Request:
     def execute(self, timeout):
         #return self.__opener.open(self.__request, timeout=timeout)
         if not self.__verify:
-            unverified_context = ssl._SSLContext()
+            unverified_context = ssl.SSLContext()
             unverified_context.verify_mode = ssl.CERT_NONE
             return http.urlopen(self.__request, timeout=timeout, context=unverified_context)
         return http.urlopen(self.__request, timeout=timeout)
