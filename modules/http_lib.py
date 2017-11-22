@@ -5,7 +5,7 @@ try:
     from modules.logger import root_logger
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
-import time, base64
+import time, base64, ssl
 from socket import timeout as Timeout
 from urllib import parse
 from urllib import request as http
@@ -15,7 +15,7 @@ logger = root_logger.getChild(__name__)
 
 
 class Request:
-    def __init__(self, method, url, body=None, query=None, headers=None, auth=None):
+    def __init__(self, method, url, body=None, query=None, headers=None, auth=None, verify=True):
         parsed_url = list(parse.urlparse(url))
         #self.__handlers = list()
         if body:
@@ -47,6 +47,7 @@ class Request:
                 headers = {'Authorization': 'Basic {}'.format(base64credentials)}
             else:
                 headers['Authorization'] = 'Basic {}'.format(base64credentials)
+        self.__verify = verify
         self.__method = method
         self.__url = parse.urlunparse(tuple(parsed_url))
         #self.__opener = http.build_opener(*self.__handlers)
@@ -54,6 +55,10 @@ class Request:
 
     def execute(self, timeout):
         #return self.__opener.open(self.__request, timeout=timeout)
+        if not self.__verify:
+            unverified_context = ssl._SSLContext()
+            unverified_context.verify_mode = ssl.CERT_NONE
+            return http.urlopen(self.__request, timeout=timeout, context=unverified_context)
         return http.urlopen(self.__request, timeout=timeout)
 
     @property
