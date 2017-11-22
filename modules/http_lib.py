@@ -15,7 +15,7 @@ logger = root_logger.getChild(__name__)
 
 
 class Request:
-    def __init__(self, method, url, body=None, query=None, headers=None, auth=None, verify=True):
+    def __init__(self, method, url, headers, auth, verify, body=None, query=None):
         parsed_url = list(parse.urlparse(url))
         #self.__handlers = list()
         if body:
@@ -109,26 +109,26 @@ class Response:
 
 class Methods:
     @staticmethod
-    def get(url, query=None, headers=None, auth=None, **kwargs):
-        request = Request("GET", url, query=query, headers=headers, auth=auth)
+    def get(url, query=None, headers=None, auth=None, verify=True, **kwargs):
+        request = Request("GET", url, headers, auth, verify, query=query)
         return Response(request, **kwargs)
 
     @staticmethod
-    def post(url, body, headers=None, auth=None, **kwargs):
-        request = Request("POST", url, body, headers=headers, auth=auth)
+    def post(url, body, headers=None, auth=None, verify=True, **kwargs):
+        request = Request("POST", url, headers, auth, verify, body=body)
         return Response(request, **kwargs)
 
     @staticmethod
-    def put(url, body, headers=None, auth=None, **kwargs):
-        request = Request("PUT", url, body, headers=headers, auth=auth)
+    def put(url, body, headers=None, auth=None, verify=True, **kwargs):
+        request = Request("PUT", url, headers, auth, verify, body=body)
         return Response(request, **kwargs)
 
     @staticmethod
-    def delete(url, headers=None, auth=None, **kwargs):
-        request = Request("DELETE", url, headers=headers, auth=auth)
+    def delete(url, headers=None, auth=None, verify=True, **kwargs):
+        request = Request("DELETE", url, headers, auth, verify)
         return Response(request, **kwargs)
 
     @staticmethod
-    def header(url, query=None, headers=None, auth=None, **kwargs):
-        request = Request("HEADER", url, query=query, headers=headers, auth=auth)
+    def header(url, query=None, headers=None, auth=None, verify=True, **kwargs):
+        request = Request("HEADER", url, headers, auth, verify, query=query)
         return Response(request, **kwargs)
