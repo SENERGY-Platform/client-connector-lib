@@ -84,7 +84,8 @@ class Websocket(Thread):
             )
             logger.debug("connected to '{}' on '{}'".format(self._host, self._port))
             callback(True)
-        except (OSError, websockets.InvalidHandshake, websockets.InvalidURI) as ex:
+        #except (OSError, websockets.InvalidHandshake, websockets.InvalidURI) as ex:
+        except Exception as ex:
             logger.debug("could not connect to '{}' on '{}'".format(self._host, self._port))
             logger.debug(ex)
             callback(False)
@@ -115,7 +116,8 @@ class Websocket(Thread):
         try:
             yield from self._websocket.send(payload)
             callback(True)
-        except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError, TypeError) as ex:
+        #except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError, TypeError) as ex:
+        except Exception as ex:
             logger.warning("could not send data")
             logger.error(ex)
             callback(False)
@@ -130,7 +132,8 @@ class Websocket(Thread):
         try:
             payload = yield from self._websocket.recv()
             callback(payload)
-        except (websockets.ConnectionClosed, websockets.WebSocketProtocolError) as ex:
+        #except (websockets.ConnectionClosed, websockets.WebSocketProtocolError, websockets) as ex:
+        except Exception as ex:
             logger.error(ex)
             callback(False)
 
@@ -147,7 +150,8 @@ class Websocket(Thread):
             try:
                 payload = yield from self._websocket.recv()
                 in_queue.put(payload)
-            except (websockets.ConnectionClosed, websockets.WebSocketProtocolError) as ex:
+            #except (websockets.ConnectionClosed, websockets.WebSocketProtocolError) as ex:
+            except Exception as ex:
                 logger.error(ex)
                 break
         if not self._stop_async:
@@ -168,7 +172,8 @@ class Websocket(Thread):
                     )
                     try:
                         yield from self._websocket.send(payload)
-                    except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError, TypeError) as ex:
+                    #except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError, TypeError) as ex:
+                    except Exception as ex:
                         logger.warning("could not send data")
                         logger.error(ex)
                         break
