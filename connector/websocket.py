@@ -96,7 +96,6 @@ class Websocket(Thread):
 
     @asyncio.coroutine
     def _connect(self, callback):
-        #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         try:
             self._websocket = yield from websockets.connect(
                 'ws://{}:{}'.format(self._host, self._port),
@@ -106,7 +105,6 @@ class Websocket(Thread):
             if self._client_ping:
                 self._functionQueuePut(self._pingLoop)
             callback(True)
-        #except (OSError, websockets.InvalidHandshake, websockets.InvalidURI) as ex:
         except Exception as ex:
             logger.debug("could not connect to '{}' on '{}'".format(self._host, self._port))
             logger.debug(ex)
@@ -119,7 +117,6 @@ class Websocket(Thread):
 
     @asyncio.coroutine
     def _shutdown(self, callback=None, lost_conn=None):
-        #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         logger.debug("stopping async tasks")
         self._stop_async = True
         if self._websocket and not lost_conn:
@@ -137,11 +134,9 @@ class Websocket(Thread):
 
     @asyncio.coroutine
     def _send(self, callback, payload):
-        #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         try:
             yield from self._websocket.send(payload)
             callback(True)
-        #except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError, TypeError) as ex:
         except Exception as ex:
             logger.warning("could not send data - {}".format(ex))
             callback(False)
@@ -152,11 +147,9 @@ class Websocket(Thread):
 
     @asyncio.coroutine
     def _receive(self, callback):
-        #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         try:
             payload = yield from self._websocket.recv()
             callback(payload)
-        #except (websockets.ConnectionClosed, websockets.WebSocketProtocolError, websockets) as ex:
         except Exception as ex:
             if not self._stop_async:
                 logger.warning("could not receive data - {}".format(ex))
@@ -168,14 +161,12 @@ class Websocket(Thread):
 
     @asyncio.coroutine
     def _ioRecv(self, callback, in_queue):
-        #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         logger.debug("io receive task started")
         callback()
         while not self._stop_async:
             try:
                 payload = yield from self._websocket.recv()
                 in_queue.put(payload)
-            #except (websockets.ConnectionClosed, websockets.WebSocketProtocolError) as ex:
             except Exception as ex:
                 if not self._stop_async:
                     logger.warning("could not receive data - {}".format(ex))
@@ -186,7 +177,6 @@ class Websocket(Thread):
 
     @asyncio.coroutine
     def _ioSend(self, callback, out_queue):
-        #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         logger.debug("io send task started")
         callback()
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
@@ -198,7 +188,6 @@ class Websocket(Thread):
                     )
                     try:
                         yield from self._websocket.send(payload)
-                    #except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError, TypeError) as ex:
                     except Exception as ex:
                         logger.warning("could not send data - {}".format(ex))
                         break
