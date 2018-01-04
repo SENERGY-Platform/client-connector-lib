@@ -11,7 +11,7 @@ import concurrent.futures
 import functools
 from queue import Queue, Empty
 from threading import Thread, Event
-from time import sleep
+import time
 
 logger = root_logger.getChild(__name__)
 
@@ -75,6 +75,28 @@ class Websocket(Thread):
 
 
     @asyncio.coroutine
+    def _monitorConnection(self):
+        while not self._stop_async:
+            yield from asyncio.sleep(5)
+            try:
+                pong = yield from self._websocket.ping()
+                try:
+                    yield from asyncio.wait_for(pong, timeout=5)
+                except asyncio.TimeoutError:
+                    logger.error("ping timeout")
+                    break
+            except Exception as ex:
+                logger.warning("could not send ping")
+                logger.error(ex)
+                break
+        if not self._stop_async:
+            yield from self._shutdown(lost_conn=True)
+
+    def monitorConnection(self):
+        self._functionQueuePut(self._monitorConnection)
+
+
+    @asyncio.coroutine
     def _connect(self, callback):
         #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         try:
@@ -96,13 +118,16 @@ class Websocket(Thread):
 
 
     @asyncio.coroutine
-    def _shutdown(self, callback=None):
+    def _shutdown(self, callback=None, lost_conn=None):
         #asyncio.Task.current_task().add_done_callback(self._retrieveAsyncResult)
         logger.debug("stopping async tasks")
         self._stop_async = True
-        if self._websocket:
-            logger.debug("closing connection")
+        if self._websocket and not lost_conn:
+            logger.info("closing connection")
             yield from self._websocket.close(code=1000, reason='closed by client')
+        if lost_conn:
+            logger.info("failing connection")
+            yield from self._websocket.close_connection(False)
         if callback:
             callback()
 
@@ -118,8 +143,7 @@ class Websocket(Thread):
             callback(True)
         #except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError, TypeError) as ex:
         except Exception as ex:
-            logger.warning("could not send data")
-            logger.error(ex)
+            logger.warning("could not send data - {}".format(ex))
             callback(False)
 
     def send(self, callback, payload):
@@ -134,7 +158,8 @@ class Websocket(Thread):
             callback(payload)
         #except (websockets.ConnectionClosed, websockets.WebSocketProtocolError, websockets) as ex:
         except Exception as ex:
-            logger.error(ex)
+            if not self._stop_async:
+                logger.warning("could not receive data - {}".format(ex))
             callback(False)
 
     def receive(self, callback):
@@ -152,7 +177,8 @@ class Websocket(Thread):
                 in_queue.put(payload)
             #except (websockets.ConnectionClosed, websockets.WebSocketProtocolError) as ex:
             except Exception as ex:
-                logger.error(ex)
+                if not self._stop_async:
+                    logger.warning("could not receive data - {}".format(ex))
                 break
         if not self._stop_async:
             yield from self._shutdown()
@@ -174,8 +200,7 @@ class Websocket(Thread):
                         yield from self._websocket.send(payload)
                     #except (websockets.WebSocketProtocolError, websockets.ConnectionClosed, BrokenPipeError, TypeError) as ex:
                     except Exception as ex:
-                        logger.warning("could not send data")
-                        logger.error(ex)
+                        logger.warning("could not send data - {}".format(ex))
                         break
                 except Empty:
                     pass
