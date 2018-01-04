@@ -17,7 +17,7 @@ logger = root_logger.getChild(__name__)
 
 
 class Websocket(Thread):
-    def __init__(self, host, port, exit_callbck=None):
+    def __init__(self, host, port, exit_callbck=None, client_ping=True):
         super().__init__()
         self._host = host
         self._port = port
@@ -25,6 +25,7 @@ class Websocket(Thread):
         self._stop_async = False
         self._websocket = None
         self._exit_callbck = exit_callbck
+        self._client_ping = client_ping
 
 
     def _functionQueuePut(self, function, *args, **kwargs):
@@ -75,7 +76,7 @@ class Websocket(Thread):
 
 
     @asyncio.coroutine
-    def _monitorConnection(self):
+    def _pingLoop(self):
         while not self._stop_async:
             yield from asyncio.sleep(5)
             try:
@@ -92,9 +93,6 @@ class Websocket(Thread):
         if not self._stop_async:
             yield from self._shutdown(lost_conn=True)
 
-    def monitorConnection(self):
-        self._functionQueuePut(self._monitorConnection)
-
 
     @asyncio.coroutine
     def _connect(self, callback):
@@ -105,6 +103,8 @@ class Websocket(Thread):
                 loop=self._event_loop
             )
             logger.debug("connected to '{}' on '{}'".format(self._host, self._port))
+            if self._client_ping:
+                self._functionQueuePut(self._pingLoop)
             callback(True)
         #except (OSError, websockets.InvalidHandshake, websockets.InvalidURI) as ex:
         except Exception as ex:

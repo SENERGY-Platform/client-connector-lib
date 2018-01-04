@@ -189,7 +189,6 @@ class Client(metaclass=Singleton):
         logger.info('trying to connect to SEPL connector')
         if _callAndWaitFor(websocket.connect):
             logger.info("connected to SEPL connector")
-            websocket.monitorConnection()
             logger.debug("starting handshake")
             logger.debug('sending credentials: {}'.format(credentials))
             if _callAndWaitFor(websocket.send, credentials):
