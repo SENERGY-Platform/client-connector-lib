@@ -189,6 +189,7 @@ class Client(metaclass=Singleton):
         logger.info('trying to connect to SEPL connector')
         if _callAndWaitFor(websocket.connect):
             logger.info("connected to SEPL connector")
+            websocket.monitorConnection()
             logger.debug("starting handshake")
             logger.debug('sending credentials: {}'.format(credentials))
             if _callAndWaitFor(websocket.send, credentials):
@@ -197,7 +198,7 @@ class Client(metaclass=Singleton):
                     logger.debug('received initial response: {}'.format(initial_response))
                     initial_response = unmarshalMsg(initial_response)
                     if initial_response and initial_response.status == 200 and getMangledAttr(initial_response, 'token') == 'credentials':
-                        logger.debug('check if gateay ID needs to be synchronised')
+                        logger.debug('check if gateway ID needs to be synchronised')
                         _synchroniseGid(initial_response.payload.get('gid'))
                         logger.info('handshake completed')
                         __class__.__out_queue.empty()
