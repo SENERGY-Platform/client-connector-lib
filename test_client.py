@@ -10,34 +10,35 @@ import time, json
 logger = root_logger.getChild(__name__)
 
 
-logger.info('###### initiation phase ######')
+scenario = {
+    1: [0, 1, 2, 3, 4],
+    2: [0, 5, 6],
+    3: [0, 7, 8],
+    4: [0, 9],
+    5: [0, 10, 11, 12, 13, 14],
+    6: []
+}
 
+tests = scenario[6]
+
+
+logger.info('###### initiation phase ######')
 
 id_1 = 'asdsdfsf24t'
 id_2 = '3g46h4h6h436h'
 id_3 = '46j5j67j6rt'
 id_4 = '3h6j6i8i7rer5'
 
-logger.info('------ populate device manager ------')
-
 device_manager = DevicePool
 
-device_manager.add(Device(id_1, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 1'))
-device_2 = Device(id_2, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 2')
-device_2.addTag('type', 'Dummy')
-device_manager.add(device_2)
-device_manager.add(Device(id_3, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 3'))
+if 0 in tests:
+    logger.info('------ populate device manager ------')
+    device_manager.add(Device(id_1, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 1'))
+    device_2 = Device(id_2, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 2')
+    device_2.addTag('type', 'Dummy')
+    device_manager.add(device_2)
+    device_manager.add(Device(id_3, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 3'))
 
-scenario = {
-    1: [1, 2, 3, 4],
-    2: [5, 6],
-    3: [7, 8],
-    4: [9],
-    5: [10, 11, 12, 13, 14],
-    6: []
-}
-
-tests = scenario[6]
 
 if __name__ == '__main__':
     connector_client = Client(device_manager)
