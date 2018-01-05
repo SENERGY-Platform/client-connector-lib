@@ -124,7 +124,14 @@ class Websocket(Thread):
             yield from self._websocket.close(code=1000, reason='closed by client')
         if lost_conn:
             logger.info("failing connection")
-            yield from self._websocket.close_connection(False)
+            #self._websocket.eof_received() # -> pending tasks
+            # yield from self._websocket.close_connection(False) # -> random exceptions
+            # adapted from protocol.close_connection:
+            self._websocket.writer.close()
+            if not (yield from self._websocket.wait_for_connection_lost()):
+                self._websocket.writer.transport.abort()
+                self._websocket.wait_for_connection_lost()
+
         if callback:
             callback()
 
