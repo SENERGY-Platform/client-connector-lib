@@ -63,7 +63,7 @@ class Websocket(Thread):
     def run(self):
         try:
             self._event_loop = asyncio.get_event_loop()
-        except RuntimeError:
+        except (RuntimeError, AssertionError):
             logger.debug("no event loop found")
             self._event_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._event_loop)
