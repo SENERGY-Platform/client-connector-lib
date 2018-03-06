@@ -18,11 +18,10 @@ logging_levels = {
 }
 
 
-config_args = {
-        'format': '%(asctime)s - %(levelname)s: [%(name)s] %(message)s',
-        'datefmt': '%m.%d.%Y %I:%M:%S %p',
-        'level': logging_levels[LOGGING_LEVEL],
-}
+formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s: [%(name)s] %(message)s', datefmt='%m.%d.%Y %I:%M:%S %p')
+
+root_logger = logging.getLogger()
+root_logger.setLevel(logging_levels[LOGGING_LEVEL])
 
 
 if LOCAL_ROTATING_LOG:
@@ -31,11 +30,10 @@ if LOCAL_ROTATING_LOG:
     if not os.path.exists(logs_path):
         os.makedirs(logs_path)
     file_path = os.path.join(os.path.dirname(__file__), '{}/connector-client.log'.format(logs_path))
-    rotating_log_handler = TimedRotatingFileHandler(file_path, when="midnight", backupCount=int(ROTATING_LOG_BACKUP_COUNT))
-    config_args['handlers'] = [rotating_log_handler]
-    logging.basicConfig(**config_args)
+    log_handler = TimedRotatingFileHandler(file_path, when="midnight", backupCount=int(ROTATING_LOG_BACKUP_COUNT))
+    log_handler.setFormatter(formatter)
 else:
-    logging.basicConfig(**config_args)
+    log_handler = logging.StreamHandler()
+    log_handler.setFormatter(formatter)
 
-
-root_logger = logging.getLogger()
+root_logger.addHandler(log_handler)
