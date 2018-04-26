@@ -3,17 +3,17 @@ if __name__ == '__main__':
 
 try:
     import websockets
-    from modules.logger import root_logger
+    from modules.logger import root_logger, log_handler
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
-import asyncio
-import concurrent.futures
-import functools
+import asyncio, concurrent.futures, functools, logging
 from queue import Queue, Empty
 from threading import Thread, Event
-import time
 
 logger = root_logger.getChild(__name__)
+ws_logger = logging.getLogger('websockets')
+ws_logger.setLevel(logging.INFO)
+ws_logger.addHandler(log_handler)
 
 
 class Websocket(Thread):
