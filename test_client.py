@@ -1,13 +1,15 @@
 try:
-    from modules.logger import root_logger
+    from modules.logger import connector_client_log_handler
     from connector.client import Client
     from connector.device import Device
     from modules.device_pool import DevicePool
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
-import time, json
+import time, json, logging
 
-logger = root_logger.getChild(__name__)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(connector_client_log_handler)
 
 
 scenario = {
