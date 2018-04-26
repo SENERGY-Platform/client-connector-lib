@@ -99,7 +99,7 @@ During runtime users can execute their own code and make use of the client API.
 connector-client configuration is done via `connector/connector.conf`, if no conf file is found a new file will be generated.
 
     [CONNECTOR]
-    protocol = < ws / wss >
+    encryption = < no / yes >
     host = < your-websocket-host.com / 123.128.12.45 >
     port = < websocket port >
     user = < sepl username >
