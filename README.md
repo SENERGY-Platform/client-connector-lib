@@ -402,7 +402,6 @@ Only supports `Device` objects.
 ##### Logger
 
 If user logs ought to be combined with connector-client logs, please create your own logger and use the `connector_client_log_handler`.
-Levels: `info`, `warning`, `error`, `critical` and `debug`
 
 
     from modules.logger import connector_client_log_handler
