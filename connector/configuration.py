@@ -12,7 +12,7 @@ conf_file_path = '{}/connector.conf'.format(os.path.realpath(os.path.abspath(os.
 if not os.path.isfile(conf_file_path):
     print('No config file found')
     config['CONNECTOR'] = {
-        'protocol': 'ws',
+        'encryption': 'no',
         'host': '',
         'port': '',
         'user': '',
@@ -44,12 +44,18 @@ def writeConf(section, option, value):
         print(ex)
 
 
-CONNECTOR_PROTOCOL = config['CONNECTOR']['protocol']
-CONNECTOR_HOST = config['CONNECTOR']['host']
-CONNECTOR_PORT = config['CONNECTOR']['port']
+protocol_map = {
+    'yes': 'wss',
+    'no': 'ws'
+}
+
+
+CONNECTOR_WS_ENCRYPTION = protocol_map[config['CONNECTOR']['encryption']]
+CONNECTOR_WS_HOST = config['CONNECTOR']['host']
+CONNECTOR_WS_PORT = config['CONNECTOR']['port']
 CONNECTOR_USER = config['CONNECTOR']['user']
 CONNECTOR_PASSWORD = config['CONNECTOR']['password']
-CONNECTOR_GID = config['CONNECTOR']['gid']
+GATEWAY_ID = config['CONNECTOR']['gid']
 LOGGING_LEVEL = os.getenv('CONNECTOR_CLIENT_LOG_LEVEL', config['LOGGER']['level'])
 LOCAL_ROTATING_LOG = config['LOGGER'].getboolean('rotating_log')
 ROTATING_LOG_BACKUP_COUNT = config['LOGGER']['rotating_log_backup_count']

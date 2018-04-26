@@ -5,7 +5,7 @@ try:
     from modules.logger import root_logger
     from modules.singleton import Singleton
     from modules.http_lib import Methods as http
-    from connector.configuration import CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_HOST, CONNECTOR_PORT, CONNECTOR_GID, writeConf
+    from connector.configuration import CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, GATEWAY_ID, writeConf
     from connector.session import SessionManager
     from connector.websocket import Websocket
     from connector.message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
@@ -77,10 +77,10 @@ def _synchroniseGid(remote_gid):
     Checks if local and remote gateway ID differ and sets new ID.
     :param remote_gid: Remote gateway ID as string.
     """
-    global CONNECTOR_GID
-    if not CONNECTOR_GID == remote_gid:
-        logger.debug('local and remote gateway ID differ: {} - {}'.format(CONNECTOR_GID, remote_gid))
-        CONNECTOR_GID = remote_gid
+    global GATEWAY_ID
+    if not GATEWAY_ID == remote_gid:
+        logger.debug('local and remote gateway ID differ: {} - {}'.format(GATEWAY_ID, remote_gid))
+        GATEWAY_ID = remote_gid
         writeConf(section='CONNECTOR', option='gid', value=remote_gid)
         logger.info("set gateway ID: '{}'".format(remote_gid))
     else:
@@ -182,10 +182,10 @@ class Client(metaclass=Singleton):
         credentials = json.dumps({
             'user': CONNECTOR_USER,
             'pw': CONNECTOR_PASSWORD,
-            'gid': CONNECTOR_GID,
+            'gid': GATEWAY_ID,
             'token': 'credentials'
         })
-        websocket = Websocket(CONNECTOR_HOST, CONNECTOR_PORT, self.__reconnect)
+        websocket = Websocket(CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, self.__reconnect)
         logger.info('trying to connect to SEPL connector')
         if _callAndWaitFor(websocket.connect):
             logger.info("connected to SEPL connector")

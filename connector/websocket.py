@@ -17,10 +17,11 @@ ws_logger.addHandler(connector_client_log_handler)
 
 
 class Websocket(Thread):
-    def __init__(self, host, port, exit_callbck=None, client_ping=True):
+    def __init__(self, protocol, host, port, exit_callbck=None, client_ping=True):
         super().__init__()
         self._host = host
         self._port = port
+        self._protocol = protocol
         self._function_queue = Queue(1)
         self._stop_async = False
         self._websocket = None
@@ -98,7 +99,7 @@ class Websocket(Thread):
     def _connect(self, callback):
         try:
             self._websocket = yield from websockets.connect(
-                'ws://{}:{}'.format(self._host, self._port),
+                '{}://{}:{}'.format(self._protocol, self._host, self._port),
                 loop=self._event_loop
             )
             logger.debug("connected to '{}' on '{}'".format(self._host, self._port))
