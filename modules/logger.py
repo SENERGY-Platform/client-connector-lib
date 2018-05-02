@@ -21,6 +21,7 @@ logging_levels = {
 formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s: [%(name)s] %(message)s', datefmt='%m.%d.%Y %I:%M:%S %p')
 
 root_logger = logging.getLogger("sepl")
+root_logger.propagate = False
 root_logger.setLevel(logging_levels[LOGGING_LEVEL])
 
 connector_client_log_handler = logging.StreamHandler()
