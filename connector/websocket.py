@@ -80,6 +80,8 @@ class Websocket(Thread):
     def _pingLoop(self):
         while not self._stop_async:
             yield from asyncio.sleep(5)
+            if self._stop_async:
+                break
             try:
                 pong = yield from self._websocket.ping()
                 try:
@@ -92,7 +94,7 @@ class Websocket(Thread):
                 logger.error(ex)
                 break
         if not self._stop_async:
-            yield from self._shutdown(lost_conn=True)
+            self._functionQueuePut(self._shutdown, lost_conn=True)
 
 
     @asyncio.coroutine
@@ -120,9 +122,6 @@ class Websocket(Thread):
     def _shutdown(self, callback=None, lost_conn=None):
         logger.debug("stopping async tasks")
         self._stop_async = True
-        if self._websocket and not lost_conn:
-            logger.info("closing connection")
-            yield from self._websocket.close(code=1000, reason='closed by client')
         if lost_conn:
             logger.info("failing connection")
             #self._websocket.eof_received() # -> pending tasks
@@ -131,8 +130,13 @@ class Websocket(Thread):
             self._websocket.writer.close()
             if not (yield from self._websocket.wait_for_connection_lost()):
                 self._websocket.writer.transport.abort()
-                self._websocket.wait_for_connection_lost()
-
+                yield from self._websocket.wait_for_connection_lost()
+        elif self._websocket and self._websocket.open:
+            logger.info("closing connection")
+            try:
+                yield from self._websocket.close(code=1000, reason='closed by client')
+            except Exception as ex:
+                logger.error(ex)
         if callback:
             callback()
 
