@@ -17,7 +17,7 @@ ws_logger.addHandler(connector_client_log_handler)
 
 
 class Websocket(Thread):
-    def __init__(self, protocol, host, port, exit_callbck=None, client_ping=True):
+    def __init__(self, protocol, host, port, exit_callbck=None):
         super().__init__()
         self._host = host
         self._port = port
@@ -26,7 +26,6 @@ class Websocket(Thread):
         self._stop_async = False
         self._websocket = None
         self._exit_callbck = exit_callbck
-        self._client_ping = client_ping
 
 
     def _functionQueuePut(self, function, *args, **kwargs):
@@ -77,11 +76,9 @@ class Websocket(Thread):
 
 
     @asyncio.coroutine
-    def _pingLoop(self):
+    def _pingLoop(self, callback):
+        callback()
         while not self._stop_async:
-            yield from asyncio.sleep(5)
-            if self._stop_async:
-                break
             try:
                 pong = yield from self._websocket.ping()
                 try:
@@ -93,8 +90,12 @@ class Websocket(Thread):
                 logger.warning("could not send ping")
                 logger.error(ex)
                 break
+            yield from asyncio.sleep(5)
         if not self._stop_async:
-            self._functionQueuePut(self._shutdown, lost_conn=True)
+            self._functionQueuePut(self._shutdown, ping_fail=True)
+
+    def pingLoop(self, callback):
+        self._functionQueuePut(self._pingLoop, callback)
 
 
     @asyncio.coroutine
@@ -105,8 +106,8 @@ class Websocket(Thread):
                 loop=self._event_loop
             )
             logger.debug("connected to '{}' on '{}'".format(self._host, self._port))
-            if self._client_ping:
-                self._functionQueuePut(self._pingLoop)
+            #if self._client_ping:
+            #    self._functionQueuePut(self._pingLoop)
             callback(True)
         except Exception as ex:
             logger.debug("could not connect to '{}' on '{}'".format(self._host, self._port))
@@ -119,24 +120,25 @@ class Websocket(Thread):
 
 
     @asyncio.coroutine
-    def _shutdown(self, callback=None, lost_conn=None):
+    def _shutdown(self, callback=None, ping_fail=None):
         logger.debug("stopping async tasks")
         self._stop_async = True
-        if lost_conn:
-            logger.info("failing connection")
-            #self._websocket.eof_received() # -> pending tasks
-            # yield from self._websocket.close_connection(False) # -> random exceptions
-            # adapted from protocol.close_connection:
-            self._websocket.writer.close()
-            if not (yield from self._websocket.wait_for_connection_lost()):
-                self._websocket.writer.transport.abort()
-                yield from self._websocket.wait_for_connection_lost()
-        elif self._websocket and self._websocket.open:
-            logger.info("closing connection")
-            try:
-                yield from self._websocket.close(code=1000, reason='closed by client')
-            except Exception as ex:
-                logger.error(ex)
+        if self._websocket and self._websocket.open:
+            if ping_fail:
+                logger.info("failing connection")
+                # self._websocket.eof_received() # -> pending tasks
+                # yield from self._websocket.close_connection(False) # -> random exceptions
+                # adapted from protocol.close_connection:
+                self._websocket.writer.close()
+                if not (yield from self._websocket.wait_for_connection_lost()):
+                    self._websocket.writer.transport.abort()
+                    yield from self._websocket.wait_for_connection_lost()
+            else:
+                logger.info("closing connection")
+                try:
+                    yield from self._websocket.close(code=1000, reason='closed by client')
+                except Exception as ex:
+                    logger.error(ex)
         if callback:
             callback()
 
@@ -184,7 +186,7 @@ class Websocket(Thread):
                     logger.warning("could not receive data - {}".format(ex))
                 break
         if not self._stop_async:
-            yield from self._shutdown()
+            self._functionQueuePut(self._shutdown)
 
 
     @asyncio.coroutine
@@ -206,7 +208,7 @@ class Websocket(Thread):
                 except Empty:
                     pass
         if not self._stop_async:
-            yield from self._shutdown()
+            self._functionQueuePut(self._shutdown)
 
 
     def ioStart(self, callback, in_queue, out_queue):
