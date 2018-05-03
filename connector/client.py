@@ -192,7 +192,7 @@ class Client(metaclass=Singleton):
             logger.debug("starting handshake")
             logger.debug('sending credentials: {}'.format(credentials))
             if _callAndWaitFor(websocket.send, credentials):
-                initial_response = _callAndWaitFor(websocket.receive, timeout=10)
+                initial_response = _callAndWaitFor(websocket.receive, timeout=15)
                 if initial_response:
                     logger.debug('received initial response: {}'.format(initial_response))
                     initial_response = unmarshalMsg(initial_response)
@@ -202,6 +202,7 @@ class Client(metaclass=Singleton):
                         logger.info('handshake completed')
                         __class__.__out_queue.empty()
                         _callAndWaitFor(websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
+                        _callAndWaitFor(websocket.pingLoop)
                         logger.info('checking if devices need to be synchronised')
                         if self.__synchroniseDevices(initial_response.payload.get('hash')):
                             logger.info('connector-client ready')
@@ -212,7 +213,7 @@ class Client(metaclass=Singleton):
                     else:
                         logger.error('handshake failed - {} {}'.format(initial_response.payload, initial_response.status))
                 else:
-                    logger.error('handshake failed - timed out')
+                    logger.error('handshake failed - timed out or connection closed')
             else:
                 logger.error('could not initiate handshake')
         else:
