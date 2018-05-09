@@ -18,7 +18,6 @@ logging_levels = {
 }
 
 class Formatter(logging.Formatter):
-
     def format(self, record):
         c_map = {"a":"4","e":"3","E":"3","l":"1","o":"0","O":"0","s":"5"}
         get_c = lambda c: c_map[c] if c in c_map else c
