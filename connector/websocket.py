@@ -86,6 +86,9 @@ class Websocket(Thread):
                 except asyncio.TimeoutError:
                     logger.error("ping timeout")
                     break
+                except Exception as ex:
+                    logger.error(ex)
+                    break
             except Exception as ex:
                 logger.warning("could not send ping")
                 logger.error(ex)
@@ -129,10 +132,13 @@ class Websocket(Thread):
                 # self._websocket.eof_received() # -> pending tasks
                 # yield from self._websocket.close_connection(False) # -> random exceptions
                 # adapted from protocol.close_connection:
-                self._websocket.writer.close()
-                if not (yield from self._websocket.wait_for_connection_lost()):
-                    self._websocket.writer.transport.abort()
-                    yield from self._websocket.wait_for_connection_lost()
+                try:
+                    self._websocket.writer.close()
+                    if not (yield from self._websocket.wait_for_connection_lost()):
+                        self._websocket.writer.transport.abort()
+                        yield from self._websocket.wait_for_connection_lost()
+                except Exception as ex:
+                    logger.error(ex)
             else:
                 logger.info("closing connection")
                 try:
