@@ -59,3 +59,4 @@ GATEWAY_ID = config['CONNECTOR']['gid']
 LOGGING_LEVEL = os.getenv('CONNECTOR_CLIENT_LOG_LEVEL', config['LOGGER']['level'])
 LOCAL_ROTATING_LOG = config['LOGGER'].getboolean('rotating_log')
 ROTATING_LOG_BACKUP_COUNT = config['LOGGER']['rotating_log_backup_count']
+L_FORMAT = os.environ.get('L_FORMAT')
