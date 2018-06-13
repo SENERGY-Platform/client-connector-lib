@@ -12,7 +12,7 @@ from threading import Thread, Event
 
 logger = root_logger.getChild(__name__)
 ws_logger = logging.getLogger('websockets')
-ws_logger.setLevel(logging.INFO)
+ws_logger.setLevel(logging.DEBUG)
 ws_logger.addHandler(connector_client_log_handler)
 
 
@@ -107,6 +107,7 @@ class Websocket(Thread):
                 #yield from self._websocket.wait_for_connection_lost()
                 #yield from self._websocket.fail_connection()
                 self._websocket.connection_lost(None)
+                yield from self._websocket.wait_for_connection_lost()
             else:
                 logger.info("closing connection")
                 try:
