@@ -32,14 +32,6 @@ class Websocket(Thread):
         self._function_queue.put((function, args, kwargs))
 
 
-    def _retrieveAsyncResult(self, task):
-        if task.exception():
-            task.cancel()
-        else:
-            task.result()
-        logger.debug("{}".format(task))
-
-
     @asyncio.coroutine
     def _spawnAsync(self):
         tasks = list()
@@ -109,8 +101,6 @@ class Websocket(Thread):
                 loop=self._event_loop
             )
             logger.debug("connected to '{}' on '{}'".format(self._host, self._port))
-            #if self._client_ping:
-            #    self._functionQueuePut(self._pingLoop)
             callback(True)
         except Exception as ex:
             logger.debug("could not connect to '{}' on '{}'".format(self._host, self._port))
