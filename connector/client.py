@@ -192,7 +192,7 @@ class Client(metaclass=Singleton):
             logger.debug("starting handshake")
             logger.debug('sending credentials: {}'.format(credentials))
             if _callAndWaitFor(websocket.send, credentials):
-                initial_response = _callAndWaitFor(websocket.receive, timeout=15)
+                initial_response = _callAndWaitFor(websocket.receive)
                 if initial_response:
                     logger.debug('received initial response: {}'.format(initial_response))
                     initial_response = unmarshalMsg(initial_response)
@@ -200,7 +200,7 @@ class Client(metaclass=Singleton):
                         logger.debug('check if gateway ID needs to be synchronised')
                         _synchroniseGid(initial_response.payload.get('gid'))
                         logger.info('handshake completed')
-                        __class__.__out_queue.empty()
+                        #clear out queue?
                         _callAndWaitFor(websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
                         _callAndWaitFor(websocket.pingLoop)
                         logger.info('checking if devices need to be synchronised')
