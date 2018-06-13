@@ -68,32 +68,6 @@ class Websocket(Thread):
 
 
     @asyncio.coroutine
-    def _pingLoop(self, callback):
-        callback()
-        while not self._stop_async:
-            try:
-                pong = yield from self._websocket.ping()
-                try:
-                    yield from asyncio.wait_for(pong, timeout=5)
-                except asyncio.TimeoutError:
-                    logger.error("ping timeout")
-                    break
-                except Exception as ex:
-                    logger.error(ex)
-                    break
-            except Exception as ex:
-                logger.warning("could not send ping")
-                logger.error(ex)
-                break
-            yield from asyncio.sleep(5)
-        if not self._stop_async:
-            self._functionQueuePut(self._shutdown, ping_fail=True)
-
-    def pingLoop(self, callback):
-        self._functionQueuePut(self._pingLoop, callback)
-
-
-    @asyncio.coroutine
     def _connect(self, callback):
         try:
             self._websocket = yield from websockets.connect(
@@ -113,22 +87,26 @@ class Websocket(Thread):
 
 
     @asyncio.coroutine
-    def _shutdown(self, callback=None, ping_fail=None):
+    def _shutdown(self, callback=None, lost_con=None):
         logger.debug("stopping async tasks")
         self._stop_async = True
         if self._websocket and self._websocket.open:
-            if ping_fail:
+            if lost_con:
                 logger.info("failing connection")
                 # self._websocket.eof_received() # -> pending tasks
                 # yield from self._websocket.close_connection(False) # -> random exceptions
                 # adapted from protocol.close_connection:
-                try:
-                    self._websocket.writer.close()
-                    if not (yield from self._websocket.wait_for_connection_lost()):
-                        self._websocket.writer.transport.abort()
-                        yield from self._websocket.wait_for_connection_lost()
-                except Exception as ex:
-                    logger.error(ex)
+                #try:
+                #    self._websocket.writer.close()
+                #    if not (yield from self._websocket.wait_for_connection_lost()):
+                #        self._websocket.writer.transport.abort()
+                #        yield from self._websocket.wait_for_connection_lost()
+                #except Exception as ex:
+                #    logger.error(ex)
+                # tests:
+                #yield from self._websocket.wait_for_connection_lost()
+                #yield from self._websocket.fail_connection()
+                self._websocket.connection_lost(None)
             else:
                 logger.info("closing connection")
                 try:
@@ -175,8 +153,17 @@ class Websocket(Thread):
         callback()
         while not self._stop_async:
             try:
-                payload = yield from self._websocket.recv()
+                payload = yield from asyncio.wait_for(self._websocket.recv(), timeout=10)
                 in_queue.put(payload)
+            except asyncio.TimeoutError:
+                try:
+                    pong = yield from self._websocket.ping()
+                    yield from asyncio.wait_for(pong, timeout=10)
+                except asyncio.TimeoutError:
+                    logger.error("ping timeout")
+                    if not self._stop_async:
+                        self._functionQueuePut(self._shutdown, lost_con=True)
+                    return
             except Exception as ex:
                 if not self._stop_async:
                     logger.warning("could not receive data - {}".format(ex))
@@ -197,7 +184,8 @@ class Websocket(Thread):
                         functools.partial(out_queue.get, timeout=1)
                     )
                     try:
-                        yield from self._websocket.send(payload)
+                        if not self._stop_async:
+                            yield from self._websocket.send(payload)
                     except Exception as ex:
                         logger.warning("could not send data - {}".format(ex))
                         break
