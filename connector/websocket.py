@@ -158,7 +158,7 @@ class Websocket(Thread):
     @asyncio.coroutine
     def _receive(self, callback):
         try:
-            payload = yield from self._websocket.recv()
+            payload = yield from asyncio.wait_for(self._websocket.recv(), timeout=15)
             callback(payload)
         except Exception as ex:
             if not self._stop_async:
