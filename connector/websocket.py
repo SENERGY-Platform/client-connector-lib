@@ -93,19 +93,6 @@ class Websocket(Thread):
         if self._websocket and self._websocket.open:
             if lost_con:
                 logger.info("failing connection")
-                # self._websocket.eof_received() # -> pending tasks
-                # yield from self._websocket.close_connection(False) # -> random exceptions
-                # adapted from protocol.close_connection:
-                #try:
-                #    self._websocket.writer.close()
-                #    if not (yield from self._websocket.wait_for_connection_lost()):
-                #        self._websocket.writer.transport.abort()
-                #        yield from self._websocket.wait_for_connection_lost()
-                #except Exception as ex:
-                #    logger.error(ex)
-                # tests:
-                #yield from self._websocket.wait_for_connection_lost()
-                #yield from self._websocket.fail_connection()
                 self._websocket.connection_lost(None)
                 yield from self._websocket.wait_for_connection_lost()
             else:
