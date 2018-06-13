@@ -202,7 +202,6 @@ class Client(metaclass=Singleton):
                         logger.info('handshake completed')
                         #clear out queue?
                         _callAndWaitFor(websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
-                        _callAndWaitFor(websocket.pingLoop)
                         logger.info('checking if devices need to be synchronised')
                         if self.__synchroniseDevices(initial_response.payload.get('hash')):
                             logger.info('connector-client ready')
