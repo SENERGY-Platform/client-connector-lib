@@ -12,7 +12,7 @@ from threading import Thread, Event
 
 logger = root_logger.getChild(__name__)
 ws_logger = logging.getLogger('websockets')
-ws_logger.setLevel(logging.DEBUG)
+ws_logger.setLevel(logging.INFO)
 ws_logger.addHandler(connector_client_log_handler)
 
 
