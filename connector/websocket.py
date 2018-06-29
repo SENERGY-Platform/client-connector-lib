@@ -32,20 +32,19 @@ class Websocket(Thread):
         self._function_queue.put((function, args, kwargs))
 
 
-    @asyncio.coroutine
-    def _spawnAsync(self):
+    async def _spawnAsync(self):
         tasks = list()
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             while not self._stop_async:
                 try:
-                    function, args, kwargs = yield from self._event_loop.run_in_executor(
+                    function, args, kwargs = await self._event_loop.run_in_executor(
                         executor,
                         functools.partial(self._function_queue.get, timeout=1)
                     )
                     tasks.append(self._event_loop.create_task(function(*args, **kwargs)))
                 except Empty:
                     pass
-            done, pending = yield from asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=30)
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=30)
             logger.debug("done tasks: {}".format(done))
             if pending:
                 logger.error("could not finish tasks: {}".format(pending))
@@ -67,10 +66,9 @@ class Websocket(Thread):
             self._exit_callbck()
 
 
-    @asyncio.coroutine
-    def _connect(self, callback):
+    async def _connect(self, callback):
         try:
-            self._websocket = yield from websockets.connect(
+            self._websocket = await websockets.connect(
                 '{}://{}:{}'.format(self._protocol, self._host, self._port),
                 loop=self._event_loop
             )
@@ -86,19 +84,18 @@ class Websocket(Thread):
         self.start()
 
 
-    @asyncio.coroutine
-    def _shutdown(self, callback=None, lost_con=None):
+    async def _shutdown(self, callback=None, lost_con=None):
         logger.debug("stopping async tasks")
         self._stop_async = True
         if self._websocket and self._websocket.open:
             if lost_con:
                 logger.info("failing connection")
                 self._websocket.connection_lost(None)
-                yield from self._websocket.wait_for_connection_lost()
+                await self._websocket.wait_for_connection_lost()
             else:
                 logger.info("closing connection")
                 try:
-                    yield from self._websocket.close(code=1000, reason='closed by client')
+                    await self._websocket.close(code=1000, reason='closed by client')
                 except Exception as ex:
                     logger.error(ex)
         if callback:
@@ -108,10 +105,9 @@ class Websocket(Thread):
         self._functionQueuePut(self._shutdown, callback)
 
 
-    @asyncio.coroutine
-    def _send(self, callback, payload):
+    async def _send(self, callback, payload):
         try:
-            yield from self._websocket.send(payload)
+            await self._websocket.send(payload)
             callback(True)
         except Exception as ex:
             logger.warning("could not send data - {}".format(ex))
@@ -121,10 +117,9 @@ class Websocket(Thread):
         self._functionQueuePut(self._send, callback, payload)
 
 
-    @asyncio.coroutine
-    def _receive(self, callback):
+    async def _receive(self, callback):
         try:
-            payload = yield from asyncio.wait_for(self._websocket.recv(), timeout=15)
+            payload = await asyncio.wait_for(self._websocket.recv(), timeout=15)
             callback(payload)
         except Exception as ex:
             if not self._stop_async:
@@ -135,18 +130,17 @@ class Websocket(Thread):
         self._functionQueuePut(self._receive, callback)
 
 
-    @asyncio.coroutine
-    def _ioRecv(self, callback, in_queue):
+    async def _ioRecv(self, callback, in_queue):
         logger.debug("io receive task started")
         callback()
         while not self._stop_async:
             try:
-                payload = yield from asyncio.wait_for(self._websocket.recv(), timeout=10)
+                payload = await asyncio.wait_for(self._websocket.recv(), timeout=10)
                 in_queue.put(payload)
             except asyncio.TimeoutError:
                 try:
-                    pong = yield from self._websocket.ping()
-                    yield from asyncio.wait_for(pong, timeout=10)
+                    pong = await self._websocket.ping()
+                    await asyncio.wait_for(pong, timeout=10)
                 except asyncio.TimeoutError:
                     logger.error("ping timeout")
                     if not self._stop_async:
@@ -160,20 +154,19 @@ class Websocket(Thread):
             self._functionQueuePut(self._shutdown)
 
 
-    @asyncio.coroutine
-    def _ioSend(self, callback, out_queue):
+    async def _ioSend(self, callback, out_queue):
         logger.debug("io send task started")
         callback()
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             while not self._stop_async:
                 try:
-                    payload = yield from self._event_loop.run_in_executor(
+                    payload = await self._event_loop.run_in_executor(
                         executor,
                         functools.partial(out_queue.get, timeout=1)
                     )
                     try:
                         if not self._stop_async:
-                            yield from self._websocket.send(payload)
+                            await self._websocket.send(payload)
                     except Exception as ex:
                         logger.warning("could not send data - {}".format(ex))
                         break

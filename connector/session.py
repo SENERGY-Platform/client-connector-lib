@@ -97,14 +97,13 @@ class SessionManager(Thread, metaclass=Singleton):
 
 
     @staticmethod
-    @asyncio.coroutine
-    def _interruptor():
+    async def _interruptor():
         """
         Waits for event and interrupts the session timer coroutine.
         """
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             while True:
-                session = yield from __class__._event_loop.run_in_executor(
+                session = await __class__._event_loop.run_in_executor(
                     executor,
                     functools.partial(__class__._event_queue.get)
                 )
@@ -113,15 +112,14 @@ class SessionManager(Thread, metaclass=Singleton):
 
 
     @staticmethod
-    @asyncio.coroutine
-    def _timer(session):
+    async def _timer(session):
         """
         Timer coroutine for a session.
         Times out after given time or can be interrupted by an event.
         :param session: Session object.
         """
         try:
-            yield from asyncio.wait_for(session.event.wait(), session.timeout)
+            await asyncio.wait_for(session.event.wait(), session.timeout)
             logger.debug('{} caught event (timer)'.format(session.token))
         except asyncio.TimeoutError:
             logger.warning('{} timed out'.format(session.token))
@@ -130,8 +128,7 @@ class SessionManager(Thread, metaclass=Singleton):
 
 
     @staticmethod
-    @asyncio.coroutine
-    def _spawn():
+    async def _spawn():
         """
         Creates timer coroutines for sessions.
         Adds Event objects to sessions or calls cleanup if sessions are already done.
@@ -139,7 +136,7 @@ class SessionManager(Thread, metaclass=Singleton):
         """
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             while True:
-                session = yield from __class__._event_loop.run_in_executor(
+                session = await __class__._event_loop.run_in_executor(
                     executor,
                     functools.partial(__class__._session_queue.get)
                 )
