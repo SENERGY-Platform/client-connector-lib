@@ -83,6 +83,7 @@ def _synchroniseGid(remote_gid):
         GATEWAY_ID = remote_gid
         writeConf(section='CONNECTOR', option='gid', value=remote_gid)
         logger.info("set gateway ID: '{}'".format(remote_gid))
+        time.sleep(2)
     else:
         logger.debug('local and remote gateway ID match')
 
