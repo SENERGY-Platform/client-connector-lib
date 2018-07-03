@@ -117,6 +117,7 @@ class Client(metaclass=Singleton):
     __client_queue = Queue()
     __device_manager = None
     __ready = False
+    __reconnect_attempts = 1
 
 
     def __init__(self, device_manager, con_callbck=None, discon_callbck=None):
@@ -190,6 +191,7 @@ class Client(metaclass=Singleton):
         logger.info('trying to connect to SEPL connector')
         if _callAndWaitFor(websocket.connect):
             logger.info("connected to SEPL connector")
+            __class__.__reconnect_attempts = 1
             logger.debug("starting handshake")
             logger.debug('sending credentials: {}'.format(credentials))
             if _callAndWaitFor(websocket.send, credentials):
@@ -227,8 +229,10 @@ class Client(metaclass=Singleton):
         Calls __connect() wrapped in a thread on a reconnect event.
         """
         __class__.__ready = False
-        reconnect = Thread(target=self.__connect, name='reconnect', args=(30, ))
-        logger.info("reconnecting in 30s")
+        reconnect = Thread(target=self.__connect, name='reconnect', args=(__class__.__reconnect_attempts * 30, ))
+        logger.info("reconnecting in {}s".format(__class__.__reconnect_attempts * 30))
+        if __class__.__reconnect_attempts < 10:
+            __class__.__reconnect_attempts = __class__.__reconnect_attempts + 1
         reconnect.start()
 
 
