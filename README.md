@@ -4,7 +4,7 @@ connector-client
 Framework for users wanting to integrate their personal IoT project / device with the SEPL platform.
 
 Written for Python >= 3.5.3 and relying on the `websockets` module.
-For Python 3.4 see legacy branch.
+For Python 3.4 please see legacy branch.
 
 ----------
 
