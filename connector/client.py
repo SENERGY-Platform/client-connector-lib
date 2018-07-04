@@ -137,7 +137,7 @@ class Client(metaclass=Singleton):
                 raise TypeError("'{}' must subclass DeviceManagerInterface".format(device_manager.__name__))
         elif not _interfaceCheck(type(device_manager), DeviceManagerInterface):
             raise TypeError("'{}' must subclass DeviceManagerInterface".format(type(device_manager).__name__))
-        logger.info(20 * '*' + ' Starting SEPL connector-client v{} '.format(VERSION) + 20 * '*')
+        logger.info(12 * '*' + ' Starting SEPL connector-client v{} '.format(VERSION) + 12 * '*')
         self.__con_callbck = con_callbck
         self.__discon_callbck = discon_callbck
         __class__.__device_manager = device_manager
