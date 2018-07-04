@@ -229,9 +229,9 @@ class Client(metaclass=Singleton):
         Calls __connect() wrapped in a thread on a reconnect event.
         """
         __class__.__ready = False
-        reconnect = Thread(target=self.__connect, name='reconnect', args=(__class__.__reconnect_attempts * 30, ))
-        logger.info("reconnecting in {}s".format(__class__.__reconnect_attempts * 30))
-        if __class__.__reconnect_attempts < 10:
+        reconnect = Thread(target=self.__connect, name='reconnect', args=(__class__.__reconnect_attempts * 15, ))
+        logger.info("reconnecting in {}s".format(__class__.__reconnect_attempts * 15))
+        if __class__.__reconnect_attempts < 20:
             __class__.__reconnect_attempts = __class__.__reconnect_attempts + 1
         reconnect.start()
 
