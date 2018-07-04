@@ -6,7 +6,7 @@ try:
     from modules.logger import root_logger, connector_client_log_handler
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
-import asyncio, concurrent.futures, functools, logging
+import asyncio, concurrent.futures, functools, logging, time
 from queue import Queue, Empty
 from threading import Thread, Event
 
@@ -135,11 +135,11 @@ class Websocket(Thread):
         callback()
         while not self._stop_async:
             try:
-                payload = await asyncio.wait_for(self._websocket.recv(), timeout=10)
+                payload = await asyncio.wait_for(self._websocket.recv(), timeout=5)
                 in_queue.put(payload)
             except asyncio.TimeoutError:
                 try:
-                    pong = await self._websocket.ping()
+                    pong = await self._websocket.ping(str(int(time.time())))
                     await asyncio.wait_for(pong, timeout=10)
                 except asyncio.TimeoutError:
                     logger.error("ping timeout")
