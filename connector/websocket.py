@@ -119,7 +119,7 @@ class Websocket(Thread):
 
     async def _receive(self, callback):
         try:
-            payload = await asyncio.wait_for(self._websocket.recv(), timeout=15)
+            payload = await asyncio.wait_for(self._websocket.recv(), timeout=20)
             callback(payload)
         except Exception as ex:
             if not self._stop_async:
@@ -135,12 +135,12 @@ class Websocket(Thread):
         callback()
         while not self._stop_async:
             try:
-                payload = await asyncio.wait_for(self._websocket.recv(), timeout=5)
+                payload = await asyncio.wait_for(self._websocket.recv(), timeout=20)
                 in_queue.put(payload)
             except asyncio.TimeoutError:
                 try:
                     pong = await self._websocket.ping(str(int(time.time())))
-                    await asyncio.wait_for(pong, timeout=10)
+                    await asyncio.wait_for(pong, timeout=20)
                 except asyncio.TimeoutError:
                     logger.error("ping timeout")
                     if not self._stop_async:
