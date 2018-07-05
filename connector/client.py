@@ -1,7 +1,7 @@
 if __name__ == '__main__':
     exit('Please use "client.py"')
 
-VERSION = '2.0.6'
+VERSION = '2.0.7'
 
 try:
     from modules.logger import root_logger
