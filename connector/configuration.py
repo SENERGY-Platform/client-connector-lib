@@ -4,12 +4,12 @@ if __name__ == '__main__':
 import os, inspect, configparser
 
 
-version_path = '{}/__init__.py'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
+init_path = '{}/__init__.py'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
 
 def read_version():
     values = dict()
-    with open(version_path, 'r') as version_file:
-        exec(version_file.read(), values)
+    with open(init_path, 'r') as init_file:
+        exec(init_file.read(), values)
     return values.get('__version__')
 
 
