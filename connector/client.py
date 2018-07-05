@@ -1,13 +1,11 @@
 if __name__ == '__main__':
     exit('Please use "client.py"')
 
-VERSION = '2.0.7'
-
 try:
     from modules.logger import root_logger
     from modules.singleton import Singleton
     from modules.http_lib import Methods as http
-    from connector.configuration import CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, GATEWAY_ID, writeConf
+    from connector.configuration import VERSION, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, GATEWAY_ID, writeConf
     from connector.session import SessionManager
     from connector.websocket import Websocket
     from connector.message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr

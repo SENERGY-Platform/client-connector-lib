@@ -4,6 +4,13 @@ if __name__ == '__main__':
 import os, inspect, configparser
 
 
+version_path = '{}/version'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
+
+def read_version():
+    with open(version_path, 'r') as version_file:
+        version = version_file.read()
+    return version
+
 
 config = configparser.ConfigParser()
 
@@ -60,3 +67,4 @@ LOGGING_LEVEL = os.getenv('CONNECTOR_CLIENT_LOG_LEVEL', config['LOGGER']['level'
 LOCAL_ROTATING_LOG = config['LOGGER'].getboolean('rotating_log')
 ROTATING_LOG_BACKUP_COUNT = config['LOGGER']['rotating_log_backup_count']
 L_FORMAT = os.environ.get('L_FORMAT')
+VERSION = read_version()
