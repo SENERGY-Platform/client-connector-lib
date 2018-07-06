@@ -111,7 +111,7 @@ Uninstall with: `pip uninstall sepl-connector-client`
 
 ##### Configuration
 
-connector-client configuration is done via the `< your project >/sepl-connector-client/client.conf` file, if no conf file is found a new file will be generated.
+connector-client configuration is done via `< your project >/sepl-connector-client/client.conf`, if no conf file is found a new file will be generated.
 
     [CONNECTOR]
     encryption = < no / yes >
