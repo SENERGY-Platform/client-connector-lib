@@ -11,8 +11,7 @@ connector-client
 
 Framework for users wanting to integrate their personal IoT project / device with the SEPL platform.
 
-Written for Python >= 3.5.3 and relying on the `websockets` module.
-For Python 3.4 please use legacy branch.
+Compatible with Python >= 3.5.3. For Python 3.4 please use legacy branch.
 
 ----------
 
@@ -112,6 +111,8 @@ Install the `sepl-connector-client` package via pip directly from this repositor
 To update the package uninstall and reinstall it.
 
 Uninstall with: `pip uninstall sepl-connector-client`
+
+> If Python 3.6 isn't available on your platform try the [pyenv](https://github.com/pyenv/pyenv) project for easy Python version management.
 
 ---
 
