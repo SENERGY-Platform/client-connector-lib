@@ -112,7 +112,7 @@ To update the package uninstall and reinstall it.
 
 Uninstall with: `pip uninstall sepl-connector-client`
 
-> If Python 3.6 isn't available on your platform try the [pyenv](https://github.com/pyenv/pyenv) project for easy Python version management.
+> If Python 3.6 isn't available on your platform try the [pyenv](https://github.com/pyenv/pyenv) and [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv) projects for easy Python version management.
 
 ---
 
