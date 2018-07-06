@@ -1,11 +1,11 @@
 connector-client
 ================
 
-##### !!! Important !!!
+**!!! Important !!!**
 
-> The connector-client has been updated to python 3.6 and can now be installed via `pip`. Import paths, configuration and logging has changed.
+> **connector-client has been updated to python 3.6 and can now be installed via `pip`. Import paths, configuration and logging has changed.**
 >
-> Please consult this readme for more information or contact the author!
+> **Please consult this readme for more information or contact the author!**
 
 ---
 
@@ -44,7 +44,7 @@ Compatible with Python >= 3.5.3. For Python 3.4 please use legacy branch.
 
 Start a connector-client by instantiating a `Client` object with a device manager object or class.
 
-    class connector.client.Client(device_manager, con_callbck=None, discon_callbck=None)
+    class connector_client.client.Client(device_manager, con_callbck=None, discon_callbck=None)
 
 > `device_manager` required (class or object), must implement `DeviceManagerInterface`
 > 
@@ -234,7 +234,7 @@ Device Class
 -----------------
 Provides a standard structure for Users to map device attributes and manage device tags.
 
-    class connector.device.Device(id, type, name)
+    class connector_client.device.Device(id, type, name)
 
 > Requires device ID, type and name.
 
