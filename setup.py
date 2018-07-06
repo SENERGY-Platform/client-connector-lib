@@ -2,7 +2,7 @@ import setuptools
 
 def read_version():
     values = dict()
-    with open('connector/__init__.py', 'r') as init_file:
+    with open('sepl_connector_client/__init__.py', 'r') as init_file:
         exec(init_file.read(), values)
     return values.get('__version__')
 
