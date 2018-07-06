@@ -1,6 +1,8 @@
 connector-client
 ================
 
+##### Important: connector-client is now a python package and has changed substantially! Please consult this readme for more information or contact the author.
+
 Framework for users wanting to integrate their personal IoT project / device with the SEPL platform.
 
 Written for Python >= 3.5.3 and relying on the `websockets` module.
@@ -9,6 +11,7 @@ For Python 3.4 please use legacy branch.
 ----------
 
 + [Quickstart](#quick-start)
++ [Installation] (#installation)
 + [Configuration](#configuration)
 + [Client API](#client-api)
     + [Receive and respond](#receive-and-respond-to-a-task-command)
@@ -57,8 +60,8 @@ The connector-client will try to connect to the SEPL platform and synchronise th
 Regardless of the success of the internal connection and synchronisation phase, the connector-client will return control to _'runtime phase'_.
 During runtime users can execute their own code and make use of the client API.
 
-    from connector.client import Client
-    from connector.device import Device
+    from connector_client.client import Client
+    from connector_client.device import Device
     
     ## initiation phase ##
     
@@ -94,6 +97,17 @@ During runtime users can execute their own code and make use of the client API.
         # Delete device #
         Client.delete(new_device)
 
+##### Installation
+
+Install the `sepl-connector-client` package via pip directly from this repository by using the following command:
+
+`pip install git+ssh://git@gitlab.wifa.uni-leipzig.de/fg-seits/connector-client.git`
+
+Dependencies will be installed automatically.
+
+To update the package uninstall and reinstall it.
+
+Uninstall with: `pip uninstall sepl-connector-client`
 
 ##### Configuration
 
@@ -246,7 +260,7 @@ Device Manger Interface
 
 Users wanting to implement their own device manager must use the provided interface `DeviceManagerInterface`.
 
-    from connector.device import DeviceManagerInterface
+    from connector_client.device import DeviceManagerInterface
     
     class YourDeviceManager(DeviceManagerInterface):
         # your code
@@ -288,7 +302,7 @@ Support Modules
 
 Device manager storing and managing devices via a `dict` in memory. Uses static methods, no instantiation required.
 
-    from modules.device_pool import DevicePool
+    from connector_client.modules.device_pool import DevicePool
     
     for device in your_devices:
         DevicePool.add(device)
@@ -304,7 +318,7 @@ Device manager storing and managing devices via a `dict` in memory. Uses static 
 Device manager storing and managing devices in a sqlite database (Singleton instance). 
 Only supports `Device` objects.
 
-    from modules.device_pool import DeviceStore
+    from connector_client.modules.device_pool import DeviceStore
     
     device_manager = DeviceStore()
     
@@ -380,7 +394,7 @@ Only supports `Device` objects.
 `body` response body.
 
 
-    from modules.http_lib import Methods as http
+    from connector_client.modules.http_lib import Methods as http
     
     # get http://www.yourdomain.com/path?id=1&lang=en
     response = http.get(
@@ -405,7 +419,7 @@ Only supports `Device` objects.
 If user logs ought to be combined with connector-client logs, please create your own logger and use the `connector_client_log_handler`.
 
 
-    from modules.logger import connector_client_log_handler
+    from connector_client.modules.logger import connector_client_log_handler
     import logging
     
     logger = logging.getLogger(__name__) # set desired logger name
@@ -429,14 +443,14 @@ If the instantiation of a class is to be restricted to only one object this modu
 
 Use `Singleton` for most cases:
 
-    from modules.singleton import Singleton
+    from connector_client.modules.singleton import Singleton
     
     YourClass(Singleton):
         # your code
 
 Use `SimpleSingleton` if your class inherits from abstract classes:
 
-    from modules.singleton import SimpleSingleton
+    from connector_client.modules.singleton import SimpleSingleton
     
     YourClass(DeviceManagerInterface, SimpleSingleton):
         # your code
