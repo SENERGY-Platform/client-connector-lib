@@ -57,7 +57,7 @@ Note the _'initiation phase'_ and _'runtime phase'_ in the example below.
 During initiation the user can collect available devices and store them in a device manager.
 After all devices have been found the user can instantiate the connector-client and provide it with the collected devices.
 The connector-client will try to connect to the SEPL platform and synchronise the provided devices.
-Regardless of the success of the internal connection and synchronisation phase, the connector-client will return control to _'runtime phase'_.
+Regardless of the success of the connection and synchronisation phase, the connector-client will return control to _'runtime phase'_.
 During runtime users can execute their own code and make use of the client API.
 
     from connector_client.client import Client
@@ -103,15 +103,15 @@ Install the `sepl-connector-client` package via pip directly from this repositor
 
 `pip install git+ssh://git@gitlab.wifa.uni-leipzig.de/fg-seits/connector-client.git`
 
-Dependencies will be installed automatically.
-
 To update the package uninstall and reinstall it.
 
 Uninstall with: `pip uninstall sepl-connector-client`
 
+---
+
 ##### Configuration
 
-connector-client configuration is done via `connector/connector.conf`, if no conf file is found a new file will be generated.
+connector-client configuration is done via the `< your project >/sepl-connector-client/client.conf` file, if no conf file is found a new file will be generated.
 
     [CONNECTOR]
     encryption = < no / yes >
@@ -126,6 +126,7 @@ connector-client configuration is done via `connector/connector.conf`, if no con
     rotating_log = < yes / no >
     rotating_log_backup_count = < number of backup copies to keep >
 
+If rotating logs is enabled log files will be stored in `< your project >/sepl-connector-client/logs`.
 
 Client API
 -----------------
