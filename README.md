@@ -1,8 +1,10 @@
 connector-client
 ================
 
-##### Important:
+##### !!! Important !!!
 > connector-client is now a python package and has changed substantially! Please consult this readme for more information or contact the author.
+
+---
 
 Framework for users wanting to integrate their personal IoT project / device with the SEPL platform.
 
