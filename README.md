@@ -118,7 +118,7 @@ Uninstall with: `pip uninstall sepl-connector-client`
 
 ##### Configuration
 
-connector-client configuration is done via `< your project >/sepl-connector-client/client.conf`, if no conf file is found a new file will be generated.
+connector-client configuration is done via `< current working dir >/sepl-connector-client/client.conf`, if no conf file is found a new file will be generated.
 
     [CONNECTOR]
     encryption = < no / yes >
@@ -133,7 +133,7 @@ connector-client configuration is done via `< your project >/sepl-connector-clie
     rotating_log = < yes / no >
     rotating_log_backup_count = < number of backup copies to keep >
 
-If rotating logs is enabled log files will be stored in `< your project >/sepl-connector-client/logs`.
+If rotating logs is enabled log files will be stored in `< current working dir >/sepl-connector-client/logs`.
 
 Client API
 -----------------
