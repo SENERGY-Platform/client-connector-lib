@@ -12,10 +12,14 @@ def read_version():
         exec(init_file.read(), values)
     return values.get('__version__')
 
+USER_PATH = '{}/sepl-connector-client'.format(os.getcwd())
+
+if not os.path.exists(USER_PATH):
+    os.makedirs(USER_PATH)
 
 config = configparser.ConfigParser()
 
-conf_file_path = '{}/connector.conf'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
+conf_file_path = '{}/client.conf'.format(USER_PATH)
 
 if not os.path.isfile(conf_file_path):
     print('No config file found')
