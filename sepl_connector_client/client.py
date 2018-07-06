@@ -5,11 +5,11 @@ try:
     from modules.logger import root_logger
     from modules.singleton import Singleton
     from modules.http_lib import Methods as http
-    from connector.configuration import VERSION, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, GATEWAY_ID, writeConf
-    from connector.session import SessionManager
-    from connector.websocket import Websocket
-    from connector.message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
-    from connector.device import DeviceManagerInterface, Device, _isDevice
+    from configuration import VERSION, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, GATEWAY_ID, writeConf
+    from session import SessionManager
+    from websocket import Websocket
+    from message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
+    from device import DeviceManagerInterface, Device, _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, json, time, hashlib
