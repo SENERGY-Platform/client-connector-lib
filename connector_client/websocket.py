@@ -1,6 +1,3 @@
-if __name__ == '__main__':
-    exit('Please use "client.py"')
-
 try:
     import websockets
     from connector_client.modules.logger import root_logger, connector_client_log_handler

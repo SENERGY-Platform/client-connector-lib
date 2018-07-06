@@ -1,8 +1,4 @@
-if __name__ == '__main__':
-    exit('Please use "client.py"')
-
 import os, inspect, configparser
-
 
 init_path = '{}/__init__.py'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
 

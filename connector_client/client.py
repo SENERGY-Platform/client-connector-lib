@@ -1,10 +1,6 @@
-if __name__ == '__main__':
-    exit('Please use "client.py"')
-
 try:
     from connector_client.modules.logger import root_logger
     from connector_client.modules.singleton import Singleton
-    from connector_client.modules.http_lib import Methods as http
     from connector_client.configuration import VERSION, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, GATEWAY_ID, writeConf
     from connector_client.session import SessionManager
     from connector_client.websocket import Websocket

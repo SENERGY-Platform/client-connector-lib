@@ -1,7 +1,3 @@
-if __name__ == '__main__':
-    exit('Please use "client.py"')
-
-
 class Singleton(type):
     """
     Subclass this class for singleton behavior

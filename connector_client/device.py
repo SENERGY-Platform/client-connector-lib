@@ -1,6 +1,3 @@
-if __name__ == '__main__':
-    exit('Please use "client.py"')
-
 try:
     from connector_client.modules.logger import root_logger
 except ImportError as ex:
