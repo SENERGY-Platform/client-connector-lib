@@ -3,6 +3,7 @@ connector-client
 
 ##### !!! Important !!!
 This project has changed substantially!
+
 The connector-client has been updated to python 3.6 and can now be installed via pip.
 Please consult this readme for more information or contact the author.
 
