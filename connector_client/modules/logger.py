@@ -2,7 +2,7 @@ if __name__ == '__main__':
     exit('Please use "client.py"')
 
 try:
-    from sepl_connector_client.configuration import LOGGING_LEVEL, LOCAL_ROTATING_LOG, ROTATING_LOG_BACKUP_COUNT, L_FORMAT, USER_PATH
+    from connector_client.configuration import LOGGING_LEVEL, LOCAL_ROTATING_LOG, ROTATING_LOG_BACKUP_COUNT, L_FORMAT, USER_PATH
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 from logging.handlers import TimedRotatingFileHandler

@@ -2,14 +2,14 @@ if __name__ == '__main__':
     exit('Please use "client.py"')
 
 try:
-    from sepl_connector_client.modules.logger import root_logger
-    from sepl_connector_client.modules.singleton import Singleton
-    from sepl_connector_client.modules.http_lib import Methods as http
-    from sepl_connector_client.configuration import VERSION, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, GATEWAY_ID, writeConf
-    from sepl_connector_client.session import SessionManager
-    from sepl_connector_client.websocket import Websocket
-    from sepl_connector_client.message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
-    from sepl_connector_client.device import DeviceManagerInterface, Device, _isDevice
+    from connector_client.modules.logger import root_logger
+    from connector_client.modules.singleton import Singleton
+    from connector_client.modules.http_lib import Methods as http
+    from connector_client.configuration import VERSION, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, GATEWAY_ID, writeConf
+    from connector_client.session import SessionManager
+    from connector_client.websocket import Websocket
+    from connector_client.message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
+    from connector_client.device import DeviceManagerInterface, Device, _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, json, time, hashlib

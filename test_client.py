@@ -1,8 +1,8 @@
 try:
-    from sepl_connector_client.modules.logger import connector_client_log_handler
-    from sepl_connector_client.client import Client
-    from sepl_connector_client.device import Device
-    from sepl_connector_client.modules.device_pool import DevicePool
+    from connector_client.modules.logger import connector_client_log_handler
+    from connector_client.client import Client
+    from connector_client.device import Device
+    from connector_client.modules.device_pool import DevicePool
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import time, json, logging
