@@ -2,9 +2,9 @@ if __name__ == '__main__':
     exit('Please use "client.py"')
 
 try:
-    from modules.logger import root_logger
-    from modules.singleton import SimpleSingleton
-    from connector.device import DeviceManagerInterface, Device, _isDevice
+    from sepl_connector_client.modules.logger import root_logger
+    from sepl_connector_client.modules.singleton import SimpleSingleton
+    from sepl_connector_client.device import DeviceManagerInterface, Device, _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import inspect

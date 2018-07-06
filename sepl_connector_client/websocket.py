@@ -3,7 +3,7 @@ if __name__ == '__main__':
 
 try:
     import websockets
-    from logger import root_logger, connector_client_log_handler
+    from sepl_connector_client.modules.logger import root_logger, connector_client_log_handler
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import asyncio, concurrent.futures, functools, logging, time
