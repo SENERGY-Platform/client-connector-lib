@@ -16,7 +16,7 @@ Compatible with Python >= 3.5.3. For Python 3.4 please use legacy branch.
 ----------
 
 + [Quickstart](#quick-start)
-+ [Installation] (#installation)
++ [Installation](#installation)
 + [Configuration](#configuration)
 + [Client API](#client-api)
     + [Receive and respond](#receive-and-respond-to-a-task-command)
