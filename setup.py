@@ -21,7 +21,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url='https://gitlab.wifa.uni-leipzig.de/fg-seits/connector-client',
     packages=setuptools.find_packages(),
-    install_requires=['websockets'],
+    install_requires=['websockets>=5,<6'],
     python_requires='>=3.5.3',
     classifiers=(
         'Programming Language :: Python :: 3.5',
