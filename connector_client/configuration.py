@@ -34,7 +34,7 @@ if not os.path.isfile(conf_file_path):
     }
     with open(conf_file_path, 'w') as conf_file:
         config.write(conf_file)
-    exit('Created blank config file')
+    exit("Created blank config file at '{}'".format(USER_PATH))
 
 
 try:
