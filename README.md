@@ -108,9 +108,9 @@ Install the `sepl-connector-client` package via pip by using the following comma
 
 `pip install git+ssh://git@gitlab.wifa.uni-leipzig.de/fg-seits/connector-client.git@vX.X.X` 
 
-To update the package uninstall and reinstall it. 
+Upgrade to new version: `pip install --upgrade git+ssh://git@gitlab.wifa.uni-leipzig.de/fg-seits/connector-client.git@vX.X.X`
 
-Uninstall with: `pip uninstall sepl-connector-client`
+Uninstall: `pip uninstall sepl-connector-client`
 
 > If Python 3.6 isn't available on your platform try the [pyenv](https://github.com/pyenv/pyenv) and [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv) projects for easy Python version management.
 
