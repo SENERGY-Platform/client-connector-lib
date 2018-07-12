@@ -104,11 +104,11 @@ During runtime users can execute their own code and make use of the client API.
 
 ##### Installation
 
-Install the `sepl-connector-client` package via pip directly from this repository by using the following command:
+Install the `sepl-connector-client` package via pip by using the following command in combination with a desired version `vX.X.X` from the available git tags: 
 
-`pip install git+ssh://git@gitlab.wifa.uni-leipzig.de/fg-seits/connector-client.git`
+`pip install git+ssh://git@gitlab.wifa.uni-leipzig.de/fg-seits/connector-client.git@vX.X.X` 
 
-To update the package uninstall and reinstall it.
+To update the package uninstall and reinstall it. 
 
 Uninstall with: `pip uninstall sepl-connector-client`
 
