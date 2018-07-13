@@ -3,7 +3,7 @@ connector-client
 
 **!!! Important !!!**
 
-**This project has been updated to python 3.6 and can now be installed via `pip`. Import paths, configuration and logging has changed.**
+**This project has been updated and can now be installed via `pip`. Import paths, configuration and logging has changed.**
 
 **Please consult the readme for more information or contact the author!**
 
@@ -112,7 +112,7 @@ Upgrade to new version: `pip install --upgrade git+ssh://git@gitlab.wifa.uni-lei
 
 Uninstall: `pip uninstall sepl-connector-client`
 
-> If Python 3.6 isn't available on your platform try the [pyenv](https://github.com/pyenv/pyenv) and [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv) projects for easy Python version management.
+> If Python >= 3.5.3 isn't available on your platform try the [pyenv](https://github.com/pyenv/pyenv) and [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv) projects for easy Python version management.
 
 ---
 
