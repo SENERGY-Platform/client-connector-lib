@@ -8,7 +8,7 @@ try:
     from connector_client.device import DeviceManagerInterface, Device, _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
-import functools, json, time, hashlib
+import functools, json, time, hashlib, math
 from queue import Queue
 from threading import Thread, Event
 from inspect import isclass
@@ -113,7 +113,7 @@ class Client(metaclass=Singleton):
     __client_queue = Queue()
     __device_manager = None
     __ready = False
-    __reconnect_attempts = 1
+    __reconnect_min_delay = 30
 
 
     def __init__(self, device_manager, con_callbck=None, discon_callbck=None):
@@ -132,6 +132,8 @@ class Client(metaclass=Singleton):
         elif not _interfaceCheck(type(device_manager), DeviceManagerInterface):
             raise TypeError("'{}' must subclass DeviceManagerInterface".format(type(device_manager).__name__))
         logger.info(12 * '*' + ' Starting SEPL connector-client v{} '.format(VERSION) + 12 * '*')
+        self.__reconnect_attempts = 0
+        self.__reconnect_delay = __class__.__reconnect_min_delay
         self.__con_callbck = con_callbck
         self.__discon_callbck = discon_callbck
         __class__.__device_manager = device_manager
@@ -187,7 +189,8 @@ class Client(metaclass=Singleton):
         logger.info('trying to connect to SEPL connector')
         if _callAndWaitFor(websocket.connect):
             logger.info("connected to SEPL connector")
-            __class__.__reconnect_attempts = 1
+            self.__reconnect_attempts = 0
+            self.__reconnect_delay = __class__.__reconnect_min_delay
             logger.debug("starting handshake")
             logger.debug('sending credentials: {}'.format(credentials))
             if _callAndWaitFor(websocket.send, credentials):
@@ -220,15 +223,39 @@ class Client(metaclass=Singleton):
         return False
 
 
+    def __calcGeometricDelay(self):
+        """
+        Calculates a delay based on a geometric progression.
+        """
+        exponent = self.__reconnect_attempts / 6
+        self.__reconnect_delay = self.__reconnect_delay * 2 ** exponent
+
+
+    def __getDelay(self):
+        """
+        Round up the geometric delay to a more reasonable value and return it. Won't return values above 300.
+        :return: Integer.
+        """
+        if self.__reconnect_delay < 100:
+            return math.ceil(self.__reconnect_delay / 10) * 10
+        else:
+            delay = math.ceil(self.__reconnect_delay / 100) * 100
+            if delay <= 300:
+                return delay
+            return 300
+
+
     def __reconnect(self):
         """
-        Calls __connect() wrapped in a thread on a reconnect event.
+        Calls __connect(wait=self.__getDelay()) wrapped in a thread on a reconnect event.
+        Advances the reconnect attempt and calls __calcGeometricDelay() if necessary.
         """
         __class__.__ready = False
-        reconnect = Thread(target=self.__connect, name='reconnect', args=(__class__.__reconnect_attempts * 15, ))
-        logger.info("reconnecting in {}s".format(__class__.__reconnect_attempts * 15))
-        if __class__.__reconnect_attempts < 20:
-            __class__.__reconnect_attempts = __class__.__reconnect_attempts + 1
+        reconnect = Thread(target=self.__connect, name='reconnect', args=(self.__getDelay(), ))
+        logger.info("reconnecting in {}s".format(self.__getDelay()))
+        if self.__reconnect_delay <= 200:
+            self.__calcGeometricDelay()
+            self.__reconnect_attempts = self.__reconnect_attempts + 1
         reconnect.start()
 
 
