@@ -137,7 +137,9 @@ class Websocket(Thread):
             except asyncio.TimeoutError:
                 try:
                     pong = await self._websocket.ping(str(int(time.time())))
+                    logger.debug("sent ping after 20s of inactivity")
                     await asyncio.wait_for(pong, timeout=30)
+                    logger.debug("received pong")
                 except asyncio.TimeoutError:
                     logger.error("ping timeout")
                     if not self._stop_async:
