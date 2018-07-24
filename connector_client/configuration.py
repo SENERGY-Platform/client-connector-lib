@@ -21,14 +21,14 @@ if not os.path.isfile(conf_file_path):
     print('No config file found')
     config['CONNECTOR'] = {
         'encryption': 'no',
-        'host': '',
-        'port': '',
+        'host': 'connector.sepl.infai.or',
+        'port': '8093',
         'user': '',
         'password': '',
         'gid': ''
     }
     config['LOGGER'] = {
-        'level': 'debug',
+        'level': 'info',
         'rotating_log': 'no',
         'rotating_log_backup_count': 14
     }
