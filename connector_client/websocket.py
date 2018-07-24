@@ -41,7 +41,7 @@ class Websocket(Thread):
                     tasks.append(self._event_loop.create_task(function(*args, **kwargs)))
                 except Empty:
                     pass
-            done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=30)
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED, timeout=30, loop=self._event_loop)
             logger.debug("done tasks: {}".format(done))
             if pending:
                 logger.error("could not finish tasks: {}".format(pending))
@@ -116,7 +116,7 @@ class Websocket(Thread):
 
     async def _receive(self, callback):
         try:
-            payload = await asyncio.wait_for(self._websocket.recv(), timeout=20)
+            payload = await asyncio.wait_for(self._websocket.recv(), timeout=20, loop=self._event_loop)
             callback(payload)
         except Exception as ex:
             if not self._stop_async:
@@ -132,15 +132,15 @@ class Websocket(Thread):
         callback()
         while not self._stop_async:
             try:
-                payload = await asyncio.wait_for(self._websocket.recv(), timeout=20)
+                payload = await asyncio.wait_for(self._websocket.recv(), timeout=20, loop=self._event_loop)
                 in_queue.put(payload)
-            except asyncio.TimeoutError:
+            except (TimeoutError, asyncio.TimeoutError):
                 try:
                     pong = await self._websocket.ping(str(int(time.time())))
                     logger.debug("sent ping after 20s of inactivity")
-                    await asyncio.wait_for(pong, timeout=30)
+                    await asyncio.wait_for(pong, timeout=20, loop=self._event_loop)
                     logger.debug("received pong")
-                except asyncio.TimeoutError:
+                except (TimeoutError, asyncio.TimeoutError):
                     logger.error("ping timeout")
                     if not self._stop_async:
                         self._functionQueuePut(self._shutdown, lost_con=True)

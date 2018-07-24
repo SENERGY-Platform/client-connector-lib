@@ -116,9 +116,9 @@ class SessionManager(Thread, metaclass=Singleton):
         :param session: Session object.
         """
         try:
-            await asyncio.wait_for(session.event.wait(), session.timeout)
+            await asyncio.wait_for(session.event.wait(), session.timeout, loop=__class__._event_loop)
             logger.debug('{} caught event (timer)'.format(session.token))
-        except asyncio.TimeoutError:
+        except (TimeoutError, asyncio.TimeoutError):
             logger.warning('{} timed out'.format(session.token))
             session.msg_obj.payload = 'timed out'
         __class__._cleanup(session)
