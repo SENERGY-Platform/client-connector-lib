@@ -251,7 +251,7 @@ class Client(metaclass=Singleton):
         Advances the reconnect attempt and calls __calcGeometricDelay() if necessary.
         """
         __class__.__ready = False
-        reconnect = Thread(target=self.__connect, name='reconnect', args=(self.__getDelay(), ))
+        reconnect = Thread(target=self.__connect, name='Reconnect', args=(self.__getDelay(), ))
         logger.info("reconnecting in {}s".format(self.__getDelay()))
         if self.__reconnect_delay <= 200:
             self.__calcGeometricDelay()
@@ -279,7 +279,6 @@ class Client(metaclass=Singleton):
                     if not __class__.__put(device):
                         logger.error("synchronisation failed - device '{}' could not be synchronised".format(device.name))
                         return False
-                    time.sleep(0.1)
                 if __class__.__commit(local_hash):
                     logger.info('synchronised devices')
                     return True
@@ -480,7 +479,6 @@ class Client(metaclass=Singleton):
         if __class__.__ready:
             local_hash = _hashDevices(__class__.__device_manager.devices())
             if __class__.__put(device):
-                time.sleep(0.1)
                 if __class__.__commit(local_hash):
                     logger.info("registered device '{}'".format(device.name))
                     return True
@@ -502,7 +500,6 @@ class Client(metaclass=Singleton):
         if __class__.__ready:
             local_hash = _hashDevices(__class__.__device_manager.devices())
             if __class__.__put(device):
-                time.sleep(0.1)
                 if __class__.__commit(local_hash):
                     logger.info("updated device '{}'".format(device.name))
                     return True
@@ -526,7 +523,6 @@ class Client(metaclass=Singleton):
         if __class__.__ready:
             local_hash = _hashDevices(__class__.__device_manager.devices())
             if __class__.__disconnect(device):
-                time.sleep(0.1)
                 if __class__.__commit(local_hash):
                     logger.info("disconnected device '{}'".format(device))
                     return True
@@ -551,7 +547,6 @@ class Client(metaclass=Singleton):
         if __class__.__ready:
             local_hash = _hashDevices(__class__.__device_manager.devices())
             if __class__.__delete(device):
-                time.sleep(0.1)
                 if __class__.__commit(local_hash):
                     logger.info("deleted device '{}'".format(device))
                     return True
