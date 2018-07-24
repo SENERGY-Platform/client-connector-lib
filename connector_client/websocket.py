@@ -16,6 +16,7 @@ ws_logger.addHandler(connector_client_log_handler)
 class Websocket(Thread):
     def __init__(self, protocol, host, port, exit_callbck=None):
         super().__init__()
+        self.setName('Websocket')
         self._host = host
         self._port = port
         self._protocol = protocol
@@ -31,7 +32,7 @@ class Websocket(Thread):
 
     async def _spawnAsync(self):
         tasks = list()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix='Websocket_spawnAsync') as executor:
             while not self._stop_async:
                 try:
                     function, args, kwargs = await self._event_loop.run_in_executor(
@@ -156,7 +157,7 @@ class Websocket(Thread):
     async def _ioSend(self, callback, out_queue):
         logger.debug("io send task started")
         callback()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix='Websocket_ioSend') as executor:
             while not self._stop_async:
                 try:
                     payload = await self._event_loop.run_in_executor(

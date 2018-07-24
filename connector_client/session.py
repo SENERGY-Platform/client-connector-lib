@@ -48,6 +48,7 @@ class SessionManager(Thread, metaclass=Singleton):
         Start session manager thread.
         """
         super().__init__()
+        self.setName('SessionManager')
         self.start()
 
 
@@ -98,7 +99,7 @@ class SessionManager(Thread, metaclass=Singleton):
         """
         Waits for event and interrupts the session timer coroutine.
         """
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix='SessionManager_interruptor') as executor:
             while True:
                 session = await __class__._event_loop.run_in_executor(
                     executor,
@@ -131,7 +132,7 @@ class SessionManager(Thread, metaclass=Singleton):
         Adds Event objects to sessions or calls cleanup if sessions are already done.
         (races against event detection)
         """
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix='SessionManager_spawn') as executor:
             while True:
                 session = await __class__._event_loop.run_in_executor(
                     executor,
