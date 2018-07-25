@@ -92,6 +92,7 @@ def unmarshalMsg(msg_str: str) -> Message:
     :return: Message object.
     """
     try:
+        logger.debug("in unmarshalMsg")
         msg = json.loads(msg_str)
         msg_obj = Message()
         for key in msg:
