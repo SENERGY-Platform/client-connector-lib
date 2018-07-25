@@ -95,7 +95,9 @@ def unmarshalMsg(msg_str: str) -> Message:
     try:
         logger.debug("in unmarshalMsg")
         msg = json.loads(msg_str)
+        logger.debug(msg)
         msg_obj = Message()
+        logger.debug(msg_obj)
         for key in msg:
             if msg[key]:
                 setMangledAttr(msg_obj, key, msg[key])
