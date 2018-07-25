@@ -73,7 +73,6 @@ def setMangledAttr(obj, attr, arg):
     :param attr: Name of mangled attribute.
     :param arg: value to be written.
     """
-    logger.debug("set {}".format(attr))
     setattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr), arg)
 
 
@@ -93,15 +92,11 @@ def unmarshalMsg(msg_str: str) -> Message:
     :return: Message object.
     """
     try:
-        logger.debug("in unmarshalMsg")
         msg = json.loads(msg_str)
-        logger.debug(msg)
         msg_obj = Message()
-        logger.debug(msg_obj)
         for key in msg:
             if msg[key]:
                 setMangledAttr(msg_obj, key, msg[key])
-        logger.debug("unmarshalMsg done")
         return msg_obj
     except Exception as ex:
         logger.error("malformed message: '{}'".format(msg_str))
