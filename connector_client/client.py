@@ -198,6 +198,7 @@ class Client(metaclass=Singleton):
                 if initial_response:
                     logger.debug('received initial response: {}'.format(initial_response))
                     initial_response = unmarshalMsg(initial_response)
+                    logger.debug(initial_response)
                     if initial_response and initial_response.status == 200 and getMangledAttr(initial_response, 'token') == 'credentials':
                         logger.debug('check if gateway ID needs to be synchronised')
                         _synchroniseGid(initial_response.payload.get('gid'))
