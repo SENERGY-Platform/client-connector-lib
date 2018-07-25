@@ -21,7 +21,7 @@ if not os.path.isfile(conf_file_path):
     print('No config file found')
     config['CONNECTOR'] = {
         'encryption': 'no',
-        'host': 'connector.sepl.infai.or',
+        'host': 'connector.sepl.infai.org',
         'port': '8093',
         'user': '',
         'password': '',
