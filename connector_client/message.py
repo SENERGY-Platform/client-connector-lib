@@ -21,7 +21,9 @@ class Message:
         """
         self.__status = int()
         self.__handler = handler
+        logger.debug(1)
         self.__token = str(uuid())
+        logger.debug(2)
         self.__content_type = str()
         self.__payload = None
 
