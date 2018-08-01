@@ -1,15 +1,7 @@
 connector-client
 ================
 
-**!!! Important !!!**
-
-**This project has been updated and can now be installed via `pip`. Import paths, configuration and logging has changed.**
-
-**Please consult the readme for more information or contact the author!**
-
----
-
-Framework for users wanting to integrate their personal IoT project / device with the SEPL platform.
+Client library for users wanting to integrate their personal IoT project / device with the SEPL platform.
 
 Compatible with Python >= 3.5.3. For Python 3.4 please use legacy branch.
 
