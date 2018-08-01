@@ -104,8 +104,6 @@ Upgrade to new version: `pip install --upgrade git+ssh://git@gitlab.wifa.uni-lei
 
 Uninstall: `pip uninstall sepl-connector-client`
 
-> If Python >= 3.5.3 isn't available on your platform try the [pyenv](https://github.com/pyenv/pyenv) and [pyenv-virtualenv](https://github.com/pyenv/pyenv-virtualenv) projects for easy Python version management.
-
 ---
 
 ##### Configuration
