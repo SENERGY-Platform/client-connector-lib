@@ -133,19 +133,21 @@ class Websocket(Thread):
         callback()
         while not self._stop_async:
             try:
-                payload = await asyncio.wait_for(self._websocket.recv(), timeout=20, loop=self._event_loop)
+                payload = await asyncio.wait_for(self._websocket.recv(), timeout=15, loop=self._event_loop)
                 in_queue.put(payload)
             except (TimeoutError, asyncio.TimeoutError):
-                try:
-                    pong = await self._websocket.ping(str(int(time.time())))
-                    logger.debug("sent ping after 20s of inactivity")
-                    await asyncio.wait_for(pong, timeout=20, loop=self._event_loop)
-                    logger.debug("received pong")
-                except (TimeoutError, asyncio.TimeoutError):
-                    logger.error("ping timeout")
+                pong = await self._websocket.ping(str(int(time.time())))
+                logger.debug("sent ping after 15s of inactivity")
+                done, pending = await asyncio.wait([pong], timeout=15, loop=self._event_loop)
+                if pending:
+                    logger.error("pong timeout")
                     if not self._stop_async:
                         self._functionQueuePut(self._shutdown, lost_con=True)
                     return
+                if done:
+                    pong_fut = done.pop()
+                    if not pong_fut.cancelled():
+                        logger.debug("received pong")
             except Exception as ex:
                 if not self._stop_async:
                     logger.warning("could not receive data - {}".format(ex))
