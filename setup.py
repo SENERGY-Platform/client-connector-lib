@@ -15,7 +15,6 @@ setuptools.setup(
     name='sepl-connector-client',
     version=read_version(),
     author='Yann Dumont',
-    author_email='dumont@infai.org',
     description='Framework for users wanting to integrate their personal IoT project / device with the SEPL platform.',
     long_description=read_readme(),
     long_description_content_type="text/markdown",
