@@ -14,7 +14,9 @@
    limitations under the License.
 """
 
-import setuptools
+import setuptools, os
+
+print(os.path.abspath(os.path.dirname(__file__)))
 
 def read_version():
     values = dict()
@@ -32,7 +34,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     include_package_data=True,
     package_data={
-      '': ['*.txt', '*.rst']
+      '': ['*.txt']
     },
     install_requires=['websockets>=5,<7'],
     python_requires='>=3.5.3',
