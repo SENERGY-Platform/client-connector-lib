@@ -31,6 +31,9 @@ setuptools.setup(
     url='https://github.com/SmartEnergyPlatform',
     packages=setuptools.find_packages(),
     include_package_data=True,
+    package_data={
+      '': ['*.txt', '*.rst']
+    },
     install_requires=['websockets>=5,<7'],
     python_requires='>=3.5.3',
     classifiers=(
