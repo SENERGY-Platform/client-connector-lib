@@ -1,5 +1,5 @@
 """
-   Copyright [2018] [SEPL Team]
+   Copyright 2018 SEPL Team
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -25,12 +25,12 @@ def read_version():
 setuptools.setup(
     name='sepl-connector-client',
     version=read_version(),
-    author='Yann Dumont',
+    author='SEPL Team',
     description='Library for users wanting to integrate their personal IoT project / device with the SEPL platform.',
     license='Apache License 2.0',
     url='https://github.com/SmartEnergyPlatform',
     packages=setuptools.find_packages(),
-    package_data={'': ['LICENSE.txt']},
+    package_data={'': ['LICENSE.txt', 'CONTRIBUTORS.txt']},
     install_requires=['websockets>=5,<7'],
     python_requires='>=3.5.3',
     classifiers=(
