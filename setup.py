@@ -29,7 +29,7 @@ setuptools.setup(
     description='Library for users wanting to integrate their personal IoT project / device with the SEPL platform.',
     license='Apache License 2.0',
     url='https://github.com/SmartEnergyPlatform',
-    packages=setuptools.find_packages(),
+    packages=['connector_client'],
     package_data={
         'connector_client': [
             'LICENSE.txt',
