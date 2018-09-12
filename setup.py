@@ -30,7 +30,7 @@ setuptools.setup(
     license='Apache License 2.0',
     url='https://github.com/SmartEnergyPlatform',
     packages=setuptools.find_packages(),
-    package_data={'': ['LICENSE.txt', 'CONTRIBUTORS.txt']},
+    include_package_data=True,
     install_requires=['websockets>=5,<7'],
     python_requires='>=3.5.3',
     classifiers=(
