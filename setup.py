@@ -16,7 +16,7 @@
 
 import setuptools, os
 
-print(os.path.abspath(os.path.dirname(__file__)))
+pkg_path = os.path.abspath(os.path.dirname(__file__))
 
 def read_version():
     values = dict()
@@ -32,10 +32,10 @@ setuptools.setup(
     license='Apache License 2.0',
     url='https://github.com/SmartEnergyPlatform',
     packages=setuptools.find_packages(),
-    include_package_data=True,
-    package_data={
-      '': ['*.txt']
-    },
+    data_files=[
+        (pkg_path, ['LICENSE.txt']),
+        (pkg_path, ['CONTRIBUTORS.txt'])
+        ],
     install_requires=['websockets>=5,<7'],
     python_requires='>=3.5.3',
     classifiers=(
