@@ -14,9 +14,7 @@
    limitations under the License.
 """
 
-import setuptools, os
-
-pkg_path = os.path.abspath(os.path.dirname(__file__))
+import setuptools
 
 def read_version():
     values = dict()
@@ -27,15 +25,11 @@ def read_version():
 setuptools.setup(
     name='sepl-connector-client',
     version=read_version(),
-    author='SEPL Team',
+    author='Yann Dumont',
     description='Library for users wanting to integrate their personal IoT project / device with the SEPL platform.',
     license='Apache License 2.0',
     url='https://github.com/SmartEnergyPlatform',
     packages=setuptools.find_packages(),
-    data_files=[
-        ('../connector_client', ['LICENSE.txt']),
-        ('../connector_client', ['CONTRIBUTORS.txt'])
-        ],
     install_requires=['websockets>=5,<7'],
     python_requires='>=3.5.3',
     classifiers=(
