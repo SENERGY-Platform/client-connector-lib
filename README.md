@@ -3,7 +3,7 @@ connector-client
 
 Client library for users wanting to integrate their personal IoT project / device with the SEPL platform.
 
-Compatible with Python >= 3.5.3. For Python 3.4 please use legacy branch.
+Compatible with Python >= 3.5.3.
 
 ----------
 
@@ -483,4 +483,4 @@ Users can currently access the above data via the key `protocol_parts`:
     msg_obj = Client.receive()
     command = msg_obj.payload.get('protocol_parts')
     
-For further information see test `9` in `test_client.py` and the [connector](https://gitlab.wifa.uni-leipzig.de/fg-seits/connector) project.
+For further information see test `9` in `example_client.py`.
