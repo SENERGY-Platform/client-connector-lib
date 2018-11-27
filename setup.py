@@ -18,17 +18,17 @@ import setuptools
 
 def read_version():
     values = dict()
-    with open('connector_client/__init__.py', 'r') as init_file:
+    with open('connector_lib/__init__.py', 'r') as init_file:
         exec(init_file.read(), values)
     return values.get('__version__')
 
 setuptools.setup(
-    name='sepl-connector-client',
+    name='client-connector-lib',
     version=read_version(),
     author='Yann Dumont',
     description='Library for users wanting to integrate their personal IoT project / device with the SEPL platform.',
     license='Apache License 2.0',
-    url='https://github.com/SmartEnergyPlatform',
+    url='https://github.com/SENERGY-Platform',
     packages=setuptools.find_packages(),
     install_requires=['websockets>=5,<7'],
     python_requires='>=3.5.3',
