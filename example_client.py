@@ -15,17 +15,17 @@
 """
 
 try:
-    from connector_client.modules.logger import connector_client_log_handler
-    from connector_client.client import Client
-    from connector_client.device import Device
-    from connector_client.modules.device_pool import DevicePool
+    from connector_lib.modules.logger import connector_lib_log_handler
+    from connector_lib.client import Client
+    from connector_lib.device import Device
+    from connector_lib.modules.device_pool import DevicePool
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import time, json, logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-logger.addHandler(connector_client_log_handler)
+logger.addHandler(connector_lib_log_handler)
 
 
 scenario = {
