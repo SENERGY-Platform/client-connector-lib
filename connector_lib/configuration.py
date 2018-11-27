@@ -24,7 +24,7 @@ def read_version():
         exec(init_file.read(), values)
     return values.get('__version__')
 
-USER_PATH = '{}/sepl-connector-client'.format(os.getcwd())
+USER_PATH = '{}/client-connector'.format(os.getcwd())
 
 if not os.path.exists(USER_PATH):
     os.makedirs(USER_PATH)

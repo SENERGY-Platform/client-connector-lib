@@ -15,7 +15,7 @@
 """
 
 try:
-    from connector_client.configuration import LOGGING_LEVEL, LOCAL_ROTATING_LOG, ROTATING_LOG_BACKUP_COUNT, L_FORMAT, USER_PATH
+    from connector_lib.configuration import LOGGING_LEVEL, LOCAL_ROTATING_LOG, ROTATING_LOG_BACKUP_COUNT, L_FORMAT, USER_PATH
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 from logging.handlers import TimedRotatingFileHandler
@@ -51,14 +51,14 @@ root_logger = logging.getLogger("sepl")
 root_logger.propagate = False
 root_logger.setLevel(logging_levels[LOGGING_LEVEL])
 
-connector_client_log_handler = logging.StreamHandler()
+connector_lib_log_handler = logging.StreamHandler()
 
 if LOCAL_ROTATING_LOG:
     logs_path = '{}/logs'.format(USER_PATH)
     if not os.path.exists(logs_path):
         os.makedirs(logs_path)
     file_path = '{}/connector-client.log'.format(logs_path)
-    connector_client_log_handler = TimedRotatingFileHandler(file_path, when="midnight", backupCount=int(ROTATING_LOG_BACKUP_COUNT))
+    connector_lib_log_handler = TimedRotatingFileHandler(file_path, when="midnight", backupCount=int(ROTATING_LOG_BACKUP_COUNT))
 
-connector_client_log_handler.setFormatter(formatter)
-root_logger.addHandler(connector_client_log_handler)
+connector_lib_log_handler.setFormatter(formatter)
+root_logger.addHandler(connector_lib_log_handler)

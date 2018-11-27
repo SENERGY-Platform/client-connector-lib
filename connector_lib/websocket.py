@@ -16,7 +16,7 @@
 
 try:
     import websockets
-    from connector_client.modules.logger import root_logger, connector_client_log_handler
+    from connector_lib.modules.logger import root_logger, connector_lib_log_handler
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import asyncio, concurrent.futures, functools, logging, time
@@ -26,7 +26,7 @@ from threading import Thread, Event
 logger = root_logger.getChild(__name__)
 ws_logger = logging.getLogger('websockets')
 ws_logger.setLevel(logging.INFO)
-ws_logger.addHandler(connector_client_log_handler)
+ws_logger.addHandler(connector_lib_log_handler)
 
 
 class Websocket(Thread):
