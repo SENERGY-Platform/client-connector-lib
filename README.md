@@ -1,7 +1,7 @@
 connector-client
 ================
 
-Client library for users wanting to integrate their personal IoT project / device with the SEPL platform.
+Client library for users wanting to integrate their personal IoT project / device with the SENERGY platform.
 
 Compatible with Python >= 3.5.3.
 
@@ -36,7 +36,7 @@ Compatible with Python >= 3.5.3.
 
 Start a connector-client by instantiating a `Client` object with a device manager object or class.
 
-    class connector_client.client.Client(device_manager, con_callbck=None, discon_callbck=None)
+    class connector_lib.client.Client(device_manager, con_callbck=None, discon_callbck=None)
 
 > `device_manager` required (class or object), must implement `DeviceManagerInterface`
 > 
@@ -57,8 +57,8 @@ The connector-client will try to connect to the SEPL platform and synchronise th
 Regardless of the success of the connection and synchronisation phase, the connector-client will return control to _'runtime phase'_.
 During runtime users can execute their own code and make use of the client API.
 
-    from connector_client.client import Client
-    from connector_client.device import Device
+    from connector_lib.client import Client
+    from connector_lib.device import Device
     
     ## initiation phase ##
     
@@ -68,7 +68,7 @@ During runtime users can execute their own code and make use of the client API.
 
 
     if __name__ == '__main__':
-        connector_client = Client(your_device_manager)
+        connector_lib = Client(your_device_manager)
         
         ## runtime phase ##
 
@@ -96,19 +96,19 @@ During runtime users can execute their own code and make use of the client API.
 
 ##### Installation
 
-Install the `sepl-connector-client` package via pip by using the following command in combination with a desired version `vX.X.X` from the available git tags: 
+Install the `client-connector-lib` package via pip by using the following command in combination with a desired version `vX.X.X` from the available git tags: 
 
-`pip install git+ssh://git@gitlab.wifa.uni-leipzig.de/fg-seits/connector-client.git@vX.X.X` 
+`pip install git+https://github.com/SENERGY-Platform/client-connector-lib.git@vX.X.X` 
 
-Upgrade to new version: `pip install --upgrade git+ssh://git@gitlab.wifa.uni-leipzig.de/fg-seits/connector-client.git@vX.X.X`
+Upgrade to new version: `pip install --upgrade git+https://github.com/SENERGY-Platform/client-connector-lib.git@vX.X.X`
 
-Uninstall: `pip uninstall sepl-connector-client`
+Uninstall: `pip uninstall client-connector-lib`
 
 ---
 
 ##### Configuration
 
-connector-client configuration is done via `< current working dir >/sepl-connector-client/client.conf`, if no conf file is found a new file will be generated.
+connector-client configuration is done via `< current working dir >/client-connector/client.conf`, if no conf file is found a new file will be generated.
 
     [CONNECTOR]
     encryption = < no / yes >
@@ -123,7 +123,7 @@ connector-client configuration is done via `< current working dir >/sepl-connect
     rotating_log = < yes / no >
     rotating_log_backup_count = < number of backup copies to keep >
 
-If rotating logs is enabled log files will be stored in `< current working dir >/sepl-connector-client/logs`.
+If rotating logs is enabled log files will be stored in `< current working dir >/client-connector/logs`.
 
 Client API
 -----------------
@@ -224,7 +224,7 @@ Device Class
 -----------------
 Provides a standard structure for Users to map device attributes and manage device tags.
 
-    class connector_client.device.Device(id, type, name)
+    class connector_lib.device.Device(id, type, name)
 
 > Requires device ID, type and name.
 
@@ -258,7 +258,7 @@ Device Manger Interface
 
 Users wanting to implement their own device manager must use the provided interface `DeviceManagerInterface`.
 
-    from connector_client.device import DeviceManagerInterface
+    from connector_lib.device import DeviceManagerInterface
     
     class YourDeviceManager(DeviceManagerInterface):
         # your code
@@ -300,13 +300,13 @@ Support Modules
 
 Device manager storing and managing devices via a `dict` in memory. Uses static methods, no instantiation required.
 
-    from connector_client.modules.device_pool import DevicePool
+    from connector_lib.modules.device_pool import DevicePool
     
     for device in your_devices:
         DevicePool.add(device)
     
     if __name__ == '__main__':
-        connector_client = Client(device_manager=DevicePool)
+        connector_lib = Client(device_manager=DevicePool)
      
 
 ---
@@ -316,7 +316,7 @@ Device manager storing and managing devices via a `dict` in memory. Uses static 
 Device manager storing and managing devices in a sqlite database (Singleton instance). 
 Only supports `Device` objects.
 
-    from connector_client.modules.device_pool import DeviceStore
+    from connector_lib.modules.device_pool import DeviceStore
     
     device_manager = DeviceStore()
     
@@ -324,7 +324,7 @@ Only supports `Device` objects.
         device_manager.add(device)
     
     if __name__ == '__main__':
-        connector_client = Client(device_manager=device_manager)
+        connector_lib = Client(device_manager=device_manager)
      
 ---
 
@@ -392,7 +392,7 @@ Only supports `Device` objects.
 `body` response body.
 
 
-    from connector_client.modules.http_lib import Methods as http
+    from connector_lib.modules.http_lib import Methods as http
     
     # get http://www.yourdomain.com/path?id=1&lang=en
     response = http.get(
@@ -414,15 +414,15 @@ Only supports `Device` objects.
 
 ##### Logger
 
-If user logs ought to be combined with connector-client logs, please create your own logger and use the `connector_client_log_handler`.
+If user logs ought to be combined with connector-client logs, please create your own logger and use the `connector_lib_log_handler`.
 
 
-    from connector_client.modules.logger import connector_client_log_handler
+    from connector_lib.modules.logger import connector_lib_log_handler
     import logging
     
     logger = logging.getLogger(__name__) # set desired logger name
     logger.setLevel(logging.DEBUG) # set desired logging level
-    logger.addHandler(connector_client_log_handler)
+    logger.addHandler(connector_lib_log_handler)
     
     logger.debug('debug message')   
     logger.info('info message')
@@ -441,14 +441,14 @@ If the instantiation of a class is to be restricted to only one object this modu
 
 Use `Singleton` for most cases:
 
-    from connector_client.modules.singleton import Singleton
+    from connector_lib.modules.singleton import Singleton
     
     YourClass(Singleton):
         # your code
 
 Use `SimpleSingleton` if your class inherits from abstract classes:
 
-    from connector_client.modules.singleton import SimpleSingleton
+    from connector_lib.modules.singleton import SimpleSingleton
     
     YourClass(DeviceManagerInterface, SimpleSingleton):
         # your code
