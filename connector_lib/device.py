@@ -38,14 +38,14 @@ def _isDevice(obj):
 
 class Device:
     """
-    Use this class to create devices for use with the connector-client.
+    Use this class to create devices for use with the client-connector-lib.
     Subclass this class for advanced requirements. Don't forget to call __init__ of this class when subclassing.
     """
     def __init__(self, id, type, name):
         """
         Create a device object. Checks if parameters meet type requirements.
         :param id: Local device ID.
-        :param type: Device type (create device types via SEPL gui).
+        :param type: Device type (create device types via platform gui).
         :param name: Device name.
         :return: Device object
         """

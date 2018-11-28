@@ -1,4 +1,4 @@
-connector-client
+client-connector
 ================
 
 Client library for users wanting to integrate their personal IoT project / device with the SENERGY platform.
@@ -34,27 +34,27 @@ Compatible with Python >= 3.5.3.
 
 ##### Quick start
 
-Start a connector-client by instantiating a `Client` object with a device manager object or class.
+Start a client-connector by instantiating a `Client` object with a device manager object or class.
 
     class connector_lib.client.Client(device_manager, con_callbck=None, discon_callbck=None)
 
 > `device_manager` required (class or object), must implement `DeviceManagerInterface`
 > 
-> `con_callbck` callback after successful connection to SEPL platform
+> `con_callbck` callback after successful connection to the platform
 >
 > `discon_callbck` callback on disconnect event
 >
 > **Important:** Provided callbacks must never block!
 
-+ To avoid multiple instantiations the connector-client implements the singleton pattern.
++ To avoid multiple instantiations the client-connector implements the singleton pattern.
 + The client API uses static methods, thus allowing calls directly from the class or an object. 
-+ Threading is managed internally, wrapping the connector-client in a thread is not necessary.
++ Threading is managed internally, wrapping the client-connector in a thread is not necessary.
 
 Note the _'initiation phase'_ and _'runtime phase'_ in the example below. 
 During initiation the user can collect available devices and store them in a device manager.
-After all devices have been found the user can instantiate the connector-client and provide it with the collected devices.
-The connector-client will try to connect to the SEPL platform and synchronise the provided devices.
-Regardless of the success of the connection and synchronisation phase, the connector-client will return control to _'runtime phase'_.
+After all devices have been found the user can instantiate the client-connector and provide it with the collected devices.
+The client-connector will try to connect to the platform and synchronise the provided devices.
+Regardless of the success of the connection and synchronisation phase, the client-connector will return control to _'runtime phase'_.
 During runtime users can execute their own code and make use of the client API.
 
     from connector_lib.client import Client
@@ -108,15 +108,15 @@ Uninstall: `pip uninstall client-connector-lib`
 
 ##### Configuration
 
-connector-client configuration is done via `< current working dir >/client-connector/client.conf`, if no conf file is found a new file will be generated.
+client-connector configuration is done via `< current working dir >/client-connector/client.conf`, if no conf file is found a new file will be generated.
 
     [CONNECTOR]
     encryption = < no / yes >
     host = < your-websocket-host.com / 123.128.12.45 >
     port = < websocket port >
-    user = < sepl username >
-    password = < sepl password >
-    gid = < set by sepl platform >
+    user = < platform username >
+    password = < platform password >
+    gid = < set by platform >
     
     [LOGGER]
     level = < debug / info / warning / error / critical >
@@ -142,7 +142,7 @@ Requires a `Message` object returned by `Client.receive()` and data concerning t
 
     Client.event(device, service, data, metadata=None, timeout=10, callback=None, block=True)
 
-Requires a device ID (or `Device` object), sepl-service and event data.
+Requires a device ID (or `Device` object), device service and event data.
 
 Returns a response `Message`.
 
@@ -152,7 +152,7 @@ Returns a response `Message`.
 
     Client.add(device, timeout=10, callback=None, block=True)
     
-Adds a device to the connector-client via the provided device manager and if possible registers the device with the platform.
+Adds a device to the client-connector via the provided device manager and if possible registers the device with the platform.
 
 Requires a `Device` object.
 
@@ -164,7 +164,7 @@ Returns true only on successful device registration. Devices will always be adde
 
     Client.update(device, timeout=10, callback=None, block=True)
     
-Updates a existing Device on the connector-client and if possible publishes the changes to the platform.
+Updates a existing Device on the client-connector and if possible publishes the changes to the platform.
 
 Requires a `Device` object.
 
@@ -176,7 +176,7 @@ Returns true only on successful publish. Devices will always be updated internal
 
     Client.disconnect(device, timeout=10, callback=None, block=True)
 
-Deletes a device from the connector-client and if possible disconnects it from the platform. Disconnecting a device allows for devices to be retained on the platform (in a disconnected state) and thus remain available for further user actions.
+Deletes a device from the client-connector and if possible disconnects it from the platform. Disconnecting a device allows for devices to be retained on the platform (in a disconnected state) and thus remain available for further user actions.
 
 Requires a device ID (or `Device` object).
 
@@ -188,7 +188,7 @@ Returns true only on successful disconnect. Devices will always be deleted inter
 
     Client.delete(device, timeout=10, callback=None, block=True)
 
-Deletes a device from the connector-client and if possible deletes it from the platform. If deleting a device from the platform isn't possible, the device will enter a disconnected state after a successful connector-client reconnect and further user action is required.
+Deletes a device from the client-connector and if possible deletes it from the platform. If deleting a device from the platform isn't possible, the device will enter a disconnected state after a successful client-connector reconnect and further user action is required.
 
 Requires a device ID (or `Device` object).
 
@@ -208,7 +208,7 @@ Callbacks should conform to the following signature with a reserved leading posi
    
 Message Class
 -----------------
-Used for communication between connector-client and sepl platform.
+Used for communication between client-connector and platform-connector.
 
 **Important:**
 Users are not required to instantiate `Message` objects, they are obtained via the methods described in the 'Client API' section above.
@@ -414,7 +414,7 @@ Only supports `Device` objects.
 
 ##### Logger
 
-If user logs ought to be combined with connector-client logs, please create your own logger and use the `connector_lib_log_handler`.
+If user logs ought to be combined with client-connector logs, please create your own logger and use the `connector_lib_log_handler`.
 
 
     from connector_lib.modules.logger import connector_lib_log_handler
@@ -457,7 +457,7 @@ Use `SimpleSingleton` if your class inherits from abstract classes:
 Platform Specific Info
 -----------------
 
-The connector-client uses the `standard-connector` protocol.
+The client-connector uses the `standard-connector` protocol.
 Please be sure to select the right protocol when creating new device types.
 
 The `standard-connector` protocol consists of:
@@ -465,7 +465,7 @@ The `standard-connector` protocol consists of:
 + `metadata`
 + `data`
 
-A _'command / task'_ payload received from the SEPL platform will have the following structure:
+A _'command / task'_ payload received from the platform will have the following structure:
 
     [
         {

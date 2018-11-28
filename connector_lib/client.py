@@ -119,10 +119,10 @@ def _hashDevices(devices) -> str:
 
 class Client(metaclass=Singleton):
     """
-    Connector-client for integrating personal IoT projects / devices with the SEPL platform.
-    To avoid multiple instantiations the connector-client implements the singleton pattern.
+    client-connector for integrating personal IoT projects / devices with the platform.
+    To avoid multiple instantiations the Client class implements the singleton pattern.
     The client API uses static methods, thus allowing calls directly from the class or an object.
-    Threading is managed internally, wrapping the connector-client in a thread is not necessary.
+    Threading is managed internally, wrapping the client in a thread is not necessary.
     """
     __out_queue = Queue()
     __in_queue = Queue()
@@ -135,9 +135,9 @@ class Client(metaclass=Singleton):
     def __init__(self, device_manager, con_callbck=None, discon_callbck=None):
         """
         Creates a Client instance, checks for a device manager, starts session manager, callback handler and router.
-        Connects to the SEPL platform on first run and returns control to caller.
+        Connects to the platform on first run and returns control to caller.
         :param device_manager: Required (class or object), must implement DeviceManagerInterface.
-        :param con_callbck: Method to be called after successful connection to SEPL platform.
+        :param con_callbck: Method to be called after successful connection to platform.
         :param discon_callbck: Method to be called upon disconnect event.
         """
         if not device_manager:
@@ -147,7 +147,7 @@ class Client(metaclass=Singleton):
                 raise TypeError("'{}' must subclass DeviceManagerInterface".format(device_manager.__name__))
         elif not _interfaceCheck(type(device_manager), DeviceManagerInterface):
             raise TypeError("'{}' must subclass DeviceManagerInterface".format(type(device_manager).__name__))
-        logger.info(12 * '*' + ' Starting SEPL connector-client v{} '.format(VERSION) + 12 * '*')
+        logger.info(12 * '*' + ' Starting client-connector v{} '.format(VERSION) + 12 * '*')
         self.__reconnect_attempts = 0
         self.__reconnect_delay = __class__.__reconnect_min_delay
         self.__con_callbck = con_callbck
@@ -186,8 +186,8 @@ class Client(metaclass=Singleton):
 
     def __connect(self, wait=None) -> bool:
         """
-        Connects to the SEPL platform.
-        Performs handshake, starts device synchronisation and sets connector-client to ready on successful connection.
+        Connects to the platform.
+        Performs handshake, starts device synchronisation and sets the client-connector to ready on successful connection.
         :param wait: Time in sec to wait until a connection is attempted.
         :return: Boolean.
         """
@@ -202,9 +202,9 @@ class Client(metaclass=Singleton):
             'token': 'credentials'
         })
         websocket = Websocket(CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, self.__reconnect)
-        logger.info('trying to connect to SEPL connector')
+        logger.info('trying to connect to platform-connector')
         if _callAndWaitFor(websocket.connect):
-            logger.info("connected to SEPL connector")
+            logger.info("connected to platform-connector")
             self.__reconnect_attempts = 0
             self.__reconnect_delay = __class__.__reconnect_min_delay
             logger.debug("starting handshake")
@@ -222,7 +222,7 @@ class Client(metaclass=Singleton):
                         _callAndWaitFor(websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
                         logger.info('checking if devices need to be synchronised')
                         if self.__synchroniseDevices(initial_response.payload.get('hash')):
-                            logger.info('connector-client ready')
+                            logger.info('client-connector ready')
                             __class__.__ready = True
                             if self.__con_callbck:
                                 self.__con_callbck()
@@ -278,7 +278,7 @@ class Client(metaclass=Singleton):
     def __synchroniseDevices(self, remote_hash) -> bool:
         """
         Synchronises local devices during connection phase.
-        :param remote_hash: Hash stored on the SEPL platform.
+        :param remote_hash: Hash stored on the platform.
         :return: Boolean.
         """
         devices = __class__.__device_manager.devices()
@@ -312,7 +312,7 @@ class Client(metaclass=Singleton):
     @staticmethod
     def __send(msg_obj, timeout=10, callback=None, block=True) -> Message:
         """
-        Send messages to the SEPL platform.
+        Send messages to the platform.
         :param msg_obj: Message object.
         :param timeout: Timeout in sec.
         :param callback: Method to be called on response or timeout.
@@ -337,7 +337,7 @@ class Client(metaclass=Singleton):
     @staticmethod
     def __commit(local_hash, **kwargs) -> bool:
         """
-        Commits changes on the SEPL platform.
+        Commits changes on the platform.
         :param local_hash: Hash calculated from devices provided via a device manager.
         :param kwargs: timeout=10, callback=None, block=True.
         :return: Boolean.
@@ -355,7 +355,7 @@ class Client(metaclass=Singleton):
     @staticmethod
     def __put(device, **kwargs) -> bool:
         """
-        PUT a device to the SEPL platform. Commit required after call.
+        PUT a device to the platform. Commit required after call.
         :param device: Device (or subclass of Device) object.
         :param kwargs: timeout=10, callback=None, block=True.
         :return:
@@ -378,7 +378,7 @@ class Client(metaclass=Singleton):
     @staticmethod
     def __disconnect(device_id, **kwargs) -> bool:
         """
-        Disconnects a device from the SEPL platform. Commit required after call.
+        Disconnects a device from the platform. Commit required after call.
         :param device_id: Device ID as string.
         :param kwargs: timeout=10, callback=None, block=True.
         :return: Boolean.
@@ -396,7 +396,7 @@ class Client(metaclass=Singleton):
     @staticmethod
     def __delete(device_id, **kwargs) -> bool:
         """
-        Deletes a device from the SEPL platform. Commit required after call.
+        Deletes a device from the platform. Commit required after call.
         :param device_id: Device ID as string.
         :param kwargs: timeout=10, callback=None, block=True.
         :return: Boolean.
@@ -417,9 +417,9 @@ class Client(metaclass=Singleton):
     @staticmethod
     def event(device, service, data, metadata=None, **kwargs) -> Message:
         """
-        User method for pushing events to the SEPL platform.
+        User method for pushing events to the platform.
         :param device: Device ID or a Device (or subclass of Device) object.
-        :param service: SEPL service.
+        :param service: Device service.
         :param data: Event data as string.
         :param metadata: Event metadata.
         :param kwargs: timeout=10, callback=None, block=True.
@@ -456,7 +456,7 @@ class Client(metaclass=Singleton):
     @staticmethod
     def response(msg_obj, data, metadata=None, **kwargs):
         """
-        User method for responding to a task / command from the SEPL platform.
+        User method for responding to a task / command from the platform.
         :param msg_obj: Original Message object from a task / command.
         :param data: Data concerning the completion of a task / command.
         :param metadata: Response metadata.
@@ -573,7 +573,7 @@ class Client(metaclass=Singleton):
     @staticmethod
     def receive() -> Message:
         """
-        User method for receiving tasks / commands from the SEPL platform.
+        User method for receiving tasks / commands from the platform.
         :return: Message object.
         """
         return __class__.__client_queue.get()

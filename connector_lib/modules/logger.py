@@ -57,7 +57,7 @@ if LOCAL_ROTATING_LOG:
     logs_path = '{}/logs'.format(USER_PATH)
     if not os.path.exists(logs_path):
         os.makedirs(logs_path)
-    file_path = '{}/connector-client.log'.format(logs_path)
+    file_path = '{}/client-connector.log'.format(logs_path)
     connector_lib_log_handler = TimedRotatingFileHandler(file_path, when="midnight", backupCount=int(ROTATING_LOG_BACKUP_COUNT))
 
 connector_lib_log_handler.setFormatter(formatter)
