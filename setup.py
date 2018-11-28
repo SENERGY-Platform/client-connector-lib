@@ -30,7 +30,7 @@ setuptools.setup(
     license='Apache License 2.0',
     url='https://github.com/SENERGY-Platform',
     packages=setuptools.find_packages(),
-    install_requires=['websockets>=5,<7'],
+    install_requires=['websockets>=5,<8'],
     python_requires='>=3.5.3',
     classifiers=(
         'Programming Language :: Python :: 3.5',

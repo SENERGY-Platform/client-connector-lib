@@ -82,10 +82,18 @@ class Websocket(Thread):
 
     async def _connect(self, callback):
         try:
-            self._websocket = await websockets.connect(
-                '{}://{}:{}'.format(self._protocol, self._host, self._port),
-                loop=self._event_loop
-            )
+            if float(websockets.__version__) > 6.0:
+                self._websocket = await websockets.connect(
+                    '{}://{}:{}'.format(self._protocol, self._host, self._port),
+                    ping_interval=None,
+                    ping_timeout=None,
+                    loop=self._event_loop
+                )
+            else:
+                self._websocket = await websockets.connect(
+                    '{}://{}:{}'.format(self._protocol, self._host, self._port),
+                    loop=self._event_loop
+                )
             logger.debug("connected to '{}' on '{}'".format(self._host, self._port))
             callback(True)
         except Exception as ex:
@@ -154,16 +162,18 @@ class Websocket(Thread):
             except (TimeoutError, asyncio.TimeoutError):
                 pong = await self._websocket.ping(str(int(time.time())))
                 logger.debug("sent ping after 15s of inactivity")
-                done, pending = await asyncio.wait([pong], timeout=15, loop=self._event_loop)
+                done, pending = await asyncio.wait([pong], timeout=10, loop=self._event_loop)
                 if pending:
                     logger.error("pong timeout")
                     if not self._stop_async:
                         self._functionQueuePut(self._shutdown, lost_con=True)
+                    try:
+                        await pong
+                    except Exception:
+                        logger.debug("retrieved exception from pong future")
                     return
-                if done:
-                    pong_fut = done.pop()
-                    if not pong_fut.cancelled():
-                        logger.debug("received pong")
+                if done and not pong.cancelled():
+                    logger.debug("received pong")
             except Exception as ex:
                 if not self._stop_async:
                     logger.warning("could not receive data - {}".format(ex))
