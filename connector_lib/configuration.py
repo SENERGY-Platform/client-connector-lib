@@ -14,15 +14,14 @@
    limitations under the License.
 """
 
+try:
+    from connector_lib import __version__ as VERSION
+except ImportError as ex:
+    exit("{} - {}".format(__name__, ex.msg))
+
 import os, inspect, configparser
 
 init_path = '{}/__init__.py'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
-
-def read_version():
-    values = dict()
-    with open(init_path, 'r') as init_file:
-        exec(init_file.read(), values)
-    return values.get('__version__')
 
 USER_PATH = '{}/client-connector'.format(os.getcwd())
 
@@ -84,4 +83,3 @@ LOGGING_LEVEL = os.getenv('CONNECTOR_CLIENT_LOG_LEVEL', config['LOGGER']['level'
 LOCAL_ROTATING_LOG = config['LOGGER'].getboolean('rotating_log')
 ROTATING_LOG_BACKUP_COUNT = config['LOGGER']['rotating_log_backup_count']
 L_FORMAT = os.environ.get('L_FORMAT')
-VERSION = read_version()
