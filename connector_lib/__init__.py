@@ -14,4 +14,10 @@
    limitations under the License.
 """
 
-__version__ = '4.0.1'
+__version__ = '4.0.2'
+__title__ = 'client-connector-lib'
+__description__ = 'Library for users wanting to integrate their personal IoT project with SENERGY.'
+__url__ = 'https://github.com/SENERGY-Platform/client-connector-lib'
+__author__ = 'Yann Dumont'
+__license__ = 'Apache License 2.0'
+__copyright__ = 'Copyright 2018 InfAI (CC SES)'
