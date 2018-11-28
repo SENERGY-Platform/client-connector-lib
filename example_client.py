@@ -59,7 +59,7 @@ if 0 in tests:
 
 
 if __name__ == '__main__':
-    connector_client = Client(device_manager)
+    client_connector = Client(device_manager)
 
     logger.info('###### runtime phase ######')
 
