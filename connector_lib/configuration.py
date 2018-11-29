@@ -28,7 +28,7 @@ USER_PATH = '{}/client-connector'.format(os.getcwd())
 if not os.path.exists(USER_PATH):
     os.makedirs(USER_PATH)
 
-config = configparser.ConfigParser()
+config = configparser.ConfigParser(interpolation=None)
 
 conf_file_path = '{}/client.conf'.format(USER_PATH)
 
