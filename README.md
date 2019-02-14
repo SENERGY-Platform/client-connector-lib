@@ -11,7 +11,7 @@ Compatible with Python >= 3.5.3.
 + [Installation](#installation)
 + [Configuration](#configuration)
 + [Client API](#client-api)
-    + [Receive and respond](#receive-and-respond-to-a-task-/-command)
+    + [Receive and respond](#receive-and-respond-to-a-task--command)
     + [Push event](#push-event)
     + [Add device](#add-device)
     + [Update device](#update-device)
