@@ -17,7 +17,7 @@
 try:
     from connector_lib.modules.logger import root_logger
     from connector_lib.modules.singleton import Singleton
-    from connector_lib.message import Message
+    from connector_lib._connector.message import Message
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, asyncio, concurrent.futures

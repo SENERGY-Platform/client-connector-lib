@@ -17,10 +17,10 @@
 try:
     from connector_lib.modules.logger import root_logger
     from connector_lib.modules.singleton import Singleton
-    from connector_lib.configuration import VERSION, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, GATEWAY_ID, writeConf
-    from connector_lib.session import SessionManager
-    from connector_lib.websocket import Websocket
-    from connector_lib.message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
+    from connector_lib._connector.configuration import VERSION, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, GATEWAY_ID, writeConf
+    from connector_lib._connector.session import SessionManager
+    from connector_lib._connector.websocket import Websocket
+    from connector_lib._connector.message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
     from connector_lib.device import DeviceManagerInterface, Device, _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
