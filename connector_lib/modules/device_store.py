@@ -17,7 +17,7 @@
 try:
     from connector_lib.modules.logger import root_logger
     from connector_lib.modules.singleton import SimpleSingleton
-    from connector_lib.device import DeviceManagerInterface, Device, _isDevice
+    from connector_lib.device.device import DeviceManagerInterface, Device, _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import inspect

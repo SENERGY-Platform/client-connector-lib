@@ -21,7 +21,7 @@ try:
     from connector_lib._connector.session import SessionManager
     from connector_lib._connector.websocket import Websocket
     from connector_lib._connector.message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
-    from connector_lib.device import DeviceManagerInterface, Device, _isDevice
+    from connector_lib.device.device import DeviceManagerInterface, Device, _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, json, time, hashlib, math
