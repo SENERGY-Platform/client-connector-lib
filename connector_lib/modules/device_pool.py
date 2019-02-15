@@ -15,7 +15,7 @@
 """
 
 try:
-    from connector_lib.modules.logger import root_logger
+    from connector_lib.client import root_logger
     from connector_lib.device.device import DeviceManagerInterface, Device, _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))

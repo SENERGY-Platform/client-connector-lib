@@ -15,8 +15,7 @@
 """
 
 try:
-    from connector_lib.modules.logger import connector_lib_log_handler
-    from connector_lib.client import Client
+    from connector_lib.client import Client, connector_lib_log_handler
     from connector_lib.device import Device
     from connector_lib.modules.device_pool import DevicePool
 except ImportError as ex:

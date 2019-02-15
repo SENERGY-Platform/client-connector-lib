@@ -14,4 +14,4 @@
    limitations under the License.
 """
 
-from connector_lib.device.device import Device, DeviceManagerInterface
+from .device import Device, DeviceManagerInterface
