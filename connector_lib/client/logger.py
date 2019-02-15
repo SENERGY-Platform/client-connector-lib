@@ -47,7 +47,7 @@ class Formatter(logging.Formatter):
 
 formatter = Formatter.setFormat(fmt='%(asctime)s - %(levelname)s: [%(name)s] %(message)s', datefmt='%m.%d.%Y %I:%M:%S %p')
 
-root_logger = logging.getLogger("sepl")
+root_logger = logging.getLogger('connector_lib')
 root_logger.propagate = False
 root_logger.setLevel(logging_levels[LOGGING_LEVEL])
 

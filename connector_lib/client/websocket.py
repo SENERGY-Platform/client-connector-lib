@@ -23,7 +23,7 @@ import asyncio, concurrent.futures, functools, logging, time
 from queue import Queue, Empty
 from threading import Thread, Event
 
-logger = root_logger.getChild(__name__)
+logger = root_logger.getChild(__name__.split('.', 1)[-1])
 ws_logger = logging.getLogger('websockets')
 ws_logger.setLevel(logging.INFO)
 ws_logger.addHandler(connector_lib_log_handler)

@@ -22,7 +22,7 @@ import hashlib
 from collections import OrderedDict
 from abc import ABCMeta, abstractmethod
 
-logger = root_logger.getChild(__name__)
+logger = root_logger.getChild(__name__.rsplit('.', 1)[-1])
 
 
 def _isDevice(obj):

@@ -22,7 +22,7 @@ import urllib.request, certifi
 from typing import Union, Iterable, IO
 
 
-logger = root_logger.getChild(__name__)
+logger = root_logger.getChild(__name__.split('.', 1)[-1])
 
 
 class Method:

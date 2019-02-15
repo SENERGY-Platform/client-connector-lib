@@ -29,7 +29,7 @@ from queue import Queue
 from threading import Thread, Event
 from inspect import isclass
 
-logger = root_logger.getChild(__name__)
+logger = root_logger.getChild(__name__.rsplit('.', 1)[-1])
 
 
 # platform handlers map

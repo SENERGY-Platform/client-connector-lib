@@ -22,7 +22,7 @@ import json
 from uuid import uuid4 as uuid
 
 
-logger = root_logger.getChild(__name__)
+logger = root_logger.getChild(__name__.split('.', 1)[-1])
 
 
 class Message:

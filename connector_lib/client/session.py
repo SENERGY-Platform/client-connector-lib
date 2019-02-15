@@ -24,7 +24,7 @@ import functools, asyncio, concurrent.futures
 from threading import Thread
 from queue import Queue
 
-logger = root_logger.getChild(__name__)
+logger = root_logger.getChild(__name__.split('.', 1)[-1])
 
 
 class Session:
