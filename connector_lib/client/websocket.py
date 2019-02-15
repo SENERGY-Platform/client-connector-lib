@@ -16,7 +16,7 @@
 
 try:
     import websockets
-    from connector_lib.modules.logger import root_logger, connector_lib_log_handler
+    from .logger import root_logger, connector_lib_log_handler
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import asyncio, concurrent.futures, functools, logging, time
