@@ -18,8 +18,8 @@ try:
     from .logger import root_logger
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
-import urllib.request, certifi
-from typing import Union, Iterable, IO
+import urllib.request, urllib.parse, certifi, json
+from typing import Union, Iterable, SupportsAbs
 
 
 logger = root_logger.getChild(__name__.split('.', 1)[-1])
@@ -32,6 +32,12 @@ class Method:
     put = "PUT"
     delete = "DELETE"
     options = "OPTIONS"
+
+
+class ContentType:
+    json = 'application/json'
+    form = 'application/x-www-form-urlencoded'
+    plain = 'text/plain'
 
 
 class Response:
@@ -71,16 +77,31 @@ class Response:
 
 
 class Request:
-    def __init__(self, url: str, method: str = Method.get, data: Union[Iterable, IO, bytes] = None, headers: dict = None, timeout: int = 10):
+    def __init__(self, url: str, method: str = Method.get, body: Union[Iterable, SupportsAbs] = None, content_type: str = None, headers: dict = None, timeout: int = 10):
         self.__url = url
         self.__method = method
-        self.__data = data
+        self.__body = body
         self.__headers = headers or dict()
         self.__timeout = timeout
+        self.__request = None
         try:
+            if self.__body and not content_type:
+                raise RuntimeError('missing content type for body')
+            if self.__body and content_type:
+                if content_type == ContentType.json:
+                    self.__body = json.dumps(self.__body).encode()
+                elif content_type == ContentType.form:
+                    self.__body = urllib.parse.urlencode(self.__body).encode()
+                elif content_type == ContentType.plain:
+                    if type(self.__body) not in (int, float, complex, str):
+                        logger.warning("body with none primitive type '{}' will be converted to string representation".format(type(body).__name__))
+                    self.__body = str(self.__body).encode()
+                else:
+                    raise RuntimeError('unsupported content type for body')
+                self.__headers['content-type'] = content_type
             self.__request = urllib.request.Request(
                 self.__url,
-                data=self.__data,
+                data=self.__body,
                 headers=self.__headers,
                 method=self.__method
             )
@@ -88,20 +109,27 @@ class Request:
             logger.error(ex)
 
     def send(self) -> Response:
-        try:
-            resp = urllib.request.urlopen(
-                self.__request,
-                timeout=self.__timeout,
-                cafile=certifi.where(),
-                context=None
-            )
-            return Response(
-                status=resp.getcode(),
-                body=resp.read().decode(),
-                headers=dict(resp.info().items())
-            )
-        except Exception as ex:
-            logger.error(ex)
+        if self.__request:
+            try:
+                resp = urllib.request.urlopen(
+                    self.__request,
+                    timeout=self.__timeout,
+                    cafile=certifi.where(),
+                    context=None
+                )
+                return Response(
+                    status=resp.getcode(),
+                    body=resp.read().decode(),
+                    headers=dict(resp.info().items())
+                )
+            except urllib.request.HTTPError as ex:
+                return Response(
+                    status=ex.code,
+                    body=ex.reason,
+                    headers=dict(ex.headers.items())
+                )
+            except Exception as ex:
+                logger.error(ex)
         return Response(None)
 
     def __repr__(self):
@@ -112,7 +140,7 @@ class Request:
         attributes = [
             ('url', self.__url),
             ('method', self.__method),
-            ('data', self.__data),
+            ('body', self.__body),
             ('headers', self.__headers),
             ('timeout', self.__timeout)
         ]
