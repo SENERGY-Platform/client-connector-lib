@@ -18,11 +18,19 @@ try:
     from .logger import root_logger
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
-import urllib.request, urllib.parse, certifi, json
+import urllib.request, urllib.parse, json
 from typing import Union, Iterable, SupportsAbs
 
 
 logger = root_logger.getChild(__name__.split('.', 1)[-1])
+
+ca_file = None
+
+try:
+    import certifi
+    ca_file = certifi.where()
+except ImportError as ex:
+    pass
 
 
 class Method:
@@ -114,7 +122,7 @@ class Request:
                 resp = urllib.request.urlopen(
                     self.__request,
                     timeout=self.__timeout,
-                    cafile=certifi.where(),
+                    cafile=ca_file,
                     context=None
                 )
                 return Response(

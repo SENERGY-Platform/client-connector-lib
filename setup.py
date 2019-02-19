@@ -34,7 +34,7 @@ setuptools.setup(
     url=metadata.get('__url__'),
     copyright=metadata.get('__copyright__'),
     packages=setuptools.find_packages(),
-    install_requires=['websockets>=5,<8', 'certifi'],
+    install_requires=['websockets>=5,<8'],
     python_requires='>=3.5.3',
     classifiers=(
         'Programming Language :: Python :: 3.5',
