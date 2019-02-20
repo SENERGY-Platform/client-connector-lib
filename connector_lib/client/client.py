@@ -19,7 +19,7 @@ try:
     from .singleton import Singleton
     from .configuration import VERSION, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, GATEWAY_ID, writeConf
     from .session import SessionManager
-    from .websocket import Websocket
+    from .protocol.websocket import Websocket
     from .message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
     from ..device.device import DeviceManagerInterface, Device, _isDevice
 except ImportError as ex:
