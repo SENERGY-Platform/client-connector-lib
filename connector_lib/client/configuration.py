@@ -19,7 +19,7 @@ try:
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 
-import os, inspect, configparser
+import os, configparser
 
 
 USER_PATH = '{}/client-connector'.format(os.getcwd())
