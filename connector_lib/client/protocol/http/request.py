@@ -14,8 +14,10 @@
    limitations under the License.
 """
 
+
 try:
-    from .logger import root_logger
+    from ...logger import root_logger
+    from .response import Response
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import urllib.request, urllib.parse, json
@@ -23,6 +25,7 @@ from typing import Union, Iterable, SupportsAbs
 
 
 logger = root_logger.getChild(__name__.split('.', 1)[-1])
+
 
 ca_file = None
 
@@ -46,42 +49,6 @@ class ContentType:
     json = 'application/json'
     form = 'application/x-www-form-urlencoded'
     plain = 'text/plain'
-
-
-class Response:
-    def __init__(self, status, body=None, headers=None):
-        self.__headers = headers
-        self.__body = body
-        self.__status = status
-
-    @property
-    def body(self):
-        return self.__body
-
-    @property
-    def headers(self):
-        return self.__headers
-
-    @property
-    def status(self):
-        return self.__status
-
-    def __repr__(self):
-        """
-        Provide a string representation.
-        :return: String.
-        """
-        attributes = [
-            ('body', self.__body),
-            ('header', self.__headers),
-            ('status', self.__status)
-        ]
-        return "{}({})".format(__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
-
-    def __bool__(self):
-        if self.__status:
-            return True
-        return False
 
 
 class Request:
