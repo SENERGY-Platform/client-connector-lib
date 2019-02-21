@@ -13,6 +13,3 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 """
-
-from .client import Client
-from .logger import connector_lib_log_handler
