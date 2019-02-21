@@ -15,21 +15,21 @@
 """
 
 try:
+    from connector_lib.client.logger import getLogger, connector_lib_log_handler
     import websockets
-    from ...logger import root_logger, connector_lib_log_handler
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import asyncio, concurrent.futures, functools, logging, time
 from queue import Queue, Empty
 from threading import Thread, Event
 
-logger = root_logger.getChild(__name__.split('.', 1)[-1])
+logger = getLogger(__name__.split('.', 1)[-1])
 ws_logger = logging.getLogger('websockets')
 ws_logger.setLevel(logging.INFO)
 ws_logger.addHandler(connector_lib_log_handler)
 
 
-class Websocket(Thread):
+class Client(Thread):
     def __init__(self, protocol, host, port, exit_callbck=None):
         super().__init__()
         self.setName('Websocket')
