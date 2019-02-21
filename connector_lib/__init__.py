@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__version__ = '4.0.6'
+__version__ = '5.0.0'
 __title__ = 'client-connector-lib'
 __description__ = 'Library for users wanting to integrate their personal IoT project with SENERGY.'
 __url__ = 'https://github.com/SENERGY-Platform/client-connector-lib'
