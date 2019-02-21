@@ -62,3 +62,6 @@ if LOCAL_ROTATING_LOG:
 
 connector_lib_log_handler.setFormatter(formatter)
 root_logger.addHandler(connector_lib_log_handler)
+
+def getLogger(name: str) -> logging.Logger:
+    return root_logger.getChild(name)
