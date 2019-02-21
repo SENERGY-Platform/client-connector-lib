@@ -21,7 +21,8 @@ try:
     from .session import SessionManager
     from .protocol.websocket import Websocket
     from .message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
-    from ..device.device import DeviceManagerInterface, Device, _isDevice
+    from ..device.manager import DeviceManagerInterface
+    from ..device.device import _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import functools, json, time, hashlib, math

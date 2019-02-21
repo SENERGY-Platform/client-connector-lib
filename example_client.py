@@ -17,7 +17,7 @@
 try:
     from connector_lib.client import Client, connector_lib_log_handler
     from connector_lib.device import Device
-    from connector_lib.modules.device_pool import DevicePool
+    from connector_lib.device.manager import DevicePool
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import time, json, logging

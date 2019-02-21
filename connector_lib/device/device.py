@@ -20,7 +20,6 @@ except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import hashlib
 from collections import OrderedDict
-from abc import ABCMeta, abstractmethod
 
 logger = root_logger.getChild(__name__.rsplit('.', 1)[-1])
 
@@ -166,49 +165,3 @@ class Device:
                 attributes.append((arg, value))
         return "{}({})".format(type(self).__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
 
-
-class DeviceManagerInterface(metaclass=ABCMeta):
-    """
-    Interface class. Device managers must inherit from this class.
-    """
-    @abstractmethod
-    def add(*sc, device):
-        """
-        add device
-        :param device: takes a Device (or subclass of Device) object.
-        """
-        pass
-
-    @abstractmethod
-    def update(*sc, device):
-        """
-        update device
-        :param device: takes a Device (or subclass of Device) object.
-        """
-        pass
-
-    @abstractmethod
-    def remove(*sc, id_str):
-        """
-        remove device
-        :param id_str: takes device ID as string.
-        """
-        pass
-
-    @abstractmethod
-    def get(*sc, id_str):
-        """
-        get device
-        :param id_str: takes device ID as string.
-        :return a Device (or subclass of Device) object.
-        """
-        pass
-
-    @abstractmethod
-    def devices(*sc, _):
-        """
-        all devices
-        :param _: don't use
-        :return a dict, list or tuple object.
-        """
-        pass

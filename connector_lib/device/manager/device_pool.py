@@ -15,8 +15,9 @@
 """
 
 try:
-    from ..client.logger import root_logger
-    from ..device.device import DeviceManagerInterface, Device, _isDevice
+    from ...client.logger import root_logger
+    from ..manager.interface import DeviceManagerInterface
+    from ..device import Device, _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 

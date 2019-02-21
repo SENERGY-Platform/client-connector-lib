@@ -14,4 +14,4 @@
    limitations under the License.
 """
 
-from .device import Device, DeviceManagerInterface
+from .device import Device
