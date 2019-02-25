@@ -14,10 +14,12 @@
    limitations under the License.
 """
 
+__all__ = ['Interface']
+
 from abc import ABCMeta, abstractmethod
 
 
-class DeviceManagerInterface(metaclass=ABCMeta):
+class Interface(metaclass=ABCMeta):
     """
     Interface class. Device managers must inherit from this class.
     """

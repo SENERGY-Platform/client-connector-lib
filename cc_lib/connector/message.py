@@ -15,14 +15,14 @@
 """
 
 try:
-    from .logger import root_logger
+    from .logger import getLogger
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 import json
 from uuid import uuid4 as uuid
 
 
-logger = root_logger.getChild(__name__.split('.', 1)[-1])
+logger = getLogger(__name__.split('.', 1)[-1])
 
 
 class Message:

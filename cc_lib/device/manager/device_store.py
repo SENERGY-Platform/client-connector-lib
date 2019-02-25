@@ -14,10 +14,12 @@
    limitations under the License.
 """
 
+__all__ = ['DeviceStore']
+
 try:
-    from ...client.logger import root_logger
-    from ...client.singleton import SimpleSingleton
-    from ..manager.interface import DeviceManagerInterface
+    from ...connector.logger import getLogger
+    from ...connector.singleton import SimpleSingleton
+    from .interface import Interface
     from ..device import Device, _isDevice
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
@@ -25,10 +27,10 @@ import inspect
 import os
 import sqlite3
 
-logger = root_logger.getChild(__name__)
+logger = getLogger(__name__)
 
 
-class DeviceStore(DeviceManagerInterface, SimpleSingleton):
+class DeviceStore(Interface, SimpleSingleton):
     _db_path = '{}/devices.sqlite'.format(os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])))
     _devices_table = 'devices'
     _id_field = ('id', 'TEXT')

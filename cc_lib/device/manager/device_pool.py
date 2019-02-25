@@ -14,17 +14,18 @@
    limitations under the License.
 """
 
-try:
-    from ...client.logger import root_logger
-    from ..manager.interface import DeviceManagerInterface
-    from ..device import Device, _isDevice
-except ImportError as ex:
-    exit("{} - {}".format(__name__, ex.msg))
-
-logger = root_logger.getChild(__name__)
+__all__ = ['DevicePool']
 
 
-class DevicePool(DeviceManagerInterface):
+from ...connector.logger import getLogger
+from .interface import Interface
+from ...device.device import Device, _isDevice
+
+
+logger = getLogger(__name__)
+
+
+class DevicePool(Interface):
     __pool = dict()
 
     @staticmethod

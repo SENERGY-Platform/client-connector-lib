@@ -13,3 +13,14 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 """
+
+from .device import *
+from .type import *
+from .service import *
+import cc_lib.device.manager
+
+__all__ = (
+    device.__all__,
+    type.__all__,
+    service.__all__
+)

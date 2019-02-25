@@ -14,6 +14,8 @@
    limitations under the License.
 """
 
+__all__ = ['log_handler']
+
 try:
     from .configuration import LOGGING_LEVEL, LOCAL_ROTATING_LOG, ROTATING_LOG_BACKUP_COUNT, L_FORMAT, USER_PATH
 except ImportError as ex:
@@ -51,17 +53,17 @@ root_logger = logging.getLogger('connector_lib')
 root_logger.propagate = False
 root_logger.setLevel(logging_levels[LOGGING_LEVEL])
 
-connector_lib_log_handler = logging.StreamHandler()
+log_handler = logging.StreamHandler()
 
 if LOCAL_ROTATING_LOG:
     logs_path = '{}/logs'.format(USER_PATH)
     if not os.path.exists(logs_path):
         os.makedirs(logs_path)
     file_path = '{}/client-connector.log'.format(logs_path)
-    connector_lib_log_handler = TimedRotatingFileHandler(file_path, when="midnight", backupCount=int(ROTATING_LOG_BACKUP_COUNT))
+    log_handler = TimedRotatingFileHandler(file_path, when="midnight", backupCount=int(ROTATING_LOG_BACKUP_COUNT))
 
-connector_lib_log_handler.setFormatter(formatter)
-root_logger.addHandler(connector_lib_log_handler)
+log_handler.setFormatter(formatter)
+root_logger.addHandler(log_handler)
 
 def getLogger(name: str) -> logging.Logger:
     return root_logger.getChild(name)

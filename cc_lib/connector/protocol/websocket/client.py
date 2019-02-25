@@ -15,7 +15,7 @@
 """
 
 try:
-    from connector_lib.client.logger import getLogger, connector_lib_log_handler
+    from cc_lib.connector.logger import getLogger, log_handler
     import websockets
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
@@ -26,7 +26,7 @@ from threading import Thread, Event
 logger = getLogger(__name__.split('.', 1)[-1])
 ws_logger = logging.getLogger('websockets')
 ws_logger.setLevel(logging.INFO)
-ws_logger.addHandler(connector_lib_log_handler)
+ws_logger.addHandler(log_handler)
 
 
 class Client(Thread):

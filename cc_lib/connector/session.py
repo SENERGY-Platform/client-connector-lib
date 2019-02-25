@@ -15,7 +15,7 @@
 """
 
 try:
-    from .logger import root_logger
+    from .logger import getLogger
     from .singleton import Singleton
     from .message import Message
 except ImportError as ex:
@@ -24,7 +24,7 @@ import functools, asyncio, concurrent.futures
 from threading import Thread
 from queue import Queue
 
-logger = root_logger.getChild(__name__.split('.', 1)[-1])
+logger = getLogger(__name__.split('.', 1)[-1])
 
 
 class Session:

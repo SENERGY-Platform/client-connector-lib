@@ -14,23 +14,24 @@
    limitations under the License.
 """
 
-try:
-    from .logger import root_logger
-    from .singleton import Singleton
-    from .configuration import VERSION, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, GATEWAY_ID, writeConf
-    from .session import SessionManager
-    from .protocol.websocket import Websocket
-    from .message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
-    from ..device.manager import DeviceManagerInterface
-    from ..device.device import _isDevice
-except ImportError as ex:
-    exit("{} - {}".format(__name__, ex.msg))
+__all__ = ['Client']
+
+
+from .logger import getLogger
+from .singleton import Singleton
+from .configuration import VERSION, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, GATEWAY_ID, writeConf
+from .session import SessionManager
+from .protocol import websocket
+from .message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
+from ..device.manager.interface import Interface
+from ..device.device import _isDevice
+
 import functools, json, time, hashlib, math
 from queue import Queue
 from threading import Thread, Event
 from inspect import isclass
 
-logger = root_logger.getChild(__name__.rsplit('.', 1)[-1])
+logger = getLogger(__name__.rsplit('.', 1)[-1])
 
 
 # platform handlers map
@@ -144,9 +145,9 @@ class Client(metaclass=Singleton):
         if not device_manager:
             raise RuntimeError("a device manager must be provided")
         elif isclass(device_manager):
-            if not _interfaceCheck(device_manager, DeviceManagerInterface):
+            if not _interfaceCheck(device_manager, Interface):
                 raise TypeError("'{}' must subclass DeviceManagerInterface".format(device_manager.__name__))
-        elif not _interfaceCheck(type(device_manager), DeviceManagerInterface):
+        elif not _interfaceCheck(type(device_manager), Interface):
             raise TypeError("'{}' must subclass DeviceManagerInterface".format(type(device_manager).__name__))
         logger.info(12 * '*' + ' Starting client-connector v{} '.format(VERSION) + 12 * '*')
         self.__reconnect_attempts = 0
@@ -202,16 +203,16 @@ class Client(metaclass=Singleton):
             'gid': GATEWAY_ID,
             'token': 'credentials'
         })
-        websocket = Websocket(CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, self.__reconnect)
+        ws = websocket.Client(CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, self.__reconnect)
         logger.info('trying to connect to platform-connector')
-        if _callAndWaitFor(websocket.connect):
+        if _callAndWaitFor(ws.connect):
             logger.info("connected to platform-connector")
             self.__reconnect_attempts = 0
             self.__reconnect_delay = __class__.__reconnect_min_delay
             logger.debug("starting handshake")
             logger.debug('sending credentials: {}'.format(credentials))
-            if _callAndWaitFor(websocket.send, credentials):
-                initial_response = _callAndWaitFor(websocket.receive)
+            if _callAndWaitFor(ws.send, credentials):
+                initial_response = _callAndWaitFor(ws.receive)
                 if initial_response:
                     logger.debug('received initial response: {}'.format(initial_response))
                     initial_response = unmarshalMsg(initial_response)
@@ -220,7 +221,7 @@ class Client(metaclass=Singleton):
                         _synchroniseGid(initial_response.payload.get('gid'))
                         logger.info('handshake completed')
                         #clear out queue?
-                        _callAndWaitFor(websocket.ioStart, __class__.__in_queue, __class__.__out_queue)
+                        _callAndWaitFor(ws.ioStart, __class__.__in_queue, __class__.__out_queue)
                         logger.info('checking if devices need to be synchronised')
                         if self.__synchroniseDevices(initial_response.payload.get('hash')):
                             logger.info('client-connector ready')
@@ -236,7 +237,7 @@ class Client(metaclass=Singleton):
                 logger.error('could not initiate handshake')
         else:
             logger.error('could not connect')
-        _callAndWaitFor(websocket.shutdown)
+        _callAndWaitFor(ws.shutdown)
         return False
 
 

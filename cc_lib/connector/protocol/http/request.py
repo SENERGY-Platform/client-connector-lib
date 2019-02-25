@@ -14,9 +14,8 @@
    limitations under the License.
 """
 
-
 try:
-    from ...logger import root_logger
+    from cc_lib.connector.logger import getLogger
     from .response import Response
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
@@ -24,7 +23,7 @@ import urllib.request, urllib.parse, json
 from typing import Union, Iterable, SupportsAbs
 
 
-logger = root_logger.getChild(__name__.split('.', 1)[-1])
+logger = getLogger(__name__.split('.', 1)[-1])
 
 
 ca_file = None

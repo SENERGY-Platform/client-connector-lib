@@ -15,17 +15,17 @@
 """
 
 try:
-    from ...logger import root_logger
+    from cc_lib.connector.logger import getLogger
     from paho.mqtt.client import Client, error_string, connack_string, MQTTMessage, MQTTMessageInfo
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 from queue import Queue
 
 
-logger = root_logger.getChild(__name__.split('.', 1)[-1])
+logger = getLogger(__name__.split('.', 1)[-1])
 
 
-class MQTTClient():
+class Client():
     def __init__(self, id: str, host: str, port: int, keepalive: int, msg_queue: Queue): #store keepalive in conf
         self.__id = id
         self.__host = host

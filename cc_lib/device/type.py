@@ -13,3 +13,16 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 """
+
+__all__ = ['Type']
+
+try:
+    from ..connector.logger import getLogger
+except ImportError as ex:
+    exit("{} - {}".format(__name__, ex.msg))
+
+logger = getLogger(__name__.split('.', 1)[-1])
+
+
+class Type:
+    pass

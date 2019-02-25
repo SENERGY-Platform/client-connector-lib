@@ -14,14 +14,14 @@
    limitations under the License.
 """
 
-try:
-    from ..client.logger import root_logger
-except ImportError as ex:
-    exit("{} - {}".format(__name__, ex.msg))
+__all__ = ['Device']
+
+from ..connector.logger import getLogger
+from .type import Type
 import hashlib
 from collections import OrderedDict
 
-logger = root_logger.getChild(__name__.rsplit('.', 1)[-1])
+logger = getLogger(__name__.rsplit('.', 1)[-1])
 
 
 def _isDevice(obj):
@@ -40,7 +40,7 @@ class Device:
     Use this class to create devices for use with the client-connector-lib.
     Subclass this class for advanced requirements. Don't forget to call __init__ of this class when subclassing.
     """
-    def __init__(self, id, type, name):
+    def __init__(self, id: str, type: Type, name: str):
         """
         Create a device object. Checks if parameters meet type requirements.
         :param id: Local device ID.
@@ -139,13 +139,14 @@ class Device:
             return False
 
     @staticmethod
-    def __checkType(arg):
+    def __checkType(arg, typ):
         """
-        Check if type is string. Raise exception if not.
+        Check if arg is the correct type. Raise exception if not.
         :param: arg: object to check
+        :param: typ: type
         """
-        if type(arg) is not str:
-            raise TypeError("'{}' must be a string but is a '{}'".format(arg, type(arg)))
+        if type(arg) is not typ:
+            raise TypeError("'{}' must be '{}' but is '{}'".format(arg, type(typ).__name__, type(arg)))
 
     def __repr__(self, **kwargs):
         """
