@@ -14,12 +14,13 @@
    limitations under the License.
 """
 
-__all__ = ['Client']
+__all__ = ['Connector']
 
 
-from .logger import getLogger
+from ..logger.logger import getLogger
 from .singleton import Singleton
-from .configuration import VERSION, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, GATEWAY_ID, writeConf
+from ..configuration.configuration import VERSION, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, \
+    writeConf
 from .session import SessionManager
 from .protocol import websocket
 from .message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
@@ -119,7 +120,7 @@ def _hashDevices(devices) -> str:
     return hashlib.sha1(''.join(hashes).encode()).hexdigest()
 
 
-class Client(metaclass=Singleton):
+class Connector(metaclass=Singleton):
     """
     client-connector for integrating personal IoT projects / devices with the platform.
     To avoid multiple instantiations the Client class implements the singleton pattern.

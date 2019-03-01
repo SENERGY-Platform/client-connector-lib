@@ -15,7 +15,7 @@
 """
 
 try:
-    from cc_lib.connector.logger import getLogger
+    from logger.logger import getLogger
     from paho.mqtt.client import Client, error_string, connack_string, MQTTMessage, MQTTMessageInfo
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))

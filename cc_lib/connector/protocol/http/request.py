@@ -15,7 +15,7 @@
 """
 
 try:
-    from cc_lib.connector.logger import getLogger
+    from logger.logger import getLogger
     from .response import Response
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))

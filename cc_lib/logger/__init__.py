@@ -14,12 +14,8 @@
    limitations under the License.
 """
 
-from .interface import *
-from .persistent import *
-from .volatile import *
+from .logger import *
 
 __all__ = (
-    interface.__all__,
-    persistent.__all__,
-    volatile.__all__
+    logger.__all__
 )

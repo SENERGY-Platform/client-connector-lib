@@ -17,7 +17,7 @@
 __all__ = ['DeviceStore']
 
 try:
-    from ...connector.logger import getLogger
+    from ...logger.logger import getLogger
     from ...connector.singleton import SimpleSingleton
     from .interface import Interface
     from ..device import Device, _isDevice

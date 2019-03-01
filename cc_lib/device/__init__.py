@@ -15,12 +15,11 @@
 """
 
 from .device import *
-from .type import *
 from .service import *
-import cc_lib.device.manager
+from .type import *
 
 __all__ = (
     device.__all__,
-    type.__all__,
-    service.__all__
+    service.__all__,
+    type.__all__
 )

@@ -15,7 +15,7 @@
 """
 
 try:
-    from .. import __version__ as VERSION
+    from cc_lib import __version__ as VERSION
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 

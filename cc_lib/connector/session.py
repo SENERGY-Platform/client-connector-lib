@@ -15,7 +15,7 @@
 """
 
 try:
-    from .logger import getLogger
+    from ..logger.logger import getLogger
     from .singleton import Singleton
     from .message import Message
 except ImportError as ex:

@@ -16,7 +16,7 @@
 
 __all__ = ['Device']
 
-from ..connector.logger import getLogger
+from ..logger.logger import getLogger
 from .type import Type
 import hashlib
 from collections import OrderedDict

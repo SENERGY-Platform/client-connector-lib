@@ -15,7 +15,7 @@
 """
 
 try:
-    from cc_lib.connector.logger import getLogger, log_handler
+    from logger.logger import getLogger, log_handler
     import websockets
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))

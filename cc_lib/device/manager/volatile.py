@@ -17,7 +17,7 @@
 __all__ = ['DevicePool']
 
 
-from ...connector.logger import getLogger
+from ...logger.logger import getLogger
 from .interface import Interface
 from ...device.device import Device, _isDevice
 

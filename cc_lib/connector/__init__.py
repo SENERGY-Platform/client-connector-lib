@@ -14,10 +14,8 @@
    limitations under the License.
 """
 
-from .client import *
-from .logger import *
+from .connector import *
 
 __all__ = (
-    client.__all__,
-    logger.__all__
+    connector.__all__
 )

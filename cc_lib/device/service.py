@@ -17,7 +17,7 @@
 __all__ = ['Service']
 
 try:
-    from ..connector.logger import getLogger
+    from ..logger.logger import getLogger
 except ImportError as ex:
     exit("{} - {}".format(__name__, ex.msg))
 
