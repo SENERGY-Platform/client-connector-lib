@@ -14,11 +14,10 @@
    limitations under the License.
 """
 
-try:
-    from logger.logger import getLogger, log_handler
-    import websockets
-except ImportError as ex:
-    exit("{} - {}".format(__name__, ex.msg))
+__all__ = ('Client', )
+
+from ....logger.logger import getLogger, log_handler
+import websockets
 import asyncio, concurrent.futures, functools, logging, time
 from queue import Queue, Empty
 from threading import Thread, Event
