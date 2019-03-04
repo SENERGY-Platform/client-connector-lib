@@ -14,15 +14,11 @@
    limitations under the License.
 """
 
-try:
-    from ..logger.logger import getLogger
-    from .singleton import Singleton
-    from .message import Message
-except ImportError as ex:
-    exit("{} - {}".format(__name__, ex.msg))
-import functools, asyncio, concurrent.futures
+from ..logger.logger import getLogger
+from .singleton import Singleton
 from threading import Thread
 from queue import Queue
+import functools, asyncio, concurrent.futures
 
 logger = getLogger(__name__.split('.', 1)[-1])
 
