@@ -14,11 +14,6 @@
    limitations under the License.
 """
 
-try:
-    from cc_lib import __version__ as VERSION
-except ImportError as ex:
-    exit("{} - {}".format(__name__, ex.msg))
-
 import os, configparser
 
 
