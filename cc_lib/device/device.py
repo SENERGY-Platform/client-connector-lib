@@ -18,8 +18,8 @@ __all__ = ['Device']
 
 from ..logger.logger import getLogger
 from .type import Type
-import hashlib
 from collections import OrderedDict
+import hashlib
 
 logger = getLogger(__name__.rsplit('.', 1)[-1])
 
