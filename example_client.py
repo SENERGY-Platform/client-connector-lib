@@ -14,17 +14,11 @@
    limitations under the License.
 """
 
-try:
-    from cc_lib.connector import Client, log_handler
-    from cc_lib.device import Device
-    from cc_lib.device.manager import DevicePool
-except ImportError as ex:
-    exit("{} - {}".format(__name__, ex.msg))
-import time, json, logging
+import cc_lib, time, json, logging
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-logger.addHandler(log_handler)
+logger.addHandler(cc_lib.logger.log_handler)
 
 
 scenario = {
@@ -46,19 +40,19 @@ id_2 = '3g46h4h6h436h'
 id_3 = '46j5j67j6rt'
 id_4 = '3h6j6i8i7rer5'
 
-device_manager = DevicePool
+device_manager = cc_lib.device.manager.DevicePool
 
 if 0 in tests:
     logger.info('------ populate device manager ------')
-    device_manager.add(Device(id_1, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 1'))
-    device_2 = Device(id_2, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 2')
+    device_manager.add(cc_lib.device.Device(id_1, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 1'))
+    device_2 = cc_lib.device.Device(id_2, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 2')
     device_2.addTag('type', 'Dummy')
     device_manager.add(device_2)
-    device_manager.add(Device(id_3, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 3'))
+    device_manager.add(cc_lib.device.Device(id_3, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 3'))
 
 
 if __name__ == '__main__':
-    client_connector = Client(device_manager)
+    client_connector = cc_lib.connector.Connector(device_manager)
 
     logger.info('###### runtime phase ######')
 
@@ -67,44 +61,44 @@ if __name__ == '__main__':
         logger.info('------ add tag to existing device ------')
         device = device_manager.get(id_1)
         device.addTag('type', 'Dummy')
-        Client.update(device)
+        client_connector.update(device)
 
     if 2 in tests:
         time.sleep(0.5)
         logger.info('------ change tag on existing device ------')
         device = device_manager.get(id_1)
         device.changeTag('type', 'dummy device')
-        Client.update(device)
+        client_connector.update(device)
 
     if 3 in tests:
         time.sleep(0.5)
         logger.info('------ remove tag on existing device ------')
         device = device_manager.get(id_2)
         device.removeTag('type')
-        Client.update(device)
+        client_connector.update(device)
 
     if 4 in tests:
         time.sleep(0.5)
         logger.info('------ change name of existing device ------')
         device = device_manager.get(id_3)
         device.name = 'Dummy Smart Bulb'
-        Client.update(device)
+        client_connector.update(device)
 
     if 5 in tests:
         time.sleep(0.5)
         logger.info('------ disconnect existing device ------')
-        Client.disconnect(id_1)
+        client_connector.disconnect(id_1)
 
     if 6 in tests:
         time.sleep(0.5)
         logger.info('------ delete existing device ------')
-        Client.delete(id_3)
+        client_connector.delete(id_3)
 
     if 7 in tests:
         time.sleep(0.5)
         logger.info('------ add new device ------')
-        new_device = Device(id_4, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 4')
-        Client.add(new_device)
+        new_device = cc_lib.device.Device(id_4, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 4')
+        client_connector.add(new_device)
 
     if 8 in tests:
         time.sleep(0.5)
@@ -116,36 +110,36 @@ if __name__ == '__main__':
                     'int_field': event
                 }
             )
-            response = Client.event(id_4, 'dummy-event', data, 'dummy metadata {}'.format(event))
+            response = client_connector.event(id_4, 'dummy-event', data, 'dummy metadata {}'.format(event))
             logger.info("event response '{}'".format(response.payload))
 
     if 9 in tests:
         time.sleep(0.5)
         logger.info('------ receive command and respond ------')
-        msg_obj = Client.receive()
+        msg_obj = client_connector.receive()
         device_id = msg_obj.payload.get('device_url')
         service = msg_obj.payload.get('service_url')
         command = msg_obj.payload.get('protocol_parts')
         logger.info("received command for device '{}' on service '{}':".format(device_id, service))
         logger.info(command)
-        Client.response(msg_obj, '200', 'status')
+        client_connector.response(msg_obj, '200', 'status')
         logger.info('sent response')
 
     if 10 in tests:
         time.sleep(0.5)
         logger.info('------ add existing device ------')
-        new_device = Device(id_1, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 1')
-        Client.add(new_device)
+        new_device = cc_lib.device.Device(id_1, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 1')
+        client_connector.add(new_device)
 
     if 11 in tests:
         time.sleep(0.5)
         logger.info('------ disconnect unknown device ------')
-        Client.disconnect('0okm9ijn')
+        client_connector.disconnect('0okm9ijn')
 
     if 12 in tests:
         time.sleep(0.5)
         logger.info('------ delete unknown device ------')
-        Client.delete('mko0nji9')
+        client_connector.delete('mko0nji9')
 
     if 13 in tests:
         time.sleep(0.5)
