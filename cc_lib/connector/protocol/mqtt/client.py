@@ -14,18 +14,17 @@
    limitations under the License.
 """
 
-try:
-    from logger.logger import getLogger
-    from paho.mqtt.client import Client, error_string, connack_string, MQTTMessage, MQTTMessageInfo
-except ImportError as ex:
-    exit("{} - {}".format(__name__, ex.msg))
+__all__ = ('MQTTClient', )
+
+from ....logger.logger import getLogger
+from paho.mqtt.client import Client, error_string, connack_string, MQTTMessage, MQTTMessageInfo
 from queue import Queue
 
 
 logger = getLogger(__name__.split('.', 1)[-1])
 
 
-class Client():
+class MQTTClient():
     def __init__(self, id: str, host: str, port: int, keepalive: int, msg_queue: Queue): #store keepalive in conf
         self.__id = id
         self.__host = host
