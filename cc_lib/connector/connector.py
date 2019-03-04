@@ -14,12 +14,13 @@
    limitations under the License.
 """
 
-__all__ = ['Connector']
+__all__ = ('Connector', )
 
 
+from cc_lib import __version__ as VERSION
 from ..logger.logger import getLogger
 from .singleton import Singleton
-from ..configuration.configuration import VERSION, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, \
+from ..configuration.configuration import CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, \
     writeConf
 from .session import SessionManager
 from .protocol import websocket
