@@ -14,12 +14,9 @@
    limitations under the License.
 """
 
-try:
-    from ..logger.logger import getLogger
-except ImportError as ex:
-    exit("{} - {}".format(__name__, ex.msg))
-import json
+from ..logger.logger import getLogger
 from uuid import uuid4 as uuid
+import json
 
 
 logger = getLogger(__name__.split('.', 1)[-1])
