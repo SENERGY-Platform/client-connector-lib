@@ -16,10 +16,7 @@
 
 __all__ = ['log_handler']
 
-try:
-    from ..configuration.configuration import LOGGING_LEVEL, LOCAL_ROTATING_LOG, ROTATING_LOG_BACKUP_COUNT, L_FORMAT, USER_PATH
-except ImportError as ex:
-    exit("{} - {}".format(__name__, ex.msg))
+from ..configuration.configuration import LOGGING_LEVEL, LOCAL_ROTATING_LOG, ROTATING_LOG_BACKUP_COUNT, L_FORMAT, USER_PATH
 from logging.handlers import TimedRotatingFileHandler
 import logging, os
 
