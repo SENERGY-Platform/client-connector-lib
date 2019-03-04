@@ -17,7 +17,6 @@
 __all__ = ['Device']
 
 from ..logger.logger import getLogger
-from .type import Type
 from collections import OrderedDict
 import hashlib
 
@@ -40,7 +39,7 @@ class Device:
     Use this class to create devices for use with the client-connector-lib.
     Subclass this class for advanced requirements. Don't forget to call __init__ of this class when subclassing.
     """
-    def __init__(self, id: str, type: Type, name: str):
+    def __init__(self, id: str, type: str, name: str):
         """
         Create a device object. Checks if parameters meet type requirements.
         :param id: Local device ID.
@@ -48,9 +47,9 @@ class Device:
         :param name: Device name.
         :return: Device object
         """
-        __class__.__checkType(id)
-        __class__.__checkType(type)
-        __class__.__checkType(name)
+        __class__.__checkType(id, str)
+        __class__.__checkType(type, str)
+        __class__.__checkType(name, str)
         self.__id = id
         self.__type = type
         self.__name = name
