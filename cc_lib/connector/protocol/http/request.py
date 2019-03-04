@@ -14,11 +14,11 @@
    limitations under the License.
 """
 
-try:
-    from logger.logger import getLogger
-    from .response import Response
-except ImportError as ex:
-    exit("{} - {}".format(__name__, ex.msg))
+__all__ = ('Method', 'ContentType', 'Request')
+
+
+from ....logger.logger import getLogger
+from .response import Response
 import urllib.request, urllib.parse, json
 from typing import Union, Iterable, SupportsAbs
 
