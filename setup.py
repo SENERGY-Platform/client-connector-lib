@@ -18,7 +18,7 @@ import setuptools
 
 def read_metadata():
     values = dict()
-    with open('connector_lib/__init__.py', 'r') as init_file:
+    with open('cc_lib/__init__.py', 'r') as init_file:
         exec(init_file.read(), values)
     metadata = {key: value for key, value in values.items() if key.startswith('__')}
     return metadata
