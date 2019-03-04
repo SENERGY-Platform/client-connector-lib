@@ -21,3 +21,5 @@ __url__ = 'https://github.com/SENERGY-Platform/client-connector-lib'
 __author__ = 'Yann Dumont'
 __license__ = 'Apache License 2.0'
 __copyright__ = 'Copyright 2019 InfAI (CC SES)'
+
+import cc_lib.connector, cc_lib.device, cc_lib.logger
