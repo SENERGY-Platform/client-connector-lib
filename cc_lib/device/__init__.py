@@ -17,6 +17,7 @@
 from .device import *
 from .service import *
 from .type import *
+import cc_lib.device.manager
 
 __all__ = (
     device.__all__,
