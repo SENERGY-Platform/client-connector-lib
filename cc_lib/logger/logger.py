@@ -14,9 +14,9 @@
    limitations under the License.
 """
 
-__all__ = ['log_handler']
+__all__ = ['getHandler']
 
-from ..configuration.configuration import LOGGING_LEVEL, LOCAL_ROTATING_LOG, ROTATING_LOG_BACKUP_COUNT, L_FORMAT, USER_PATH
+from ..configuration.configuration import L_FORMAT, USR_DIR, cc_conf, initConf
 from logging.handlers import TimedRotatingFileHandler
 import logging, os
 
@@ -48,19 +48,32 @@ formatter = Formatter.setFormat(fmt='%(asctime)s - %(levelname)s: [%(name)s] %(m
 
 root_logger = logging.getLogger('cc_lib')
 root_logger.propagate = False
-root_logger.setLevel(logging_levels[LOGGING_LEVEL])
 
-log_handler = logging.StreamHandler()
+log_handler = None
 
-if LOCAL_ROTATING_LOG:
-    logs_path = '{}/logs'.format(USER_PATH)
-    if not os.path.exists(logs_path):
-        os.makedirs(logs_path)
-    file_path = '{}/client-connector.log'.format(logs_path)
-    log_handler = TimedRotatingFileHandler(file_path, when="midnight", backupCount=int(ROTATING_LOG_BACKUP_COUNT))
 
-log_handler.setFormatter(formatter)
-root_logger.addHandler(log_handler)
+def initLogger():
+    initConf()
+    root_logger.setLevel(logging_levels[cc_conf.logger.level])
+    global log_handler
+    if cc_conf.logger.rotating_log:
+        logs_path = '{}/logs'.format(USR_DIR)
+        if not os.path.exists(logs_path):
+            os.makedirs(logs_path)
+        file_path = '{}/client-connector.log'.format(logs_path)
+        log_handler = TimedRotatingFileHandler(file_path, when="midnight", backupCount=cc_conf.logger.rotating_log_backup_count)
+    else:
+        log_handler = logging.StreamHandler()
+
+    log_handler.setFormatter(formatter)
+    root_logger.addHandler(log_handler)
+
+
+def getHandler() -> logging.Handler:
+    if not log_handler:
+        initLogger()
+    return log_handler
+
 
 def getLogger(name: str) -> logging.Logger:
     return root_logger.getChild(name)
