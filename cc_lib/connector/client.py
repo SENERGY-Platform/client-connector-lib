@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('Connector', )
+__all__ = ('Client', )
 
 
 from cc_lib import __version__ as VERSION
