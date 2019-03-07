@@ -18,9 +18,9 @@ __all__ = ('Connector', )
 
 
 from cc_lib import __version__ as VERSION
+from ..configuration.configuration import cc_conf, initConf
 from ..logger.logger import getLogger
 from .singleton import Singleton
-from ..configuration.configuration import GATEWAY_ID, CONNECTOR_USER, CONNECTOR_PASSWORD, CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, writeConf
 from .session import SessionManager
 from .protocol import websocket
 from .message import Message, marshalMsg, unmarshalMsg, getMangledAttr, setMangledAttr
@@ -96,7 +96,7 @@ def _synchroniseGid(remote_gid):
     if not GATEWAY_ID == remote_gid:
         logger.debug('local and remote gateway ID differ: {} - {}'.format(GATEWAY_ID, remote_gid))
         GATEWAY_ID = remote_gid
-        writeConf(section='CONNECTOR', option='gid', value=remote_gid)
+        cc_conf.client.hid = remote_gid
         logger.info("set gateway ID: '{}'".format(remote_gid))
         time.sleep(2)
     else:
@@ -120,7 +120,7 @@ def _hashDevices(devices) -> str:
     return hashlib.sha1(''.join(hashes).encode()).hexdigest()
 
 
-class Connector(metaclass=Singleton):
+class Client(metaclass=Singleton):
     """
     client-connector for integrating personal IoT projects / devices with the platform.
     To avoid multiple instantiations the Client class implements the singleton pattern.
@@ -143,6 +143,7 @@ class Connector(metaclass=Singleton):
         :param con_callbck: Method to be called after successful connection to platform.
         :param discon_callbck: Method to be called upon disconnect event.
         """
+        initConf()
         if not device_manager:
             raise RuntimeError("a device manager must be provided")
         elif isclass(device_manager):
@@ -199,12 +200,12 @@ class Connector(metaclass=Singleton):
                 self.__discon_callbck()
             time.sleep(wait)
         credentials = json.dumps({
-            'user': CONNECTOR_USER,
-            'pw': CONNECTOR_PASSWORD,
+            'user': cc_conf.client.usr,
+            'pw': cc_conf.client.pw,
             'gid': GATEWAY_ID,
             'token': 'credentials'
         })
-        ws = websocket.Client(CONNECTOR_WS_ENCRYPTION, CONNECTOR_WS_HOST, CONNECTOR_WS_PORT, self.__reconnect)
+        ws = websocket.Client('ws', cc_conf.platform.host, cc_conf.platform.port, self.__reconnect)
         logger.info('trying to connect to platform-connector')
         if _callAndWaitFor(ws.connect):
             logger.info("connected to platform-connector")
