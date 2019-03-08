@@ -16,11 +16,8 @@
 
 __all__ = ['Device']
 
-from ..logger.logger import getLogger
 from collections import OrderedDict
 import hashlib
-
-logger = getLogger(__name__.rsplit('.', 1)[-1])
 
 
 def _isDevice(obj):
@@ -121,7 +118,6 @@ class Device:
         if tag_id in self.__tags:
             self.__tags[tag_id] = tag
             return True
-        logger.error("tag id ‘{}‘ does not exist".format(tag_id))
         return False
 
     def removeTag(self, tag_id):
@@ -134,7 +130,6 @@ class Device:
             del(self.__tags[tag_id])
             return True
         except KeyError:
-            logger.error("tag id ‘{}‘ does not exist".format(tag_id))
             return False
 
     @staticmethod

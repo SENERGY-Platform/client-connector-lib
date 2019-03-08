@@ -16,13 +16,6 @@
 
 __all__ = ['Type']
 
-try:
-    from ..logger.logger import getLogger
-except ImportError as ex:
-    exit("{} - {}".format(__name__, ex.msg))
-
-logger = getLogger(__name__.split('.', 1)[-1])
-
 
 class Type:
     pass
