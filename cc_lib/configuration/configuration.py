@@ -14,11 +14,16 @@
    limitations under the License.
 """
 
-from simple_conf import configuration, section
+from simple_conf import configuration, section, initConfig
 from os import getcwd, makedirs, environ
 from os.path import exists as path_exists
+import logging
 
-USR_DIR = '{}/cc-lib'.format(getcwd())
+logger = logging.getLogger('simple-conf')
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
+
+user_dir = '{}/cc-lib'.format(getcwd())
 
 @configuration
 class ConnectorConf:
@@ -41,68 +46,13 @@ class ConnectorConf:
         rotating_log_backup_count = 14
 
 
-cc_conf = ConnectorConf
-
-def initConf():
-    if not path_exists(USR_DIR):
-        makedirs(USR_DIR)
-    global cc_conf
-    cc_conf = cc_conf(conf_file='connector.conf', user_path=USR_DIR)
+cc_conf = ConnectorConf(conf_file='connector.conf', user_path=user_dir, ext_aft_crt=True, init=False)
 
 
-
-# config = configparser.ConfigParser(interpolation=None)
-#
-# conf_file_path = '{}/client.conf'.format(USER_PATH)
-#
-# if not os.path.isfile(conf_file_path):
-#     print('No config file found')
-#     config['CONNECTOR'] = {
-#         'encryption': 'no',
-#         'host': 'connector.sepl.infai.org',
-#         'port': '8093',
-#         'user': '',
-#         'password': '',
-#         'gid': ''
-#     }
-#     config['LOGGER'] = {
-#         'level': 'info',
-#         'rotating_log': 'no',
-#         'rotating_log_backup_count': 14
-#     }
-#     with open(conf_file_path, 'w') as conf_file:
-#         config.write(conf_file)
-#     exit("Created blank config file at '{}'".format(USER_PATH))
-#
-#
-# try:
-#     config.read(conf_file_path)
-# except Exception as ex:
-#     exit(ex)
-#
-#
-# def writeConf(section, option, value):
-#     config.set(section=section, option=option, value=value)
-#     try:
-#         with open(conf_file_path, 'w') as conf_file:
-#             config.write(conf_file)
-#     except Exception as ex:
-#         print(ex)
-#
-#
-# protocol_map = {
-#     'yes': 'wss',
-#     'no': 'ws'
-# }
+def initConnectorConf():
+    if not path_exists(user_dir):
+        makedirs(user_dir)
+    initConfig(cc_conf)
 
 
-# CONNECTOR_WS_ENCRYPTION = protocol_map[config['CONNECTOR']['encryption']]
-# CONNECTOR_WS_HOST = config['CONNECTOR']['host']
-# CONNECTOR_WS_PORT = config['CONNECTOR']['port']
-# CONNECTOR_USER = config['CONNECTOR']['user']
-# CONNECTOR_PASSWORD = config['CONNECTOR']['password']
-# GATEWAY_ID = config['CONNECTOR']['gid']
-# LOGGING_LEVEL = os.getenv('CONNECTOR_CLIENT_LOG_LEVEL', config['LOGGER']['level'])
-# LOCAL_ROTATING_LOG = config['LOGGER'].getboolean('rotating_log')
-# ROTATING_LOG_BACKUP_COUNT = config['LOGGER']['rotating_log_backup_count']
 L_FORMAT = environ.get('L_FORMAT')
