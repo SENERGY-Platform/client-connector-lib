@@ -14,13 +14,13 @@
    limitations under the License.
 """
 
-from ..logger.logger import getLogger
+from ..logger.logger import _getLibLogger
 from .singleton import Singleton
 from threading import Thread
 from queue import Queue
 import functools, asyncio, concurrent.futures
 
-logger = getLogger(__name__.split('.', 1)[-1])
+logger = _getLibLogger(__name__.split('.', 1)[-1])
 
 
 class Session:

@@ -16,12 +16,12 @@
 
 __all__ = ('MQTTClient', )
 
-from ....logger.logger import getLogger
+from ....logger.logger import _getLibLogger
 from paho.mqtt.client import Client, error_string, connack_string, MQTTMessage, MQTTMessageInfo
 from queue import Queue
 
 
-logger = getLogger(__name__.split('.', 1)[-1])
+logger = _getLibLogger(__name__.split('.', 1)[-1])
 
 
 class MQTTClient():

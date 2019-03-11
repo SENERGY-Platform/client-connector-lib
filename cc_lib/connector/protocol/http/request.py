@@ -17,13 +17,13 @@
 __all__ = ('Method', 'ContentType', 'Request')
 
 
-from ....logger.logger import getLogger
+from ....logger.logger import _getLibLogger
 from .response import Response
 import urllib.request, urllib.parse, json
 from typing import Union, Iterable, SupportsAbs
 
 
-logger = getLogger(__name__.split('.', 1)[-1])
+logger = _getLibLogger(__name__.split('.', 1)[-1])
 
 
 ca_file = None

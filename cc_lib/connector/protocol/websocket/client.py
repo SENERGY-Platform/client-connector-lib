@@ -16,17 +16,15 @@
 
 __all__ = ('Client', )
 
-from ....logger.logger import getLogger, log_handler
+from ....logger.logger import _getLibLogger, _getLibHandler
 import websockets
 import asyncio, concurrent.futures, functools, logging, time
 from queue import Queue, Empty
 from threading import Thread, Event
 
-logger = getLogger(__name__.split('.', 1)[-1])
+logger = _getLibLogger(__name__.split('.', 1)[-1])
 ws_logger = logging.getLogger('websockets')
 ws_logger.setLevel(logging.INFO)
-ws_logger.addHandler(log_handler)
-
 
 class Client(Thread):
     def __init__(self, protocol, host, port, exit_callbck=None):
@@ -39,6 +37,7 @@ class Client(Thread):
         self._stop_async = False
         self._websocket = None
         self._exit_callbck = exit_callbck
+        ws_logger.addHandler(_getLibHandler())
 
 
     def _functionQueuePut(self, function, *args, **kwargs):

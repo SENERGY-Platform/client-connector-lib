@@ -14,12 +14,12 @@
    limitations under the License.
 """
 
-from ..logger.logger import getLogger
+from ..logger.logger import _getLibLogger
 from uuid import uuid4 as uuid
 import json
 
 
-logger = getLogger(__name__.split('.', 1)[-1])
+logger = _getLibLogger(__name__.split('.', 1)[-1])
 
 
 class Message:

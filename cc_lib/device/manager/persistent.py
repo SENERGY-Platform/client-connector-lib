@@ -17,7 +17,7 @@
 __all__ = ['DeviceStore']
 
 try:
-    from ...logger.logger import getLogger
+    from ...logger.logger import _getLibLogger
     from ...connector.singleton import SimpleSingleton
     from .interface import Interface
     from ..device import Device, _isDevice
@@ -27,7 +27,7 @@ import inspect
 import os
 import sqlite3
 
-logger = getLogger(__name__)
+logger = _getLibLogger(__name__)
 
 
 class DeviceStore(Interface, SimpleSingleton):

@@ -17,12 +17,12 @@
 __all__ = ['DevicePool']
 
 
-from ...logger.logger import getLogger
+from ...logger.logger import _getLibLogger
 from .interface import Interface
 from ...device.device import Device, _isDevice
 
 
-logger = getLogger(__name__)
+logger = _getLibLogger(__name__)
 
 
 class DevicePool(Interface):
