@@ -37,8 +37,7 @@ setuptools.setup(
     license=metadata.get('__license__'),
     url=metadata.get('__url__'),
     copyright=metadata.get('__copyright__'),
-    install_requires=['websockets>=5,<8', 'paho-mqtt'],
-    dependency_links=['git+https://github.com/y-du/simple-conf-manager.git#egg=simple-conf-manager'],
+    install_requires=['websockets>=5,<8', 'paho-mqtt', 'simple-conf-manager @ git+https://github.com/y-du/simple-conf-manager.git'],
     packages=setuptools.find_packages(),
     python_requires='>=3.5.3',
     classifiers=(
