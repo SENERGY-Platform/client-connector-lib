@@ -14,10 +14,17 @@
    limitations under the License.
 """
 
+__all__ = ('getLogger', )
 
-from ..configuration.configuration import L_FORMAT, user_dir, cc_conf
+from ..configuration.configuration import user_dir, cc_conf
 from logging.handlers import TimedRotatingFileHandler
-import logging, os
+from threading import RLock
+from os import makedirs
+from os.path import exists as path_exists
+import logging
+
+
+lock = RLock()
 
 
 logging_levels = {
@@ -28,41 +35,51 @@ logging_levels = {
     'debug': logging.DEBUG
 }
 
-class Formatter(logging.Formatter):
-    def format(self, record):
-        c_map = {"a":"4","e":"3","E":"3","l":"1","o":"0","O":"0","s":"5"}
-        get_c = lambda c: c_map[c] if c in c_map else c
-        record.msg = ''.join(get_c(c) for c in record.msg)
-        return super().format(record)
+formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s: [%(name)s] %(message)s', datefmt='%m.%d.%Y %I:%M:%S %p')
 
-    @staticmethod
-    def setFormat(fmt=None, datefmt=None):
-        if L_FORMAT:
-            return Formatter(fmt, datefmt)
-        else:
-            return logging.Formatter(fmt, datefmt)
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
 
+lib_logger = logging.getLogger('cc_lib')
+lib_logger.propagate = False
+lib_logger.addHandler(stream_handler)
 
-formatter = Formatter.setFormat(fmt='%(asctime)s - %(levelname)s: [%(name)s] %(message)s', datefmt='%m.%d.%Y %I:%M:%S %p')
-
-root_logger = logging.getLogger('cc_lib')
-root_logger.propagate = False
+usr_logger = logging.getLogger('user')
+usr_logger.propagate = False
+usr_logger.addHandler(stream_handler)
 
 
-def initLogger():
-    root_logger.setLevel(logging_levels[cc_conf.logger.level])
+def initLogging():
+    lib_logger.setLevel(logging_levels[cc_conf.logger.level])
     if cc_conf.logger.rotating_log:
+        lock.acquire()
+        lib_logger.removeHandler(stream_handler)
+        usr_logger.removeHandler(stream_handler)
         logs_path = '{}/logs'.format(user_dir)
-        if not os.path.exists(logs_path):
-            os.makedirs(logs_path)
+        if not path_exists(logs_path):
+            makedirs(logs_path)
         file_path = '{}/client-connector.log'.format(logs_path)
-        log_handler = TimedRotatingFileHandler(file_path, when="midnight", backupCount=cc_conf.logger.rotating_log_backup_count)
-    else:
-        log_handler = logging.StreamHandler()
-    log_handler.setFormatter(formatter)
-    root_logger.addHandler(log_handler)
+        log_handler = TimedRotatingFileHandler(
+            file_path,
+            when="midnight",
+            backupCount=cc_conf.logger.rotating_log_backup_count
+        )
+        log_handler.setFormatter(formatter)
+        lib_logger.addHandler(log_handler)
+        usr_logger.addHandler(log_handler)
+        lock.release()
+
+
+def _getLibHandler():
+    lock.acquire()
+    log_handler = lib_logger.handlers[0]
+    lock.release()
     return log_handler
 
 
+def _getLibLogger(name: str) -> logging.Logger:
+    return lib_logger.getChild(name)
+
+
 def getLogger(name: str) -> logging.Logger:
-    return root_logger.getChild(name)
+    return usr_logger.getChild(name)
