@@ -15,13 +15,17 @@
 """
 
 from simple_conf import configuration, section, initConfig
-from os import getcwd, makedirs, environ
+from os import getcwd, makedirs
 from os.path import exists as path_exists
 import logging
 
-logger = logging.getLogger('simple-conf')
-logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.INFO)
+formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s: [%(name)s] %(message)s', datefmt='%m.%d.%Y %I:%M:%S %p')
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+
+sc_logger = logging.getLogger('simple-conf')
+sc_logger.addHandler(stream_handler)
+sc_logger.setLevel(logging.INFO)
 
 user_dir = '{}/cc-lib'.format(getcwd())
 
@@ -53,6 +57,3 @@ def initConnectorConf():
     if not path_exists(user_dir):
         makedirs(user_dir)
     initConfig(cc_conf)
-
-
-L_FORMAT = environ.get('L_FORMAT')
