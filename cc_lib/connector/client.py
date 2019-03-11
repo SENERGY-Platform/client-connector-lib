@@ -18,8 +18,8 @@ __all__ = ('Client', )
 
 
 from cc_lib import __version__ as VERSION
-from ..configuration.configuration import cc_conf, initConf
-from ..logger.logger import getLogger
+from ..configuration.configuration import cc_conf, initConnectorConf
+from ..logger.logger import _getLibLogger, initLogging
 from .singleton import Singleton
 from .session import SessionManager
 from .protocol import websocket
@@ -32,7 +32,7 @@ from queue import Queue
 from threading import Thread, Event
 from inspect import isclass
 
-logger = getLogger(__name__.rsplit('.', 1)[-1])
+logger = _getLibLogger(__name__.split('.', 1)[-1])
 
 
 # platform handlers map
@@ -92,10 +92,9 @@ def _synchroniseGid(remote_gid):
     Checks if local and remote gateway ID differ and sets new ID.
     :param remote_gid: Remote gateway ID as string.
     """
-    global GATEWAY_ID
-    if not GATEWAY_ID == remote_gid:
-        logger.debug('local and remote gateway ID differ: {} - {}'.format(GATEWAY_ID, remote_gid))
-        GATEWAY_ID = remote_gid
+
+    if not cc_conf.client.hid == remote_gid:
+        logger.debug('local and remote gateway ID differ: {} - {}'.format(cc_conf.client.hid, remote_gid))
         cc_conf.client.hid = remote_gid
         logger.info("set gateway ID: '{}'".format(remote_gid))
         time.sleep(2)
@@ -143,7 +142,8 @@ class Client(metaclass=Singleton):
         :param con_callbck: Method to be called after successful connection to platform.
         :param discon_callbck: Method to be called upon disconnect event.
         """
-        initConf()
+        initConnectorConf()
+        initLogging()
         if not device_manager:
             raise RuntimeError("a device manager must be provided")
         elif isclass(device_manager):
@@ -151,19 +151,21 @@ class Client(metaclass=Singleton):
                 raise TypeError("'{}' must subclass DeviceManagerInterface".format(device_manager.__name__))
         elif not _interfaceCheck(type(device_manager), Interface):
             raise TypeError("'{}' must subclass DeviceManagerInterface".format(type(device_manager).__name__))
-        logger.info(12 * '*' + ' Starting client-connector v{} '.format(VERSION) + 12 * '*')
         self.__reconnect_attempts = 0
         self.__reconnect_delay = __class__.__reconnect_min_delay
         self.__con_callbck = con_callbck
         self.__discon_callbck = discon_callbck
         __class__.__device_manager = device_manager
-        self.__session_manager = SessionManager()
+        self.__session_manager = SessionManager
         self.__callback_thread = Thread(target=self.__callbackHandler, name="Callback")
-        self.__callback_thread.start()
         self.__router_thread = Thread(target=self.__router, name="Router")
+
+    def begin(self):
+        logger.info(12 * '*' + ' Starting client-connector v{} '.format(VERSION) + 12 * '*')
+        self.__session_manager()
+        self.__callback_thread.start()
         self.__router_thread.start()
         self.__connect()
-
 
     def __callbackHandler(self):
         """
@@ -202,7 +204,7 @@ class Client(metaclass=Singleton):
         credentials = json.dumps({
             'user': cc_conf.client.usr,
             'pw': cc_conf.client.pw,
-            'gid': GATEWAY_ID,
+            'gid': cc_conf.client.hid,
             'token': 'credentials'
         })
         ws = websocket.Client('ws', cc_conf.platform.host, cc_conf.platform.port, self.__reconnect)
