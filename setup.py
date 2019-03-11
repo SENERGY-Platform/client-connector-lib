@@ -17,10 +17,14 @@
 import setuptools
 
 def read_metadata():
-    values = dict()
+    metadata = dict()
     with open('cc_lib/__init__.py', 'r') as init_file:
-        exec(init_file.read(), values)
-    metadata = {key: value for key, value in values.items() if key.startswith('__')}
+        for line in init_file.readlines():
+            if line.startswith('__'):
+                line = line.replace("'", '')
+                line = line.replace('\n', '')
+                key, value = line.split(' = ')
+                metadata[key] = value
     return metadata
 
 metadata = read_metadata()
