@@ -16,9 +16,8 @@
 
 import cc_lib, time, json, logging
 
-logger = logging.getLogger(__name__)
+logger = cc_lib.logger.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-logger.addHandler(cc_lib.logger.log_handler)
 
 
 scenario = {
@@ -33,6 +32,11 @@ scenario = {
 tests = scenario[6]
 
 
+device_manager = cc_lib.device.manager.DevicePool
+
+client_connector = cc_lib.connector.Client(device_manager)
+
+
 logger.info('###### initiation phase ######')
 
 id_1 = 'asdsdfsf24t'
@@ -40,7 +44,6 @@ id_2 = '3g46h4h6h436h'
 id_3 = '46j5j67j6rt'
 id_4 = '3h6j6i8i7rer5'
 
-device_manager = cc_lib.device.manager.DevicePool
 
 if 0 in tests:
     logger.info('------ populate device manager ------')
@@ -52,7 +55,7 @@ if 0 in tests:
 
 
 if __name__ == '__main__':
-    client_connector = cc_lib.connector.Connector(device_manager)
+    client_connector.begin()
 
     logger.info('###### runtime phase ######')
 
