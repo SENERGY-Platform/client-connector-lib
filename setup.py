@@ -16,9 +16,10 @@
 
 import setuptools
 
-def read_metadata():
+
+def read_metadata(pkg_file):
     metadata = dict()
-    with open('cc_lib/__init__.py', 'r') as init_file:
+    with open(pkg_file, 'r') as init_file:
         for line in init_file.readlines():
             if line.startswith('__'):
                 line = line.replace("'", '')
@@ -27,7 +28,9 @@ def read_metadata():
                 metadata[key] = value
     return metadata
 
-metadata = read_metadata()
+
+metadata = read_metadata('cc_lib/__init__.py')
+
 
 setuptools.setup(
     name=metadata.get('__title__'),
