@@ -108,7 +108,7 @@ Uninstall: `pip uninstall client-connector-lib`
 
 ##### Configuration
 
-client-connector configuration is done via `< current working dir >/client-connector/client.conf`, if no conf file is found a new file will be generated.
+client-connector configuration is done via `< current working dir >/cc-lib/connector.conf`, if no conf file is found a new file will be generated.
 
     [CONNECTOR]
     encryption = < no / yes >
@@ -123,7 +123,7 @@ client-connector configuration is done via `< current working dir >/client-conne
     rotating_log = < yes / no >
     rotating_log_backup_count = < number of backup copies to keep >
 
-If rotating logs is enabled log files will be stored in `< current working dir >/client-connector/logs`.
+If rotating logs is enabled log files will be stored in `< current working dir >/cc-lib/logs`.
 
 Client API
 -----------------
