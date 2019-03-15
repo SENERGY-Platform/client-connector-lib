@@ -58,7 +58,7 @@ def initLogging():
         logs_path = '{}/logs'.format(user_dir)
         if not path_exists(logs_path):
             makedirs(logs_path)
-        file_path = '{}/client-connector.log'.format(logs_path)
+        file_path = '{}/connector.log'.format(logs_path)
         log_handler = TimedRotatingFileHandler(
             file_path,
             when="midnight",
