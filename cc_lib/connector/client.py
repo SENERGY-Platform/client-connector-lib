@@ -93,9 +93,9 @@ def _synchroniseGid(remote_gid):
     :param remote_gid: Remote gateway ID as string.
     """
 
-    if not cc_conf.client.hid == remote_gid:
-        logger.debug('local and remote gateway ID differ: {} - {}'.format(cc_conf.client.hid, remote_gid))
-        cc_conf.client.hid = remote_gid
+    if not cc_conf.hub.id == remote_gid:
+        logger.debug('local and remote gateway ID differ: {} - {}'.format(cc_conf.hub.id, remote_gid))
+        cc_conf.hub.id = remote_gid
         logger.info("set gateway ID: '{}'".format(remote_gid))
         time.sleep(2)
     else:
@@ -202,12 +202,12 @@ class Client(metaclass=Singleton):
                 self.__discon_callbck()
             time.sleep(wait)
         credentials = json.dumps({
-            'user': cc_conf.client.usr,
-            'pw': cc_conf.client.pw,
-            'gid': cc_conf.client.hid,
+            'user': cc_conf.credentials.user,
+            'pw': cc_conf.credentials.pw,
+            'gid': cc_conf.hub.id,
             'token': 'credentials'
         })
-        ws = websocket.Client('ws', cc_conf.platform.host, cc_conf.platform.port, self.__reconnect)
+        ws = websocket.Client('ws', cc_conf.connector.host, cc_conf.connector.port, self.__reconnect)
         logger.info('trying to connect to platform-connector')
         if _callAndWaitFor(ws.connect):
             logger.info("connected to platform-connector")
