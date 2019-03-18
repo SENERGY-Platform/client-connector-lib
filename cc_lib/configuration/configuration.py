@@ -33,21 +33,31 @@ user_dir = '{}/cc-lib'.format(getcwd())
 class ConnectorConf:
 
     @section
-    class platform:
-        host = 'connector.sepl.infai.org'
-        port = 8093
+    class connector:
+        host: str = None
+        port: int = None
 
     @section
-    class client:
-        usr = None
-        pw = None
-        hid = None
+    class auth:
+        host: str = None
+        port: int = None
+        path: str = None
+        id: str = None
+
+    @section
+    class credentials:
+        user: str = None
+        pw: str = None
+
+    @section
+    class hub:
+        id: str = None
 
     @section
     class logger:
-        level = 'info'
-        rotating_log = False
-        rotating_log_backup_count = 14
+        level: str = 'info'
+        rotating_log: bool = False
+        rotating_log_backup_count: int = 14
 
 
 cc_conf = ConnectorConf(conf_file='connector.conf', user_path=user_dir, ext_aft_crt=True, init=False)
