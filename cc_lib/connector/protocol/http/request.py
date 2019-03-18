@@ -36,12 +36,12 @@ except ImportError as ex:
 
 
 class Method:
-    head = "HEAD"
-    get = "GET"
-    post = "POST"
-    put = "PUT"
-    delete = "DELETE"
-    options = "OPTIONS"
+    HEAD = "HEAD"
+    GET = "GET"
+    POST = "POST"
+    PUT = "PUT"
+    DELETE = "DELETE"
+    OPTIONS = "OPTIONS"
 
 
 class ContentType:
@@ -51,7 +51,7 @@ class ContentType:
 
 
 class Request:
-    def __init__(self, url: str, method: str = Method.get, body: Union[Iterable, SupportsAbs] = None, content_type: str = None, headers: dict = None, timeout: int = 10):
+    def __init__(self, url: str, method: str = Method.GET, body: Union[Iterable, SupportsAbs] = None, content_type: str = None, headers: dict = None, timeout: int = 10):
         self.__url = url
         self.__method = method
         self.__body = body
