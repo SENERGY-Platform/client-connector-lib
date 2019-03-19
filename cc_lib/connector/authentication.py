@@ -14,13 +14,31 @@
    limitations under the License.
 """
 
+__all__ = ('OpenIdClient', 'NoTokenError')
+
 from ..logger.logger import _getLibLogger
 from .protocol import http
 from time import time as currentTimeStamp
-from json import loads as loadJson
+import json
 
 
 logger = _getLibLogger(__name__.split('.', 1)[-1])
+
+
+class OpenIdException(Exception):
+    pass
+
+
+class RequestError(OpenIdException):
+    pass
+
+
+class ResponseError(OpenIdException):
+    pass
+
+
+class NoTokenError(OpenIdException):
+    pass
 
 
 class Token:
@@ -30,7 +48,7 @@ class Token:
         self.time_stamp = int(currentTimeStamp())
 
 
-class Authentication:
+class OpenIdClient:
     def __init__(self, url, usr, pw, id):
         self.__url = url
         self.__usr = usr
@@ -42,21 +60,35 @@ class Authentication:
         self.__not_before_policy = None
         self.__session_state = None
 
-    @property
-    def access_token(self) -> str:
-        if self.__access_token:
-            if int(currentTimeStamp()) - self.__access_token.time_stamp > self.__access_token.max_age:
-                logger.debug('access token expired')
-                if int(currentTimeStamp()) - self.__refresh_token.time_stamp > self.__refresh_token.max_age:
-                    logger.debug('refresh token expired')
-                    self.__getToken()
-                else:
-                    self.__refreshToken()
-        else:
-            self.__getToken()
-        return self.__access_token.token
+    def getAccessToken(self) -> str:
+        try:
+            if self.__access_token:
+                if int(currentTimeStamp()) - self.__access_token.time_stamp >= self.__access_token.max_age:
+                    logger.debug('access token expired')
+                    if int(currentTimeStamp()) - self.__refresh_token.time_stamp >= self.__refresh_token.max_age:
+                        logger.debug('refresh token expired')
+                        self.__tokenRequest()
+                    else:
+                        self.__refreshRequest()
+            else:
+                self.__tokenRequest()
+            return self.__access_token.token
+        except (RequestError, ResponseError) as ex:
+            raise NoTokenError(ex)
 
-    def __getToken(self) -> bool:
+    def __setResponse(self, payload):
+        try:
+            payload = json.loads(payload)
+            self.__access_token = Token(payload['access_token'], payload['expires_in'])
+            self.__refresh_token = Token(payload['refresh_token'], payload['refresh_expires_in'])
+            self.__token_type = payload['token_type']
+            self.__not_before_policy = payload['not-before-policy']
+            self.__session_state = payload['session_state']
+        except (json.JSONDecodeError, KeyError) as ex:
+            logger.error('malformed response - {}'.format(ex))
+            raise ResponseError
+
+    def __tokenRequest(self):
         payload = {
             'grant_type': 'password',
             'username': self.__usr,
@@ -64,16 +96,31 @@ class Authentication:
             'client_id': self.__id
         }
         req = http.Request(url=self.__url, method=http.Method.POST, body=payload, content_type=http.ContentType.form)
-        resp = req.send()
-        if resp.status == 200:
-            payload = loadJson(resp.body)
-            self.__access_token = Token(payload['access_token'], payload['expires_in'])
-            self.__refresh_token = Token(payload['refresh_token'], payload['refresh_expires_in'])
-            self.__token_type = payload['token_type']
-            self.__not_before_policy = payload['not-before-policy']
-            self.__session_state = payload['session_state']
-            return True
-        return False
+        try:
+            resp = req.send()
+            if resp.status == 200:
+                self.__setResponse(resp.body)
+            else:
+                logger.error('token request got bad response - {}'.format(resp))
+                raise RequestError
+        except (http.TimeoutErr, http.URLError) as ex:
+            logger.error('token request failed - {}'.format(ex))
+            raise RequestError
 
-    def __refreshToken(self) -> bool:
-        pass
+    def __refreshRequest(self):
+        payload = {
+            'grant_type': 'refresh_token',
+            'client_id': self.__id,
+            'refresh_token': self.__refresh_token.token
+        }
+        req = http.Request(url=self.__url, method=http.Method.POST, body=payload, content_type=http.ContentType.form)
+        try:
+            resp = req.send()
+            if resp.status == 200:
+                self.__setResponse(resp.body)
+            else:
+                logger.error('refresh request got bad response - {}'.format(resp))
+                raise RequestError
+        except (http.TimeoutErr, http.URLError) as ex:
+            logger.error('refresh request failed - {}'.format(ex))
+            raise RequestError
