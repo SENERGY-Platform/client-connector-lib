@@ -88,6 +88,19 @@ class OpenIdClient:
             logger.error('malformed response - {}'.format(ex))
             raise ResponseError
 
+    def __request(self, r_type, payload):
+        req = http.Request(url=self.__url, method=http.Method.POST, body=payload, content_type=http.ContentType.form)
+        try:
+            resp = req.send()
+            if resp.status == 200:
+                self.__setResponse(resp.body)
+            else:
+                logger.error('{} request got bad response - {}'.format(r_type, resp))
+                raise RequestError
+        except (http.TimeoutErr, http.URLError) as ex:
+            logger.error('{} request failed - {}'.format(r_type, ex))
+            raise RequestError
+
     def __tokenRequest(self):
         payload = {
             'grant_type': 'password',
@@ -95,17 +108,7 @@ class OpenIdClient:
             'password': self.__pw,
             'client_id': self.__id
         }
-        req = http.Request(url=self.__url, method=http.Method.POST, body=payload, content_type=http.ContentType.form)
-        try:
-            resp = req.send()
-            if resp.status == 200:
-                self.__setResponse(resp.body)
-            else:
-                logger.error('token request got bad response - {}'.format(resp))
-                raise RequestError
-        except (http.TimeoutErr, http.URLError) as ex:
-            logger.error('token request failed - {}'.format(ex))
-            raise RequestError
+        self.__request('token', payload)
 
     def __refreshRequest(self):
         payload = {
@@ -113,14 +116,4 @@ class OpenIdClient:
             'client_id': self.__id,
             'refresh_token': self.__refresh_token.token
         }
-        req = http.Request(url=self.__url, method=http.Method.POST, body=payload, content_type=http.ContentType.form)
-        try:
-            resp = req.send()
-            if resp.status == 200:
-                self.__setResponse(resp.body)
-            else:
-                logger.error('refresh request got bad response - {}'.format(resp))
-                raise RequestError
-        except (http.TimeoutErr, http.URLError) as ex:
-            logger.error('refresh request failed - {}'.format(ex))
-            raise RequestError
+        self.__request('refresh', payload)
