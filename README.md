@@ -1,4 +1,4 @@
-client-connector
+client-connector-lib
 ================
 
 Client library for users wanting to integrate their personal IoT project / device with the SENERGY platform.
