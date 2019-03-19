@@ -44,10 +44,3 @@ class Response:
             ('status', self.__status)
         ]
         return "{}({})".format(__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
-
-    def __bool__(self):
-        if self.__status:
-            return True
-        return False
-
-
