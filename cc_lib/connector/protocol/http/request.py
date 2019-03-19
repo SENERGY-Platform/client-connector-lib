@@ -14,14 +14,14 @@
    limitations under the License.
 """
 
-__all__ = ('Method', 'ContentType', 'Request', 'URLError')
+__all__ = ('Method', 'ContentType', 'Request', 'URLError', 'TimeoutErr')
 
 
 from ....logger.logger import _getLibLogger
 from .response import Response
 from typing import Union, Iterable, SupportsAbs
-from socket import timeout
-from urllib.error import URLError
+from socket import timeout as TimeoutErr
+from urllib.error import URLError, HTTPError
 import urllib.request, urllib.parse, json
 
 
@@ -94,15 +94,18 @@ class Request:
                 body=resp.read().decode(),
                 headers=dict(resp.info().items())
             )
-        except urllib.request.HTTPError as ex:
+        except HTTPError as ex:
             return Response(
                 status=ex.code,
                 body=ex.reason,
                 headers=dict(ex.headers.items())
             )
-        except timeout:
-            raise TimeoutError("connection timed out - '{}' - {}".format(self.__url, self.__method))
-
+        except URLError as ex:
+            logger.error("{} - '{}'".format(ex, self.__url))
+            raise
+        except TimeoutErr:
+            logger.error("timed out - '{}' - {}".format(self.__url, self.__method))
+            raise
 
     def __repr__(self):
         """
