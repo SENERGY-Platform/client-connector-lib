@@ -14,13 +14,15 @@
    limitations under the License.
 """
 
-__all__ = ('Method', 'ContentType', 'Request')
+__all__ = ('Method', 'ContentType', 'Request', 'URLError')
 
 
 from ....logger.logger import _getLibLogger
 from .response import Response
-import urllib.request, urllib.parse, json
 from typing import Union, Iterable, SupportsAbs
+from socket import timeout
+from urllib.error import URLError
+import urllib.request, urllib.parse, json
 
 
 logger = _getLibLogger(__name__.split('.', 1)[-1])
@@ -58,53 +60,49 @@ class Request:
         self.__headers = headers or dict()
         self.__timeout = timeout
         self.__request = None
-        try:
-            if self.__body and not content_type:
-                raise RuntimeError('missing content type for body')
-            if self.__body and content_type:
-                if content_type == ContentType.json:
-                    self.__body = json.dumps(self.__body).encode()
-                elif content_type == ContentType.form:
-                    self.__body = urllib.parse.urlencode(self.__body).encode()
-                elif content_type == ContentType.plain:
-                    if type(self.__body) not in (int, float, complex, str):
-                        logger.warning("body with none primitive type '{}' will be converted to string representation".format(type(body).__name__))
-                    self.__body = str(self.__body).encode()
-                else:
-                    raise RuntimeError('unsupported content type for body')
-                self.__headers['content-type'] = content_type
-            self.__request = urllib.request.Request(
-                self.__url,
-                data=self.__body,
-                headers=self.__headers,
-                method=self.__method
-            )
-        except Exception as ex:
-            logger.error(ex)
+        if self.__body and not content_type:
+            raise RuntimeError('missing content type for body')
+        if self.__body and content_type:
+            if content_type == ContentType.json:
+                self.__body = json.dumps(self.__body).encode()
+            elif content_type == ContentType.form:
+                self.__body = urllib.parse.urlencode(self.__body).encode()
+            elif content_type == ContentType.plain:
+                if type(self.__body) not in (int, float, complex, str):
+                    logger.warning("body with none primitive type '{}' will be converted to string representation".format(type(body).__name__))
+                self.__body = str(self.__body).encode()
+            else:
+                raise RuntimeError("unsupported content type '{}'".format(content_type))
+            self.__headers['content-type'] = content_type
+        self.__request = urllib.request.Request(
+            self.__url,
+            data=self.__body,
+            headers=self.__headers,
+            method=self.__method
+        )
 
     def send(self) -> Response:
-        if self.__request:
-            try:
-                resp = urllib.request.urlopen(
-                    self.__request,
-                    timeout=self.__timeout,
-                    cafile=ca_file,
-                    context=None
-                )
-                return Response(
-                    status=resp.getcode(),
-                    body=resp.read().decode(),
-                    headers=dict(resp.info().items())
-                )
-            except urllib.request.HTTPError as ex:
-                return Response(
-                    status=ex.code,
-                    body=ex.reason,
-                    headers=dict(ex.headers.items())
-                )
-            except Exception as ex:
-                logger.error(ex)
-        return Response(None)
+        try:
+            resp = urllib.request.urlopen(
+                self.__request,
+                timeout=self.__timeout,
+                cafile=ca_file,
+                context=None
+            )
+            return Response(
+                status=resp.getcode(),
+                body=resp.read().decode(),
+                headers=dict(resp.info().items())
+            )
+        except urllib.request.HTTPError as ex:
+            return Response(
+                status=ex.code,
+                body=ex.reason,
+                headers=dict(ex.headers.items())
+            )
+        except timeout:
+            raise TimeoutError("connection timed out - '{}' - {}".format(self.__url, self.__method))
+
 
     def __repr__(self):
         """
