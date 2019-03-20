@@ -36,6 +36,7 @@ class ConnectorConf:
     class connector:
         host: str = None
         port: int = None
+        tls: bool = None
 
     @section
     class auth:
