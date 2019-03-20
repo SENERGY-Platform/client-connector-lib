@@ -51,6 +51,7 @@ class ConnectorConf:
 
     @section
     class hub:
+        name: str = None
         id: str = None
 
     @section
