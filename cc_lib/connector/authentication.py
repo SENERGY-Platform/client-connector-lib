@@ -25,19 +25,19 @@ import json
 logger = _getLibLogger(__name__.split('.', 1)[-1])
 
 
-class OpenIdException(Exception):
+class OpenIdError(Exception):
     pass
 
 
-class RequestError(OpenIdException):
+class RequestError(OpenIdError):
     pass
 
 
-class ResponseError(OpenIdException):
+class ResponseError(OpenIdError):
     pass
 
 
-class NoTokenError(OpenIdException):
+class NoTokenError(OpenIdError):
     pass
 
 
