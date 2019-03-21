@@ -24,6 +24,10 @@ from ..device.manager.interface import Interface
 from inspect import isclass
 from typing import Callable
 from threading import Thread
+from getpass import getuser
+from .authentication import OpenIdClient, NoTokenError
+from .protocol import http
+import datetime
 
 
 logger = _getLibLogger(__name__.split('.', 1)[-1])
@@ -64,6 +68,12 @@ class Client(metaclass=Singleton):
         self.__device_manager = self.__checkDeviceManager(device_manager)
         initConnectorConf()
         initLogging()
+        self.__open_id = OpenIdClient(
+            'https://{}:{}/{}'.format(cc_conf.auth.host, cc_conf.auth.port, cc_conf.auth.path),
+            cc_conf.credentials.user,
+            cc_conf.credentials.pw,
+            cc_conf.auth.id
+        )
 
     def __checkDeviceManager(self, mgr) -> Interface:
         """
@@ -85,8 +95,7 @@ class Client(metaclass=Singleton):
         :param async_cb: Callback function to be executed after startup.
         :return: None.
         """
-        logger.info(12 * '-' + ' Starting client-connector v{} '.format(VERSION) + 12 * '-')
-        # provision hub
+        self.__provisionHub()
         # start mqtt client
         if async_cb:
             async_cb()
@@ -100,6 +109,7 @@ class Client(metaclass=Singleton):
         :param async_clbk: Callback function to be executed after startup.
         :return: None.
         """
+        logger.info(12 * '-' + ' Starting client-connector v{} '.format(VERSION) + 12 * '-')
         if async_clbk:
             start_thread = Thread(target=self.__start, args=(async_clbk, ), name='Starter')
             start_thread.start()
