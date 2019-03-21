@@ -39,12 +39,7 @@ class DevicePool(Interface):
 
     @staticmethod
     def update(device):
-        if not _isDevice(device):
-            raise TypeError("device must be Device or subclass of Device but got '{}'".format(type(device)))
-        if device.id in __class__.__pool:
-            __class__.__pool[device.id] = device
-        else:
-            logger.error("can't update device '{}' please add it first".format(device.id))
+        pass
 
     @staticmethod
     def remove(device):
