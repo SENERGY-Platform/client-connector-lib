@@ -65,18 +65,6 @@ class Client(metaclass=Singleton):
         initConnectorConf()
         initLogging()
 
-    def __start(self, async_cb=None):
-        """
-        Start the client.
-        :param async_cb: Callback function to be executed after startup.
-        :return: None.
-        """
-        logger.info(12 * '-' + ' Starting client-connector v{} '.format(VERSION) + 12 * '-')
-        # provision hub
-        # start mqtt client
-        if async_cb:
-            async_cb()
-
     def __checkDeviceManager(self, mgr) -> Interface:
         """
         Check if provided object or class implements the device manager interface.
@@ -90,6 +78,18 @@ class Client(metaclass=Singleton):
             if not issubclass(type(mgr), Interface):
                 raise DeviceMgrSetError(2, type(mgr).__name__)
         return mgr
+
+    def __start(self, async_cb=None):
+        """
+        Start the client.
+        :param async_cb: Callback function to be executed after startup.
+        :return: None.
+        """
+        logger.info(12 * '-' + ' Starting client-connector v{} '.format(VERSION) + 12 * '-')
+        # provision hub
+        # start mqtt client
+        if async_cb:
+            async_cb()
 
     # ------------- user methods ------------- #
 
