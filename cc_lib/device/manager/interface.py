@@ -59,7 +59,7 @@ class Interface(metaclass=ABCMeta):
     @abstractmethod
     def devices(*sc, _):
         """
-        all devices
+        all device objects
         :param _: don't use
         :return a dict, list or tuple object.
         """
