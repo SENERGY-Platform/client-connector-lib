@@ -36,19 +36,6 @@ class ClientError(Exception):
     pass
 
 
-class NoDeviceMgrError(ClientError):
-    """
-    No device manager was found.
-    """
-    def __init__(self):
-        super().__init__(
-            "missing device manager - use '{}' before calling '{}' method".format(
-                Client.__checkDeviceManager.__name__,
-                Client.start.__name__
-            )
-        )
-
-
 class DeviceMgrSetError(ClientError):
     """
     Device manager can't be set.
@@ -113,8 +100,6 @@ class Client(metaclass=Singleton):
         :param async_clbk: Callback function to be executed after startup.
         :return: None.
         """
-        if not self.__device_manager:
-            raise NoDeviceMgrError
         if async_clbk:
             start_thread = Thread(target=self.__start, args=(async_clbk, ), name='Starter')
             start_thread.start()
