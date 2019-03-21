@@ -43,7 +43,7 @@ class NoDeviceMgrError(ClientError):
     def __init__(self):
         super().__init__(
             "missing device manager - use '{}' before calling '{}' method".format(
-                Client.setDeviceManager.__name__,
+                Client.__checkDeviceManager.__name__,
                 Client.start.__name__
             )
         )
@@ -54,9 +54,8 @@ class DeviceMgrSetError(ClientError):
     Device manager can't be set.
     """
     __cases = {
-        1: "device manager already set",
-        2: "provided class '{}' does not implement the device manager interface",
-        3: "the class '{}' of the provided object does not implement the device manager interface"
+        1: "provided class '{}' does not implement the device manager interface",
+        2: "the class '{}' of the provided object does not implement the device manager interface"
     }
 
     def __init__(self, case, *args):
@@ -70,14 +69,12 @@ class Client(metaclass=Singleton):
     Threading is managed internally, wrapping the client in a thread is not necessary.
     """
 
-    def __init__(self, device_manager: Interface = None):
+    def __init__(self, device_manager: Interface):
         """
-        Create a Client instance. Initiate configuration and library logging facility.
+        Create a Client instance. Set device manager, initiate configuration and library logging facility.
         :param device_manager: object or class implementing the device manager interface.
         """
-        self.__device_manager: Interface = None
-        if device_manager:
-            self.setDeviceManager(device_manager)
+        self.__device_manager = self.__checkDeviceManager(device_manager)
         initConnectorConf()
         initLogging()
 
@@ -93,23 +90,21 @@ class Client(metaclass=Singleton):
         if async_cb:
             async_cb()
 
-    # ------------- user methods ------------- #
-
-    def setDeviceManager(self, mgr: Interface) -> None:
+    def __checkDeviceManager(self, mgr) -> Interface:
         """
-        Check if provided object or class implements the device manager interface and sets the respective attribute.
-        :param mgr: object or class implementing the device manager interface.
-        :return: None.
+        Check if provided object or class implements the device manager interface.
+        :param mgr: object or class.
+        :return: object or class implementing the device manager interface.
         """
-        if self.__device_manager:
-            raise DeviceMgrSetError(1)
         if isclass(mgr):
             if not issubclass(mgr, Interface):
-                raise DeviceMgrSetError(2, mgr.__name__)
+                raise DeviceMgrSetError(1, mgr.__name__)
         else:
             if not issubclass(type(mgr), Interface):
-                raise DeviceMgrSetError(3, type(mgr).__name__)
-        self.__device_manager = mgr
+                raise DeviceMgrSetError(2, type(mgr).__name__)
+        return mgr
+
+    # ------------- user methods ------------- #
 
     def start(self, async_clbk: Callable[[], None] = None) -> None:
         """
