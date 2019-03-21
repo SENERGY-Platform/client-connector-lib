@@ -16,18 +16,20 @@
 
 __all__ = ('Client', )
 
-from cc_lib import __version__ as VERSION
 from ..configuration.configuration import cc_conf, initConnectorConf
 from ..logger.logger import _getLibLogger, initLogging
-from .singleton import Singleton
+from ..device import Device
 from ..device.manager.interface import Interface
+from .singleton import Singleton
+from .authentication import OpenIdClient, NoTokenError
+from .protocol import http
+from cc_lib import __version__ as VERSION
 from inspect import isclass
 from typing import Callable
 from threading import Thread
 from getpass import getuser
-from .authentication import OpenIdClient, NoTokenError
-from .protocol import http
-import datetime
+from hashlib import sha1
+import datetime, time
 
 
 logger = _getLibLogger(__name__.split('.', 1)[-1])
@@ -53,6 +55,19 @@ class DeviceMgrSetError(ClientError):
         super().__init__(__class__.__cases[case].format(*args))
 
 
+class StartError(ClientError):
+    """
+    Errors during client startup.
+    """
+    def __init__(self):
+        super().__init__('client-connector already started')
+
+class HubProvisionError(ClientError):
+    """
+    Error during hub provisioning.
+    """
+    pass
+
 class Client(metaclass=Singleton):
     """
     Client class for client-connector projects.
@@ -68,14 +83,142 @@ class Client(metaclass=Singleton):
         self.__device_manager = self.__checkDeviceManager(device_manager)
         initConnectorConf()
         initLogging()
+        self.__starter_thread = None
         self.__open_id = OpenIdClient(
-            'https://{}:{}/{}'.format(cc_conf.auth.host, cc_conf.auth.port, cc_conf.auth.path),
+            'https://{}/{}'.format(cc_conf.auth.host, cc_conf.auth.path),
             cc_conf.credentials.user,
             cc_conf.credentials.pw,
             cc_conf.auth.id
         )
 
-    def __checkDeviceManager(self, mgr) -> Interface:
+    # ------------- internal methods ------------- #
+
+    def __provisionHub(self):
+        try:
+            access_token = self.__open_id.getAccessToken()
+            if not cc_conf.hub.id:
+                logger.info('initialising new hub ...')
+                if not cc_conf.hub.name:
+                    logger.info('generating hub name ...')
+                    cc_conf.hub.name = '{}-{}'.format(getuser(), datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
+                logger.info("provisioning hub '{}' ...".format(cc_conf.hub.name))
+                devices = self.__device_manager.devices()
+                req = http.Request(
+                    url='https://api.sepl.infai.org/iot-device-repo/hubs',
+                    method=http.Method.POST,
+                    body={
+                        'id': None,
+                        'name': cc_conf.hub.name,
+                        'hash': __class__.__hashDevices(devices),
+                        'devices': __class__.__listDeviceIDs(devices)
+                    },
+                    content_type=http.ContentType.json,
+                    headers={'Authorization': 'Bearer {}'.format(access_token)})
+                resp = req.send()
+                if not resp.status == 200:
+                    logger.error('provisioning failed - {}'.format(resp.status))
+                    raise HubProvisionError
+        except NoTokenError:
+            logger.error('could not retrieve access token')
+            raise HubProvisionError
+        except (http.TimeoutErr, http.URLError) as ex:
+            logger.error('provisioning failed - {}'.format(ex))
+            raise HubProvisionError
+
+    def __start(self, start_cb=None):
+        """
+        Start the client.
+        :param start_cb: Callback function to be executed after startup.
+        :return: None.
+        """
+        logger.info(12 * '-' + ' Starting client-connector v{} '.format(VERSION) + 12 * '-')
+        while True:
+            self.__provisionHub()
+            # start mqtt client
+            break
+
+        if start_cb:
+            start_cb()
+
+    # ------------- user methods ------------- #
+
+    def start(self, clbk: Callable[[], None] = None, block: bool = False) -> None:
+        """
+        Check if starter thread exists, if not create starter thread.
+        :param block: If 'True' blocks till start thread finishes
+        :param clbk: Callback function to be executed when start thread finishes.
+        :return: None.
+        """
+        if self.__starter_thread:
+            raise StartError
+        self.__starter_thread = Thread(target=self.__start, args=(clbk,), name='Starter', daemon=True)
+        self.__starter_thread.start()
+        if block:
+            self.__starter_thread.join()
+
+
+    def emmitEvent(self):
+        pass
+
+    def receiveCommand(self):
+        pass
+
+    def sendResponse(self):
+        pass
+
+    def addDevice(self, device: Device):
+        """
+
+        :param device:
+        :return: None.
+        """
+        if not __class__.__checkDevice(device):
+            raise TypeError(type(device))
+        self.__device_manager.add(device)
+        # put on platform
+
+    def deleteDevice(self):
+        pass
+
+    def connectDevice(self):
+        pass
+
+    def disconnectDevice(self):
+        pass
+
+    # ------------- class / static methods ------------- #
+
+    @staticmethod
+    def __hashDevices(devices) -> str:
+        """
+        Hash attributes of the provided devices with SHA1.
+        :param devices: List, tuple or dict (id:device) of local devices.
+        :return: Hash as string.
+        """
+        if type(devices) is dict:
+            devices = list(devices.values())
+        hashes = list()
+        for device in devices:
+            hashes.append(device.hash)
+        hashes.sort()
+        return sha1(''.join(hashes).encode()).hexdigest()
+
+    @staticmethod
+    def __listDeviceIDs(devices) -> list:
+        """
+        List the IDs of the provided devices.
+        :param devices: List, tuple or dict (id:device) of local devices.
+        :return: List of IDs
+        """
+        if type(devices) is dict:
+            devices = list(devices.values())
+        ids = list()
+        for device in devices:
+            ids.append(device.id)
+        return ids
+
+    @staticmethod
+    def __checkDeviceManager(mgr) -> Interface:
         """
         Check if provided object or class implements the device manager interface.
         :param mgr: object or class.
@@ -89,51 +232,33 @@ class Client(metaclass=Singleton):
                 raise DeviceMgrSetError(2, type(mgr).__name__)
         return mgr
 
-    def __start(self, async_cb=None):
+    @staticmethod
+    def __checkDevice(device):
         """
-        Start the client.
-        :param async_cb: Callback function to be executed after startup.
+        Check if the type of the provided object is a Device or a Device subclass.
+        :param device: object to check.
         :return: None.
         """
-        self.__provisionHub()
-        # start mqtt client
-        if async_cb:
-            async_cb()
+        if type(device) is Device or issubclass(type(device), Device):
+            return True
+        return False
 
-    # ------------- user methods ------------- #
-
-    def start(self, async_clbk: Callable[[], None] = None) -> None:
+    @staticmethod
+    def __getMangledAttr(obj, attr):
         """
-        Check if a device manager is present. Will block if async_clbk isn't provided.
-        Call internal start method to start the client.
-        :param async_clbk: Callback function to be executed after startup.
-        :return: None.
+        Read mangled attribute.
+        :param obj: Object with mangled attributes.
+        :param attr: Name of mangled attribute.
+        :return: value of mangled attribute.
         """
-        logger.info(12 * '-' + ' Starting client-connector v{} '.format(VERSION) + 12 * '-')
-        if async_clbk:
-            start_thread = Thread(target=self.__start, args=(async_clbk, ), name='Starter')
-            start_thread.start()
-        else:
-            self.__start()
+        return getattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr))
 
-
-    def emmitEvent(self):
-        pass
-
-    def receiveCommand(self):
-        pass
-
-    def sendResponse(self):
-        pass
-
-    def addDevice(self):
-        pass
-
-    def deleteDevice(self):
-        pass
-
-    def connectDevice(self):
-        pass
-
-    def disconnectDevice(self):
-        pass
+    @staticmethod
+    def __setMangledAttr(obj, attr, arg):
+        """
+        Write to mangled attribute.
+        :param obj: Object with mangled attributes.
+        :param attr: Name of mangled attribute.
+        :param arg: value to be written.
+        """
+        setattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr), arg)
