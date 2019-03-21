@@ -48,25 +48,19 @@ class NoDeviceMgrError(ClientError):
             )
         )
 
+
 class DeviceMgrSetError(ClientError):
     """
-    Device manager already set.
+    Device manager can't be set.
     """
-    def __init__(self):
-        super().__init__("device manager already set")
+    __cases = {
+        1: "device manager already set",
+        2: "provided class '{}' does not implement the device manager interface",
+        3: "the class '{}' of the provided object does not implement the device manager interface"
+    }
 
-
-def _interfaceCheck(cls, interface):
-    """
-    Check if a class subclasses another class.
-    Raise TypeError on mismatch.
-    :param cls: Class to check.
-    :param interface: Class that should be subclassed.
-    :return: Boolean.
-    """
-    if issubclass(cls, interface):
-        return True
-    raise TypeError("provided class '{}' must be a subclass of '{}'".format(cls, interface))
+    def __init__(self, case, *args):
+        super().__init__(__class__.__cases[case].format(*args))
 
 
 class Client(metaclass=Singleton):
@@ -108,13 +102,13 @@ class Client(metaclass=Singleton):
         :return: None.
         """
         if self.__device_manager:
-            raise DeviceMgrSetError
+            raise DeviceMgrSetError(1)
         if isclass(mgr):
-            if not _interfaceCheck(mgr, Interface):
-                raise TypeError("'{}' must subclass device manager interface".format(mgr.__name__))
+            if not issubclass(mgr, Interface):
+                raise DeviceMgrSetError(2, mgr.__name__)
         else:
-            if not _interfaceCheck(type(mgr), Interface):
-                raise TypeError("'{}' must subclass device manager interface".format(type(mgr).__name__))
+            if not issubclass(type(mgr), Interface):
+                raise DeviceMgrSetError(3, type(mgr).__name__)
         self.__device_manager = mgr
 
     def start(self, async_clbk: Callable[[], None] = None) -> None:
