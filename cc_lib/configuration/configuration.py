@@ -41,7 +41,6 @@ class ConnectorConf:
     @section
     class auth:
         host: str = None
-        port: int = None
         path: str = None
         id: str = None
 
