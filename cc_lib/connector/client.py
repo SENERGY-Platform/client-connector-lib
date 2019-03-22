@@ -97,25 +97,29 @@ class Client(metaclass=Singleton):
         try:
             access_token = self.__open_id.getAccessToken()
             if not cc_conf.hub.id:
-                logger.info('initialising new hub ...')
-                if not cc_conf.hub.name:
+                logger.info('initializing new hub ...')
+                hub_name = cc_conf.hub.name
+                if not hub_name:
                     logger.info('generating hub name ...')
-                    cc_conf.hub.name = '{}-{}'.format(getuser(), datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
-                logger.info("provisioning hub '{}' ...".format(cc_conf.hub.name))
+                    hub_name = '{}-{}'.format(getuser(), datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
+                logger.info("provisioning hub '{}' ...".format(hub_name))
                 devices = self.__device_manager.devices()
                 req = http.Request(
                     url='https://api.sepl.infai.org/iot-device-repo/hubs',
                     method=http.Method.POST,
                     body={
                         'id': None,
-                        'name': cc_conf.hub.name,
+                        'name': hub_name,
                         'hash': __class__.__hashDevices(devices),
                         'devices': __class__.__listDeviceIDs(devices)
                     },
                     content_type=http.ContentType.json,
                     headers={'Authorization': 'Bearer {}'.format(access_token)})
                 resp = req.send()
-                if not resp.status == 200:
+                if resp.status == 200:
+                    if not cc_conf.hub.name:
+                        cc_conf.hub.name = hub_name
+                else:
                     logger.error('provisioning failed - {}'.format(resp.status))
                     raise HubProvisionError
         except NoTokenError:
