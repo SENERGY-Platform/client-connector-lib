@@ -35,10 +35,28 @@ logging_levels = {
     'debug': logging.DEBUG
 }
 
-formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s: [%(name)s] %(message)s', datefmt='%m.%d.%Y %I:%M:%S %p')
+color_code = {
+    'CRITICAL': '\033[41m',
+    'ERROR': '\033[31m',
+    'WARNING': '\033[33m',
+    'DEBUG': '\033[37m',
+}
+
+
+class ColorFormatter(logging.Formatter):
+    def format(self, record):
+        s = super().format(record)
+        if record.levelname in color_code:
+            return '{}{}{}'.format(color_code[record.levelname], s, '\033[0m')
+        return s
+
+
+msg_fmt = '%(asctime)s - %(levelname)s: [%(name)s] %(message)s'
+date_fmt = '%m.%d.%Y %I:%M:%S %p'
+color_formatter = ColorFormatter(fmt=msg_fmt, datefmt=date_fmt)
 
 stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(formatter)
+stream_handler.setFormatter(color_formatter)
 
 lib_logger = logging.getLogger('cc_lib')
 lib_logger.propagate = False
@@ -64,6 +82,7 @@ def initLogging():
             when="midnight",
             backupCount=cc_conf.logger.rotating_log_backup_count
         )
+        formatter = logging.Formatter(fmt=msg_fmt, datefmt=date_fmt)
         log_handler.setFormatter(formatter)
         lib_logger.addHandler(log_handler)
         usr_logger.addHandler(log_handler)
