@@ -29,7 +29,7 @@ from typing import Callable
 from threading import Thread
 from getpass import getuser
 from hashlib import sha1
-import datetime, time
+import datetime, json
 
 
 logger = _getLibLogger(__name__.split('.', 1)[-1])
@@ -95,6 +95,9 @@ class Client(metaclass=Singleton):
 
     def __provisionHub(self):
         try:
+            devices = self.__device_manager.devices()
+            devices_hash = __class__.__hashDevices(devices)
+            device_ids = __class__.__listDeviceIDs(devices)
             access_token = self.__open_id.getAccessToken()
             if not cc_conf.hub.id:
                 logger.info('initializing new hub ...')
@@ -102,31 +105,59 @@ class Client(metaclass=Singleton):
                 if not hub_name:
                     logger.info('generating hub name ...')
                     hub_name = '{}-{}'.format(getuser(), datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
-                logger.info("provisioning hub '{}' ...".format(hub_name))
-                devices = self.__device_manager.devices()
+                logger.info("creating hub '{}' ...".format(hub_name))
+                logger.debug("devices {}".format(device_ids))
+                logger.debug("hash '{}'".format(devices_hash))
                 req = http.Request(
-                    url='https://api.sepl.infai.org/iot-device-repo/hubs',
+                    url='https://{}/{}'.format(cc_conf.api.host, cc_conf.api.hub),
                     method=http.Method.POST,
                     body={
                         'id': None,
                         'name': hub_name,
-                        'hash': __class__.__hashDevices(devices),
-                        'devices': __class__.__listDeviceIDs(devices)
+                        'hash': devices_hash,
+                        'devices': device_ids
                     },
                     content_type=http.ContentType.json,
                     headers={'Authorization': 'Bearer {}'.format(access_token)})
                 resp = req.send()
                 if resp.status == 200:
+                    hub = json.loads(resp.body)
+                    cc_conf.hub.id = hub['id']
+                    logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                     if not cc_conf.hub.name:
                         cc_conf.hub.name = hub_name
                 else:
-                    logger.error('provisioning failed - {}'.format(resp.status))
+                    logger.error('provisioning failed - {} {}'.format(resp.status, resp.body))
+                    raise HubProvisionError
+            else:
+                logger.info("synchronizing hub '{}' ...".format(cc_conf.hub.name))
+                logger.debug("devices {}".format(device_ids))
+                logger.debug("hash '{}'".format(devices_hash))
+                logger.debug("hub ID '{}'".format(cc_conf.hub.id))
+                req = http.Request(
+                    url='https://{}/{}/{}'.format(cc_conf.api.host, cc_conf.api.hub, cc_conf.hub.id),
+                    method=http.Method.GET,
+                    content_type=http.ContentType.json,
+                    headers={'Authorization': 'Bearer {}'.format(access_token)})
+                resp = req.send()
+                if resp.status == 200:
+                    hub = json.loads(resp.body)
+                    logger.debug(hub)
+                elif resp.status == 401:
+                    logger.error('provisioning failed - {} {}'.format(resp.status, resp.body))
+                    cc_conf.hub.id = None
+                    raise HubProvisionError
+                else:
+                    logger.error('provisioning failed - {} {}'.format(resp.status, resp.body))
                     raise HubProvisionError
         except NoTokenError:
             logger.error('could not retrieve access token')
             raise HubProvisionError
         except (http.TimeoutErr, http.URLError) as ex:
             logger.error('provisioning failed - {}'.format(ex))
+            raise HubProvisionError
+        except (json.JSONDecodeError, KeyError) as ex:
+            logger.error('malformed response - {}'.format(ex))
             raise HubProvisionError
 
     def __start(self, start_cb=None):
@@ -137,10 +168,12 @@ class Client(metaclass=Singleton):
         """
         logger.info(12 * '-' + ' Starting client-connector v{} '.format(VERSION) + 12 * '-')
         while True:
-            self.__provisionHub()
-            # start mqtt client
-            break
-
+            try:
+                self.__provisionHub()
+                # start mqtt client
+                break
+            except HubProvisionError:
+                pass
         if start_cb:
             start_cb()
 
