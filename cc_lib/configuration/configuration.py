@@ -60,6 +60,11 @@ class ConnectorConf:
         rotating_log: bool = False
         rotating_log_backup_count: int = 14
 
+    @section
+    class api:
+        host: str = None
+        hub: str = None
+
 
 cc_conf = ConnectorConf(conf_file='connector.conf', user_path=user_dir, ext_aft_crt=True, init=False)
 
