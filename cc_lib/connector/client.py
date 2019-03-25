@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('Client', )
+__all__ = ("Client", )
 
 from ..configuration.configuration import cc_conf, initConnectorConf
 from ..logger.logger import _getLibLogger, initLogging
@@ -32,7 +32,7 @@ from hashlib import sha1
 import datetime, json
 
 
-logger = _getLibLogger(__name__.split('.', 1)[-1])
+logger = _getLibLogger(__name__.split(".", 1)[-1])
 
 
 class ClientError(Exception):
@@ -60,7 +60,7 @@ class StartError(ClientError):
     Errors during client startup.
     """
     def __init__(self):
-        super().__init__('client-connector already started')
+        super().__init__("client-connector already started")
 
 class HubProvisionError(ClientError):
     """
@@ -85,7 +85,7 @@ class Client(metaclass=Singleton):
         initLogging()
         self.__starter_thread = None
         self.__open_id = OpenIdClient(
-            'https://{}/{}'.format(cc_conf.auth.host, cc_conf.auth.path),
+            "https://{}/{}".format(cc_conf.auth.host, cc_conf.auth.path),
             cc_conf.credentials.user,
             cc_conf.credentials.pw,
             cc_conf.auth.id
@@ -100,64 +100,89 @@ class Client(metaclass=Singleton):
             device_ids = __class__.__listDeviceIDs(devices)
             access_token = self.__open_id.getAccessToken()
             if not cc_conf.hub.id:
-                logger.info('initializing new hub ...')
+                logger.info("initializing new hub ...")
                 hub_name = cc_conf.hub.name
                 if not hub_name:
-                    logger.info('generating hub name ...')
-                    hub_name = '{}-{}'.format(getuser(), datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
-                logger.info("creating hub '{}' ...".format(hub_name))
+                    logger.info("generating hub name ...")
+                    hub_name = "{}-{}".format(getuser(), datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
+                logger.info("provisioning hub '{}' ...".format(hub_name))
                 logger.debug("devices {}".format(device_ids))
                 logger.debug("hash '{}'".format(devices_hash))
                 req = http.Request(
-                    url='https://{}/{}'.format(cc_conf.api.host, cc_conf.api.hub),
+                    url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.hub),
                     method=http.Method.POST,
                     body={
-                        'id': None,
-                        'name': hub_name,
-                        'hash': devices_hash,
-                        'devices': device_ids
+                        "id": None,
+                        "name": hub_name,
+                        "hash": devices_hash,
+                        "devices": device_ids
                     },
                     content_type=http.ContentType.json,
-                    headers={'Authorization': 'Bearer {}'.format(access_token)})
+                    headers={"Authorization": "Bearer {}".format(access_token)})
                 resp = req.send()
                 if resp.status == 200:
                     hub = json.loads(resp.body)
-                    cc_conf.hub.id = hub['id']
+                    cc_conf.hub.id = hub["id"]
                     logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                     if not cc_conf.hub.name:
                         cc_conf.hub.name = hub_name
                 else:
-                    logger.error('provisioning failed - {} {}'.format(resp.status, resp.body))
+                    logger.error("provisioning failed - {} {}".format(resp.status, resp.body))
                     raise HubProvisionError
             else:
-                logger.info("synchronizing hub '{}' ...".format(cc_conf.hub.name))
+                logger.info("provisioning hub '{}' ...".format(cc_conf.hub.name))
                 logger.debug("devices {}".format(device_ids))
                 logger.debug("hash '{}'".format(devices_hash))
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 req = http.Request(
-                    url='https://{}/{}/{}'.format(cc_conf.api.host, cc_conf.api.hub, cc_conf.hub.id),
+                    url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, __class__.__urlEncodeId(cc_conf.hub.id)),
                     method=http.Method.GET,
                     content_type=http.ContentType.json,
-                    headers={'Authorization': 'Bearer {}'.format(access_token)})
+                    headers={"Authorization": "Bearer {}".format(access_token)})
                 resp = req.send()
                 if resp.status == 200:
                     hub = json.loads(resp.body)
-                    logger.debug(hub)
-                elif resp.status == 401:
-                    logger.error('provisioning failed - {} {}'.format(resp.status, resp.body))
+                    if not hub["name"] == cc_conf.hub.name:
+                        logger.warning("local name '{}' differs from remote name '{}'".format(cc_conf.hub.name, hub["name"]))
+                        logger.info("setting hub name to '{}'".format(hub["name"]))
+                        cc_conf.hub.name = hub["name"]
+                    if not hub["hash"] == devices_hash:
+                        logger.debug("local hash differs from remote hash")
+                        logger.info("synchronizing devices ...")
+                        req = http.Request(
+                            url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, __class__.__urlEncodeId(cc_conf.hub.id)),
+                            method=http.Method.PUT,
+                            body={
+                                "id": cc_conf.hub.id,
+                                "name": cc_conf.hub.name,
+                                "hash": devices_hash,
+                                "devices": device_ids
+                            },
+                            content_type=http.ContentType.json,
+                            headers={"Authorization": "Bearer {}".format(access_token)})
+                        resp = req.send()
+                        if not resp.status == 200:
+                            logger.error("provisioning failed - {} could not synchronize devices".format(resp.status, resp.body))
+                            raise HubProvisionError
+                    logger.info("provisioning completed")
+                elif resp.status == 403:
+                    logger.error("provisioning failed - {} access forbidden".format(resp.status))
+                    raise HubProvisionError
+                elif resp.status == 404:
+                    logger.error("provisioning failed - {} hub not found".format(resp.status))
                     cc_conf.hub.id = None
                     raise HubProvisionError
                 else:
-                    logger.error('provisioning failed - {} {}'.format(resp.status, resp.body))
+                    logger.error("provisioning failed - {} {}".format(resp.status, resp.body))
                     raise HubProvisionError
         except NoTokenError:
-            logger.error('could not retrieve access token')
+            logger.error("could not retrieve access token")
             raise HubProvisionError
         except (http.TimeoutErr, http.URLError) as ex:
-            logger.error('provisioning failed - {}'.format(ex))
+            logger.error("provisioning failed - {}".format(ex))
             raise HubProvisionError
         except (json.JSONDecodeError, KeyError) as ex:
-            logger.error('malformed response - {}'.format(ex))
+            logger.error("malformed response - {}".format(ex))
             raise HubProvisionError
 
     def __start(self, start_cb=None):
@@ -166,7 +191,7 @@ class Client(metaclass=Singleton):
         :param start_cb: Callback function to be executed after startup.
         :return: None.
         """
-        logger.info(12 * '-' + ' Starting client-connector v{} '.format(VERSION) + 12 * '-')
+        logger.info(12 * "-" + " Starting client-connector v{} ".format(VERSION) + 12 * "-")
         while True:
             try:
                 self.__provisionHub()
@@ -188,7 +213,7 @@ class Client(metaclass=Singleton):
         """
         if self.__starter_thread:
             raise StartError
-        self.__starter_thread = Thread(target=self.__start, args=(clbk,), name='Starter', daemon=True)
+        self.__starter_thread = Thread(target=self.__start, args=(clbk,), name="Starter", daemon=True)
         self.__starter_thread.start()
         if block:
             self.__starter_thread.join()
@@ -238,7 +263,7 @@ class Client(metaclass=Singleton):
         for device in devices:
             hashes.append(device.hash)
         hashes.sort()
-        return sha1(''.join(hashes).encode()).hexdigest()
+        return sha1("".join(hashes).encode()).hexdigest()
 
     @staticmethod
     def __listDeviceIDs(devices) -> list:
@@ -288,7 +313,7 @@ class Client(metaclass=Singleton):
         :param attr: Name of mangled attribute.
         :return: value of mangled attribute.
         """
-        return getattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr))
+        return getattr(obj, "_{}__{}".format(obj.__class__.__name__, attr))
 
     @staticmethod
     def __setMangledAttr(obj, attr, arg):
@@ -298,4 +323,13 @@ class Client(metaclass=Singleton):
         :param attr: Name of mangled attribute.
         :param arg: value to be written.
         """
-        setattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr), arg)
+        setattr(obj, "_{}__{}".format(obj.__class__.__name__, attr), arg)
+
+    @staticmethod
+    def __urlEncodeId(s):
+        """
+        Encode '#' to URL encoded format.
+        :param s: String to encode.
+        :return: Encoded string.
+        """
+        return s.replace("#", "%23")
