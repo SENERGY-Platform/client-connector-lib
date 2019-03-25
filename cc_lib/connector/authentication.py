@@ -84,8 +84,11 @@ class OpenIdClient:
             self.__token_type = payload['token_type']
             self.__not_before_policy = payload['not-before-policy']
             self.__session_state = payload['session_state']
-        except (json.JSONDecodeError, KeyError) as ex:
-            logger.error('malformed response - {}'.format(ex))
+        except json.JSONDecodeError as ex:
+            logger.error("could not decode response - {}".format(ex))
+            raise ResponseError
+        except KeyError as ex:
+            logger.error("malformed response - missing key {}".format(ex))
             raise ResponseError
 
     def __request(self, r_type, payload):
