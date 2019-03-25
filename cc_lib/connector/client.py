@@ -120,15 +120,15 @@ class Client(metaclass=Singleton):
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)})
                 resp = req.send()
-                if resp.status == 200:
-                    hub = json.loads(resp.body)
-                    cc_conf.hub.id = hub["id"]
-                    logger.debug("hub ID '{}'".format(cc_conf.hub.id))
-                    if not cc_conf.hub.name:
-                        cc_conf.hub.name = hub_name
-                else:
+                if not resp.status == 200:
                     logger.error("provisioning failed - {} {}".format(resp.status, resp.body))
                     raise HubProvisionError
+                hub = json.loads(resp.body)
+                cc_conf.hub.id = hub["id"]
+                logger.debug("hub ID '{}'".format(cc_conf.hub.id))
+                if not cc_conf.hub.name:
+                    cc_conf.hub.name = hub_name
+                logger.info("provisioning completed")
             else:
                 logger.info("provisioning hub '{}' ...".format(cc_conf.hub.name))
                 logger.debug("devices {}".format(device_ids))
