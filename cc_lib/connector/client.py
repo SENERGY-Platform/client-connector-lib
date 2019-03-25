@@ -181,9 +181,13 @@ class Client(metaclass=Singleton):
         except (http.TimeoutErr, http.URLError) as ex:
             logger.error("provisioning failed - {}".format(ex))
             raise HubProvisionError
-        except (json.JSONDecodeError, KeyError) as ex:
-            logger.error("malformed response - {}".format(ex))
+        except json.JSONDecodeError as ex:
+            logger.error("could not decode response - {}".format(ex))
             raise HubProvisionError
+        except KeyError as ex:
+            logger.error("malformed response - missing key {}".format(ex))
+            raise HubProvisionError
+
 
     def __start(self, start_cb=None):
         """
