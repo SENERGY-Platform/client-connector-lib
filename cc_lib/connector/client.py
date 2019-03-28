@@ -29,7 +29,7 @@ from typing import Callable
 from threading import Thread
 from getpass import getuser
 from hashlib import sha1
-import datetime, json
+import datetime, hashlib, base64, json, time
 
 
 logger = _getLibLogger(__name__.split(".", 1)[-1])
@@ -62,11 +62,27 @@ class StartError(ClientError):
     def __init__(self):
         super().__init__("client-connector already started")
 
+
 class HubProvisionError(ClientError):
     """
     Error during hub provisioning.
     """
     pass
+
+
+class DeviceProvisionError(ClientError):
+    """
+    Error during hub provisioning.
+    """
+    pass
+
+
+class DeviceExistsError(ClientError):
+    """
+    Device already added.
+    """
+    pass
+
 
 class Client(metaclass=Singleton):
     """
@@ -83,6 +99,14 @@ class Client(metaclass=Singleton):
         self.__device_manager = self.__checkDeviceManager(device_manager)
         initConnectorConf()
         initLogging()
+        if not cc_conf.hub.device_id_prefix:
+            usr_time_str = '{}{}'.format(
+                hashlib.md5(bytes(cc_conf.credentials.user, 'UTF-8')).hexdigest(),
+                time.time()
+            )
+            cc_conf.hub.device_id_prefix = base64.urlsafe_b64encode(
+                hashlib.md5(usr_time_str.encode()).digest()
+            ).decode().rstrip('=')
         self.__starter_thread = None
         self.__open_id = OpenIdClient(
             "https://{}/{}".format(cc_conf.auth.host, cc_conf.auth.path),
@@ -119,6 +143,9 @@ class Client(metaclass=Singleton):
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)})
+                if devices:
+                    logger.info("waiting for eventual consistency")
+                    time.sleep(3)
                 resp = req.send()
                 if not resp.status == 200:
                     logger.error("provisioning failed - {} {}".format(resp.status, resp.body))
@@ -135,7 +162,7 @@ class Client(metaclass=Singleton):
                 logger.debug("hash '{}'".format(devices_hash))
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 req = http.Request(
-                    url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, __class__.__urlEncodeId(cc_conf.hub.id)),
+                    url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, __class__.__urlEncode(cc_conf.hub.id)),
                     method=http.Method.GET,
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)})
@@ -150,7 +177,7 @@ class Client(metaclass=Singleton):
                         logger.debug("local hash differs from remote hash")
                         logger.info("synchronizing devices ...")
                         req = http.Request(
-                            url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, __class__.__urlEncodeId(cc_conf.hub.id)),
+                            url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, __class__.__urlEncode(cc_conf.hub.id)),
                             method=http.Method.PUT,
                             body={
                                 "id": cc_conf.hub.id,
@@ -160,6 +187,9 @@ class Client(metaclass=Singleton):
                             },
                             content_type=http.ContentType.json,
                             headers={"Authorization": "Bearer {}".format(access_token)})
+                        if devices:
+                            logger.info("waiting for eventual consistency")
+                            time.sleep(3)
                         resp = req.send()
                         if not resp.status == 200:
                             logger.error("provisioning failed - {} could not synchronize devices".format(resp.status, resp.body))
@@ -240,7 +270,39 @@ class Client(metaclass=Singleton):
         """
         if not __class__.__checkDevice(device):
             raise TypeError(type(device))
-        self.__device_manager.add(device)
+        try:
+            access_token = self.__open_id.getAccessToken()
+            req = http.Request(
+                url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.device, http.urlEncode(device.id)),
+                method=http.Method.HEAD,
+                headers={"Authorization": "Bearer {}".format(access_token)})
+            resp = req.send()
+            if resp.status == 404:
+                req = http.Request(
+                    url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.device),
+                    method=http.Method.POST,
+                    body={
+                        "device_type": device.type,
+                        "name": device.name,
+                        "uri": device.id,
+                        "tags": device.tags
+                    },
+                    content_type=http.ContentType.json,
+                    headers={"Authorization": "Bearer {}".format(access_token)})
+                resp = req.send()
+                if not resp.status == 200:
+                    raise DeviceProvisionError
+            elif resp.status == 200:
+                raise DeviceExistsError
+            else:
+                raise DeviceProvisionError
+            self.__device_manager.add(device)
+        except NoTokenError:
+            logger.error("could not retrieve access token")
+            raise DeviceProvisionError
+        except (http.TimeoutErr, http.URLError) as ex:
+            logger.error("provisioning failed - {}".format(ex))
+            raise DeviceProvisionError
         # put on platform
 
     def deleteDevice(self):
@@ -328,12 +390,3 @@ class Client(metaclass=Singleton):
         :param arg: value to be written.
         """
         setattr(obj, "_{}__{}".format(obj.__class__.__name__, attr), arg)
-
-    @staticmethod
-    def __urlEncodeId(s):
-        """
-        Encode '#' to URL encoded format.
-        :param s: String to encode.
-        :return: Encoded string.
-        """
-        return s.replace("#", "%23")
