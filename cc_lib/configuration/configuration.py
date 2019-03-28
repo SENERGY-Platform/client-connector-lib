@@ -53,6 +53,7 @@ class ConnectorConf:
     class hub:
         name: str = None
         id: str = None
+        device_id_prefix: str = None
 
     @section
     class logger:
@@ -64,6 +65,7 @@ class ConnectorConf:
     class api:
         host: str = None
         hub: str = None
+        device: str = None
 
 
 cc_conf = ConnectorConf(conf_file='connector.conf', user_path=user_dir, ext_aft_crt=True, init=False)
