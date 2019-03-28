@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('Method', 'ContentType', 'Request', 'URLError', 'TimeoutErr')
+__all__ = ('urlEncode', 'Method', 'ContentType', 'Request', 'URLError', 'TimeoutErr')
 
 
 from ....logger.logger import _getLibLogger
@@ -35,6 +35,39 @@ try:
     ca_file = certifi.where()
 except ImportError as ex:
     pass
+
+
+reserved_chars = {
+    "!": "%21",
+    "#": "%23",
+    "$": "%24",
+    "&": "%26",
+    "'": "%27",
+    "(": "%28",
+    ")": "%29",
+    "*": "%2A",
+    "+": "%2B",
+    ",": "%2C",
+    "/": "%2F",
+    ":": "%3A",
+    ";": "%3B",
+    "=": "%3D",
+    "?": "%3F",
+    "@": "%40",
+    "[": "%5B",
+    "]": "%5D"
+}
+
+
+def urlEncode(s):
+    """
+    Encode string to URL encoded format.
+    :param s: String to encode.
+    :return: Encoded string.
+    """
+    for char, perc_enc in reserved_chars.items():
+        s = s.replace(char, perc_enc)
+    return s
 
 
 class Method:
