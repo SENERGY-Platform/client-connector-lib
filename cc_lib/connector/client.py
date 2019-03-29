@@ -25,14 +25,34 @@ from .authentication import OpenIdClient, NoTokenError
 from .protocol import http
 from cc_lib import __version__ as VERSION
 from inspect import isclass
-from typing import Callable
-from threading import Thread
+from typing import Callable, Union
+from threading import Thread, Event
 from getpass import getuser
 from hashlib import sha1
 import datetime, hashlib, base64, json, time
 
 
 logger = _getLibLogger(__name__.split(".", 1)[-1])
+
+
+def _getMangledAttr(obj, attr):
+    """
+    Read mangled attribute.
+    :param obj: Object with mangled attributes.
+    :param attr: Name of mangled attribute.
+    :return: value of mangled attribute.
+    """
+    return getattr(obj, "_{}__{}".format(obj.__class__.__name__, attr))
+
+
+def _setMangledAttr(obj, attr, arg):
+    """
+    Write to mangled attribute.
+    :param obj: Object with mangled attributes.
+    :param attr: Name of mangled attribute.
+    :param arg: value to be written.
+    """
+    setattr(obj, "_{}__{}".format(obj.__class__.__name__, attr), arg)
 
 
 class ClientError(Exception):
@@ -84,6 +104,53 @@ class DeviceExistsError(ClientError):
     pass
 
 
+class FutureNotDoneError(ClientError):
+    def __init__(self):
+        super().__init__("can't retrieve result - future not done")
+
+
+class ClientFuture:
+    def __init__(self):
+        self.__result = None
+        self.__exception = None
+        self.__done = False
+
+    def result(self):
+        if not self.__done:
+            raise FutureNotDoneError
+        if self.__exception:
+            raise self.__exception
+        return self.__result
+
+    def done(self):
+        return self.__done
+
+    def running(self):
+        return not self.__done
+
+
+class ClientWorker(Thread):
+
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, *, daemon=None):
+        super().__init__(group=group, target=target, name=name, args=args, kwargs=kwargs, daemon=daemon)
+        self.__future = ClientFuture()
+
+    def run(self):
+        try:
+            try:
+                if self._target:
+                    _setMangledAttr(self.__future, "result", self._target(*self._args, **self._kwargs))
+            finally:
+                del self._target, self._args, self._kwargs
+        except Exception as ex:
+            _setMangledAttr(self.__future, "exception", ex)
+        _setMangledAttr(self.__future, "done", True)
+
+    def start(self) -> ClientFuture:
+        super().start()
+        return self.__future
+
+
 class Client(metaclass=Singleton):
     """
     Client class for client-connector projects.
@@ -108,6 +175,12 @@ class Client(metaclass=Singleton):
                 hashlib.md5(usr_time_str.encode()).digest()
             ).decode().rstrip('=')
         self.__starter_thread = None
+
+        self.__hub_provision_event = Event()
+        self.__hub_provision_event.set()
+        self.__device_sync_event = Event()
+        self.__device_sync_event.set()
+
         self.__open_id = OpenIdClient(
             "https://{}/{}".format(cc_conf.auth.host, cc_conf.auth.path),
             cc_conf.credentials.user,
@@ -162,7 +235,7 @@ class Client(metaclass=Singleton):
                 logger.debug("hash '{}'".format(devices_hash))
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 req = http.Request(
-                    url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, __class__.__urlEncode(cc_conf.hub.id)),
+                    url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, http.urlEncode(cc_conf.hub.id)),
                     method=http.Method.GET,
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)})
@@ -177,7 +250,7 @@ class Client(metaclass=Singleton):
                         logger.debug("local hash differs from remote hash")
                         logger.info("synchronizing devices ...")
                         req = http.Request(
-                            url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, __class__.__urlEncode(cc_conf.hub.id)),
+                            url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, http.urlEncode(cc_conf.hub.id)),
                             method=http.Method.PUT,
                             body={
                                 "id": cc_conf.hub.id,
@@ -219,6 +292,48 @@ class Client(metaclass=Singleton):
             raise HubProvisionError
 
 
+    def __provisionDevice(self, device):
+        self.__device_sync_event.wait()
+        logger.info("adding device '{}' to local device manager ...".format(device.id))
+        self.__device_manager.add(device)
+        try:
+            logger.info("provisioning device '{}' ...".format(device.id))
+            access_token = self.__open_id.getAccessToken()
+            req = http.Request(
+                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.hub.device_id_prefix, http.urlEncode(device.id)),
+                method=http.Method.HEAD,
+                headers={"Authorization": "Bearer {}".format(access_token)})
+            resp = req.send()
+            if resp.status == 404:
+                req = http.Request(
+                    url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.device),
+                    method=http.Method.POST,
+                    body={
+                        "device_type": device.type,
+                        "name": device.name,
+                        "uri": "{}-{}".format(cc_conf.hub.device_id_prefix, device.id),
+                        "tags": device.tags
+                    },
+                    content_type=http.ContentType.json,
+                    headers={"Authorization": "Bearer {}".format(access_token)})
+                resp = req.send()
+                if not resp.status == 200:
+                    logger.error("provisioning of device '{}' failed - {} {}".format(device.id, resp.status, resp.body))
+                    raise DeviceProvisionError
+                logger.info("provisioning of device '{}' completed".format(device.id))
+            elif resp.status == 200:
+                logger.warning("provisioning of device '{}' - already exists on platform".format(device.id))
+            else:
+                logger.error("provisioning of device '{}' failed - {} {}".format(device.id, resp.status, resp.body))
+                raise DeviceProvisionError
+        except NoTokenError:
+            logger.error("provisioning of device '{}' failed - could not retrieve access token".format(device.id))
+            raise DeviceProvisionError
+        except (http.TimeoutErr, http.URLError) as ex:
+            logger.error("provisioning failed - {}".format(ex))
+            raise DeviceProvisionError
+
+
     def __start(self, start_cb=None):
         """
         Start the client.
@@ -238,6 +353,11 @@ class Client(metaclass=Singleton):
 
     # ------------- user methods ------------- #
 
+    def test(self):
+        self.__device_sync_event.set()
+        time.sleep(5)
+        self.__device_sync_event.clear()
+
     def start(self, clbk: Callable[[], None] = None, block: bool = False) -> None:
         """
         Check if starter thread exists, if not create starter thread.
@@ -252,7 +372,6 @@ class Client(metaclass=Singleton):
         if block:
             self.__starter_thread.join()
 
-
     def emmitEvent(self):
         pass
 
@@ -262,48 +381,24 @@ class Client(metaclass=Singleton):
     def sendResponse(self):
         pass
 
-    def addDevice(self, device: Device):
+    def addDevice(self, device: Device, asynchronous: bool = True) -> Union[ClientFuture, None]:
         """
 
         :param device:
+        :param asynchronous: If 'True' method returns a ClientFuture object
         :return: None.
         """
         if not __class__.__checkDevice(device):
             raise TypeError(type(device))
-        try:
-            access_token = self.__open_id.getAccessToken()
-            req = http.Request(
-                url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.device, http.urlEncode(device.id)),
-                method=http.Method.HEAD,
-                headers={"Authorization": "Bearer {}".format(access_token)})
-            resp = req.send()
-            if resp.status == 404:
-                req = http.Request(
-                    url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.device),
-                    method=http.Method.POST,
-                    body={
-                        "device_type": device.type,
-                        "name": device.name,
-                        "uri": device.id,
-                        "tags": device.tags
-                    },
-                    content_type=http.ContentType.json,
-                    headers={"Authorization": "Bearer {}".format(access_token)})
-                resp = req.send()
-                if not resp.status == 200:
-                    raise DeviceProvisionError
-            elif resp.status == 200:
-                raise DeviceExistsError
-            else:
-                raise DeviceProvisionError
-            self.__device_manager.add(device)
-        except NoTokenError:
-            logger.error("could not retrieve access token")
-            raise DeviceProvisionError
-        except (http.TimeoutErr, http.URLError) as ex:
-            logger.error("provisioning failed - {}".format(ex))
-            raise DeviceProvisionError
-        # put on platform
+        if self.__device_manager.get(device.id):
+            logger.error("device ID '{}' already exists in local device manager".format(device.id))
+            raise DeviceExistsError
+        if asynchronous:
+            worker = ClientWorker(target=self.__provisionDevice, args=(device,), name="add-device-{}".format(device.id), daemon=True)
+            future = worker.start()
+            return future
+        else:
+            self.__provisionDevice(device)
 
     def deleteDevice(self):
         pass
@@ -370,23 +465,3 @@ class Client(metaclass=Singleton):
         if type(device) is Device or issubclass(type(device), Device):
             return True
         return False
-
-    @staticmethod
-    def __getMangledAttr(obj, attr):
-        """
-        Read mangled attribute.
-        :param obj: Object with mangled attributes.
-        :param attr: Name of mangled attribute.
-        :return: value of mangled attribute.
-        """
-        return getattr(obj, "_{}__{}".format(obj.__class__.__name__, attr))
-
-    @staticmethod
-    def __setMangledAttr(obj, attr, arg):
-        """
-        Write to mangled attribute.
-        :param obj: Object with mangled attributes.
-        :param attr: Name of mangled attribute.
-        :param arg: value to be written.
-        """
-        setattr(obj, "_{}__{}".format(obj.__class__.__name__, attr), arg)
