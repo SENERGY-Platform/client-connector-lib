@@ -150,6 +150,9 @@ class Future:
     def wait(self, timeout: float = None):
         self.__thread.join(timeout)
 
+    def addDoneCallback(self, func: Callable):
+        self.__thread.callback = func
+
 
 class Worker(Thread):
 
@@ -158,6 +161,7 @@ class Worker(Thread):
         self.result = None
         self.exception = None
         self.done = False
+        self.callback = None
 
     def run(self):
         try:
@@ -169,6 +173,11 @@ class Worker(Thread):
         except Exception as ex:
             self.exception = ex
         self.done = True
+        if self.callback:
+            try:
+                self.callback()
+            except Exception:
+                logger.exception("exception calling callback for '{}'".format(self.name))
 
     def start(self) -> Future:
         future = Future(self)
@@ -180,7 +189,6 @@ class Client(metaclass=Singleton):
     """
     Client class for client-connector projects.
     To avoid multiple instantiations the Client class implements the singleton pattern.
-    Threading is managed internally, wrapping the client in a thread is not necessary.
     """
 
     def __init__(self, device_manager: Interface):
@@ -559,7 +567,7 @@ class Client(metaclass=Singleton):
             devices = list(devices.values())
         ids = list()
         for device in devices:
-            ids.append(device.id)
+            ids.append("{}-{}".format(cc_conf.hub.device_id_prefix, device.id))
         return ids
 
     @staticmethod
