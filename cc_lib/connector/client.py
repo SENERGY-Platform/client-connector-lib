@@ -25,7 +25,7 @@ from .authentication import OpenIdClient, NoTokenError
 from .protocol import http
 from cc_lib import __version__ as VERSION
 from inspect import isclass
-from typing import Callable, Union
+from typing import Callable, Union, Any
 from threading import Thread, Event
 from getpass import getuser
 from hashlib import sha1
@@ -104,51 +104,69 @@ class DeviceExistsError(ClientError):
     pass
 
 
+class DeviceNotFoundError(ClientError):
+    """
+    Device is missing.
+    """
+    pass
+
+
+class DeviceDeleteError(ClientError):
+    """
+    Error while deleting a device.
+    """
+    pass
+
+
 class FutureNotDoneError(ClientError):
     def __init__(self):
         super().__init__("can't retrieve result - future not done")
 
 
-class ClientFuture:
-    def __init__(self):
-        self.__result = None
-        self.__exception = None
-        self.__done = False
+class Future:
+    def __init__(self, thread):
+        self.__thread = thread
 
-    def result(self):
-        if not self.__done:
+    def result(self) -> Any:
+        if not self.__thread.done:
             raise FutureNotDoneError
-        if self.__exception:
-            raise self.__exception
-        return self.__result
+        if self.__thread.exception:
+            raise self.__thread.exception
+        return self.__thread.result
 
-    def done(self):
-        return self.__done
+    def done(self) -> bool:
+        return self.__thread.done
 
-    def running(self):
-        return not self.__done
+    def running(self) -> bool:
+        return not self.__thread.done
+
+    def wait(self, timeout: float = None):
+        self.__thread.join(timeout)
 
 
-class ClientWorker(Thread):
+class Worker(Thread):
 
     def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, *, daemon=None):
         super().__init__(group=group, target=target, name=name, args=args, kwargs=kwargs, daemon=daemon)
-        self.__future = ClientFuture()
+        self.result = None
+        self.exception = None
+        self.done = False
 
     def run(self):
         try:
             try:
                 if self._target:
-                    _setMangledAttr(self.__future, "result", self._target(*self._args, **self._kwargs))
+                    self.result = self._target(*self._args, **self._kwargs)
             finally:
                 del self._target, self._args, self._kwargs
         except Exception as ex:
-            _setMangledAttr(self.__future, "exception", ex)
-        _setMangledAttr(self.__future, "done", True)
+            self.exception = ex
+        self.done = True
 
-    def start(self) -> ClientFuture:
+    def start(self) -> Future:
+        future = Future(self)
         super().start()
-        return self.__future
+        return future
 
 
 class Client(metaclass=Singleton):
@@ -293,8 +311,7 @@ class Client(metaclass=Singleton):
 
 
     def __provisionDevice(self, device):
-        self.__device_sync_event.wait()
-        logger.info("adding device '{}' to local device manager ...".format(device.id))
+        logger.info("adding device '{}' to device manager ...".format(device.id))
         self.__device_manager.add(device)
         try:
             logger.info("provisioning device '{}' ...".format(device.id))
@@ -318,20 +335,43 @@ class Client(metaclass=Singleton):
                     headers={"Authorization": "Bearer {}".format(access_token)})
                 resp = req.send()
                 if not resp.status == 200:
-                    logger.error("provisioning of device '{}' failed - {} {}".format(device.id, resp.status, resp.body))
+                    logger.error("provisioning device '{}' failed - {} {}".format(device.id, resp.status, resp.body))
                     raise DeviceProvisionError
-                logger.info("provisioning of device '{}' completed".format(device.id))
+                logger.info("provisioning device '{}' completed".format(device.id))
             elif resp.status == 200:
-                logger.warning("provisioning of device '{}' - already exists on platform".format(device.id))
+                logger.warning("device '{}' already on platform".format(device.id))
             else:
-                logger.error("provisioning of device '{}' failed - {} {}".format(device.id, resp.status, resp.body))
+                logger.error("provisioning device '{}' failed - {} {}".format(device.id, resp.status, resp.body))
                 raise DeviceProvisionError
         except NoTokenError:
-            logger.error("provisioning of device '{}' failed - could not retrieve access token".format(device.id))
+            logger.error("provisioning device '{}' failed - could not retrieve access token".format(device.id))
             raise DeviceProvisionError
         except (http.TimeoutErr, http.URLError) as ex:
-            logger.error("provisioning failed - {}".format(ex))
+            logger.error("provisioning device '{}' failed - {}".format(device.id, ex))
             raise DeviceProvisionError
+
+
+    def __deleteDevice(self, device_id):
+        logger.info("delete device '{}' from device manager ...".format(device_id))
+        self.__device_manager.delete(device_id)
+        try:
+            logger.info("deleting device '{}' ...".format(device_id))
+            access_token = self.__open_id.getAccessToken()
+            req = http.Request(
+                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.hub.device_id_prefix, http.urlEncode(device_id)),
+                method=http.Method.DELETE,
+                headers={"Authorization": "Bearer {}".format(access_token)})
+            resp = req.send()
+            if not resp.status == 200:
+                logger.error("deleting device '{}' failed - {} {}".format(device_id, resp.status, resp.body))
+                raise DeviceDeleteError
+            logger.info("deleting device '{}' completed".format(device_id))
+        except NoTokenError:
+            logger.error("deleting device '{}' failed - could not retrieve access token".format(device_id))
+            raise DeviceDeleteError
+        except (http.TimeoutErr, http.URLError) as ex:
+            logger.error("deleting device '{}' failed - {}".format(device_id, ex))
+            raise DeviceDeleteError
 
 
     def __start(self, start_cb=None):
@@ -381,27 +421,37 @@ class Client(metaclass=Singleton):
     def sendResponse(self):
         pass
 
-    def addDevice(self, device: Device, asynchronous: bool = True) -> Union[ClientFuture, None]:
+    def addDevice(self, device: Device, asynchronous: bool = False) -> Union[Future, None]:
         """
-
-        :param device:
-        :param asynchronous: If 'True' method returns a ClientFuture object
-        :return: None.
+        Add a device to local device manager and remote platform. Blocks by default.
+        :param device: Device object.
+        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :return: Future or None.
         """
         if not __class__.__checkDevice(device):
             raise TypeError(type(device))
         if self.__device_manager.get(device.id):
-            logger.error("device ID '{}' already exists in local device manager".format(device.id))
+            logger.error("device '{}' already in device manager".format(device.id))
             raise DeviceExistsError
         if asynchronous:
-            worker = ClientWorker(target=self.__provisionDevice, args=(device,), name="add-device-{}".format(device.id), daemon=True)
+            worker = Worker(target=self.__provisionDevice, args=(device,), name="add-device-{}".format(device.id), daemon=True)
             future = worker.start()
             return future
         else:
             self.__provisionDevice(device)
 
-    def deleteDevice(self):
-        pass
+    def deleteDevice(self, device_id: str, asynchronous: bool = False) -> Union[Future, None]:
+        if not type(device_id) is str:
+            raise TypeError(type(device_id))
+        if not self.__device_manager.get(device_id):
+            logger.error("device '{}' not found in device manager".format(device_id))
+            raise DeviceNotFoundError
+        if asynchronous:
+            worker = Worker(target=self.__deleteDevice, args=(device_id,), name="delete-device-{}".format(device_id), daemon=True)
+            future = worker.start()
+            return future
+        else:
+            self.__deleteDevice(device_id)
 
     def connectDevice(self):
         pass
