@@ -118,6 +118,13 @@ class DeviceDeleteError(ClientError):
     pass
 
 
+class DeviceUpdateError(ClientError):
+    """
+    Error while updating a device.
+    """
+    pass
+
+
 class FutureNotDoneError(ClientError):
     def __init__(self):
         super().__init__("can't retrieve result - future not done")
@@ -309,12 +316,11 @@ class Client(metaclass=Singleton):
             logger.error("malformed response - missing key {}".format(ex))
             raise HubProvisionError
 
-
-    def __provisionDevice(self, device):
+    def __addDevice(self, device):
         logger.info("adding device '{}' to device manager ...".format(device.id))
         self.__device_manager.add(device)
         try:
-            logger.info("provisioning device '{}' ...".format(device.id))
+            logger.info("adding device '{}' to platform ...".format(device.id))
             access_token = self.__open_id.getAccessToken()
             req = http.Request(
                 url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.hub.device_id_prefix, http.urlEncode(device.id)),
@@ -335,44 +341,85 @@ class Client(metaclass=Singleton):
                     headers={"Authorization": "Bearer {}".format(access_token)})
                 resp = req.send()
                 if not resp.status == 200:
-                    logger.error("provisioning device '{}' failed - {} {}".format(device.id, resp.status, resp.body))
+                    logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
                     raise DeviceProvisionError
-                logger.info("provisioning device '{}' completed".format(device.id))
+                logger.info("adding device '{}' to platform completed".format(device.id))
             elif resp.status == 200:
-                logger.warning("device '{}' already on platform".format(device.id))
+                logger.warning("adding device '{}' to platform - device already on platform".format(device.id))
             else:
-                logger.error("provisioning device '{}' failed - {} {}".format(device.id, resp.status, resp.body))
+                logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
                 raise DeviceProvisionError
         except NoTokenError:
-            logger.error("provisioning device '{}' failed - could not retrieve access token".format(device.id))
+            logger.error("adding device '{}' to platform failed - could not retrieve access token".format(device.id))
             raise DeviceProvisionError
         except (http.TimeoutErr, http.URLError) as ex:
-            logger.error("provisioning device '{}' failed - {}".format(device.id, ex))
+            logger.error("adding device '{}' to platform failed - {}".format(device.id, ex))
             raise DeviceProvisionError
-
 
     def __deleteDevice(self, device_id):
         logger.info("delete device '{}' from device manager ...".format(device_id))
         self.__device_manager.delete(device_id)
         try:
-            logger.info("deleting device '{}' ...".format(device_id))
+            logger.info("deleting device '{}' from platform ...".format(device_id))
             access_token = self.__open_id.getAccessToken()
             req = http.Request(
                 url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.hub.device_id_prefix, http.urlEncode(device_id)),
                 method=http.Method.DELETE,
                 headers={"Authorization": "Bearer {}".format(access_token)})
             resp = req.send()
-            if not resp.status == 200:
-                logger.error("deleting device '{}' failed - {} {}".format(device_id, resp.status, resp.body))
+            if resp.status == 200:
+                logger.info("deleting device '{}' from platform completed".format(device_id))
+            elif resp.status == 404:
+                logger.info("deleting device '{}' from platform - device not found".format(device_id))
+            else:
+                logger.error("deleting device '{}' from platform failed - {} {}".format(device_id, resp.status, resp.body))
                 raise DeviceDeleteError
-            logger.info("deleting device '{}' completed".format(device_id))
         except NoTokenError:
-            logger.error("deleting device '{}' failed - could not retrieve access token".format(device_id))
+            logger.error("deleting device '{}' from platform failed - could not retrieve access token".format(device_id))
             raise DeviceDeleteError
         except (http.TimeoutErr, http.URLError) as ex:
-            logger.error("deleting device '{}' failed - {}".format(device_id, ex))
+            logger.error("deleting device '{}' from platform failed - {}".format(device_id, ex))
             raise DeviceDeleteError
 
+    def __updateDevice(self, device):
+        logger.info("updating device '{}' in device manager ...".format(device.id))
+        self.__device_manager.update(device)
+        try:
+            logger.info("updating device '{}' on platform ...".format(device.id))
+            access_token = self.__open_id.getAccessToken()
+            req = http.Request(
+                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.hub.device_id_prefix, http.urlEncode(device.id)),
+                method=http.Method.GET,
+                headers={"Authorization": "Bearer {}".format(access_token)})
+            resp = req.send()
+            if resp.status == 200:
+                req = http.Request(
+                    url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.hub.device_id_prefix, http.urlEncode(device.id)),
+                    method=http.Method.PUT,
+                    body={
+                        "device_type": device.type,
+                        "name": device.name,
+                        "tags": device.tags
+                    },
+                    content_type=http.ContentType.json,
+                    headers={"Authorization": "Bearer {}".format(access_token)})
+                resp = req.send()
+                if not resp.status == 200:
+                    logger.error("updating device '{}' on platform failed - {} {}".format(device.id, resp.status, resp.body))
+                    raise DeviceProvisionError
+                logger.info("updating device '{}' on platform completed".format(device.id))
+            elif resp.status == 404:
+                logger.error("updating device '{}' on platform failed - device not found".format(device.id))
+                raise DeviceNotFoundError
+            else:
+                logger.error("updating device '{}' on platform failed - {} {}".format(device.id, resp.status, resp.body))
+                raise DeviceUpdateError
+        except NoTokenError:
+            logger.error("updating device '{}' on platform failed - could not retrieve access token".format(device.id))
+            raise DeviceUpdateError
+        except (http.TimeoutErr, http.URLError) as ex:
+            logger.error("updating device '{}' on platform failed - {}".format(device.id, ex))
+            raise DeviceUpdateError
 
     def __start(self, start_cb=None):
         """
@@ -434,13 +481,19 @@ class Client(metaclass=Singleton):
             logger.error("device '{}' already in device manager".format(device.id))
             raise DeviceExistsError
         if asynchronous:
-            worker = Worker(target=self.__provisionDevice, args=(device,), name="add-device-{}".format(device.id), daemon=True)
+            worker = Worker(target=self.__addDevice, args=(device,), name="add-device-{}".format(device.id), daemon=True)
             future = worker.start()
             return future
         else:
-            self.__provisionDevice(device)
+            self.__addDevice(device)
 
     def deleteDevice(self, device_id: str, asynchronous: bool = False) -> Union[Future, None]:
+        """
+        Delete a device from local device manager and remote platform. Blocks by default.
+        :param device_id: Device ID.
+        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :return: Future or None.
+        """
         if not type(device_id) is str:
             raise TypeError(type(device_id))
         if not self.__device_manager.get(device_id):
@@ -452,6 +505,25 @@ class Client(metaclass=Singleton):
             return future
         else:
             self.__deleteDevice(device_id)
+
+    def updateDevice(self, device: Device, asynchronous: bool = False) -> Union[Future, None]:
+        """
+        Update a device in local device manager and on remote platform.
+        :param device: Device object.
+        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :return: Future or None.
+        """
+        if not __class__.__checkDevice(device):
+            raise TypeError(type(device))
+        if not self.__device_manager.get(device.id):
+            logger.error("device '{}' not found in device manager".format(device.id))
+            raise DeviceNotFoundError
+        if asynchronous:
+            worker = Worker(target=self.__updateDevice, args=(device,), name="update-device-{}".format(device.id), daemon=True)
+            future = worker.start()
+            return future
+        else:
+            self.__updateDevice(device)
 
     def connectDevice(self):
         pass
