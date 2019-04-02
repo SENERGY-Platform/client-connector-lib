@@ -42,7 +42,7 @@ class DevicePool(Interface):
         pass
 
     @staticmethod
-    def remove(device):
+    def delete(device):
         if _isDevice(device):
             device = device.id
         elif type(device) is not str:

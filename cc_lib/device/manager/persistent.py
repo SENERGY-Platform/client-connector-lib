@@ -89,7 +89,7 @@ class DeviceStore(Interface, SimpleSingleton):
         )
         self._executeQuery(query)
 
-    def remove(self, d_id):
+    def delete(self, d_id):
         if type(d_id) is Device:
             d_id = d_id.id
         elif type(d_id) is not str:

@@ -40,7 +40,7 @@ class Interface(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def remove(*sc, id_str):
+    def delete(*sc, id_str):
         """
         remove device
         :param id_str: takes device ID as string.
