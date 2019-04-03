@@ -83,16 +83,37 @@ class StartError(ClientError):
         super().__init__("client-connector already started")
 
 
-class HubProvisionError(ClientError):
+class HubInitializationError(ClientError):
     """
-    Error during hub provisioning.
+    Error during hub initialization.
     """
     pass
 
 
-class DeviceProvisionError(ClientError):
+class HubNotInitializedError(ClientError):
     """
-    Error during hub provisioning.
+    Hub has not been initialized.
+    """
+    pass
+
+
+class HubNotFoundError(ClientError):
+    """
+    Hub ID not on platform.
+    """
+    pass
+
+
+class HubSynchronizationError(ClientError):
+    """
+    Error during hub synchronization.
+    """
+    pass
+
+
+class DeviceAddError(ClientError):
+    """
+    Error while adding a device.
     """
     pass
 
@@ -199,6 +220,7 @@ class Client(metaclass=Singleton):
         self.__device_manager = self.__checkDeviceManager(device_manager)
         initConnectorConf()
         initLogging()
+        logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
         if not cc_conf.hub.device_id_prefix:
             usr_time_str = '{}{}'.format(
                 hashlib.md5(bytes(cc_conf.credentials.user, 'UTF-8')).hexdigest(),
@@ -221,106 +243,131 @@ class Client(metaclass=Singleton):
 
     # ------------- internal methods ------------- #
 
-    def __provisionHub(self):
+    def __initHub(self):
         try:
-            devices = self.__device_manager.devices()
-            devices_hash = __class__.__hashDevices(devices)
-            device_ids = __class__.__listDeviceIDs(devices)
+            logger.info("initializing hub ...")
             access_token = self.__open_id.getAccessToken()
             if not cc_conf.hub.id:
-                logger.info("initializing new hub ...")
+                logger.info("creating new hub ...")
                 hub_name = cc_conf.hub.name
                 if not hub_name:
                     logger.info("generating hub name ...")
                     hub_name = "{}-{}".format(getuser(), datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
-                logger.info("provisioning hub '{}' ...".format(hub_name))
-                logger.debug("devices {}".format(device_ids))
-                logger.debug("hash '{}'".format(devices_hash))
                 req = http.Request(
                     url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.hub),
                     method=http.Method.POST,
                     body={
                         "id": None,
                         "name": hub_name,
-                        "hash": devices_hash,
-                        "devices": device_ids
+                        "hash": None,
+                        "devices": list()
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)})
-                if devices:
-                    logger.info("waiting for eventual consistency")
-                    time.sleep(3)
                 resp = req.send()
                 if not resp.status == 200:
-                    logger.error("provisioning failed - {} {}".format(resp.status, resp.body))
-                    raise HubProvisionError
+                    logger.error("initializing hub failed - {} {}".format(resp.status, resp.body))
+                    raise HubInitializationError
                 hub = json.loads(resp.body)
                 cc_conf.hub.id = hub["id"]
-                logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 if not cc_conf.hub.name:
                     cc_conf.hub.name = hub_name
-                logger.info("provisioning completed")
+                logger.debug("hub ID '{}'".format(cc_conf.hub.id))
+                logger.info("initializing hub completed")
             else:
-                logger.info("provisioning hub '{}' ...".format(cc_conf.hub.name))
-                logger.debug("devices {}".format(device_ids))
-                logger.debug("hash '{}'".format(devices_hash))
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 req = http.Request(
                     url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, http.urlEncode(cc_conf.hub.id)),
-                    method=http.Method.GET,
-                    content_type=http.ContentType.json,
+                    method=http.Method.HEAD,
                     headers={"Authorization": "Bearer {}".format(access_token)})
                 resp = req.send()
                 if resp.status == 200:
-                    hub = json.loads(resp.body)
-                    if not hub["name"] == cc_conf.hub.name:
-                        logger.warning("local name '{}' differs from remote name '{}'".format(cc_conf.hub.name, hub["name"]))
-                        logger.info("setting hub name to '{}'".format(hub["name"]))
-                        cc_conf.hub.name = hub["name"]
-                    if not hub["hash"] == devices_hash:
-                        logger.debug("local hash differs from remote hash")
-                        logger.info("synchronizing devices ...")
-                        req = http.Request(
-                            url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, http.urlEncode(cc_conf.hub.id)),
-                            method=http.Method.PUT,
-                            body={
-                                "id": cc_conf.hub.id,
-                                "name": cc_conf.hub.name,
-                                "hash": devices_hash,
-                                "devices": device_ids
-                            },
-                            content_type=http.ContentType.json,
-                            headers={"Authorization": "Bearer {}".format(access_token)})
-                        if devices:
-                            logger.info("waiting for eventual consistency")
-                            time.sleep(3)
-                        resp = req.send()
-                        if not resp.status == 200:
-                            logger.error("provisioning failed - {} could not synchronize devices".format(resp.status, resp.body))
-                            raise HubProvisionError
-                    logger.info("provisioning completed")
-                elif resp.status == 403:
-                    logger.error("provisioning failed - {} access forbidden".format(resp.status))
-                    raise HubProvisionError
+                    logger.info("initializing hub completed")
                 elif resp.status == 404:
-                    logger.error("provisioning failed - {} hub not found".format(resp.status))
+                    logger.error("initializing hub failed - hub not found on platform")
                     cc_conf.hub.id = None
-                    raise HubProvisionError
+                    raise HubNotFoundError
                 else:
-                    logger.error("provisioning failed - {} {}".format(resp.status, resp.body))
-                    raise HubProvisionError
+                    logger.error("initializing hub failed - {} {}".format(resp.status, resp.body))
+                    raise HubInitializationError
         except NoTokenError:
             logger.error("could not retrieve access token")
-            raise HubProvisionError
+            raise HubInitializationError
         except (http.TimeoutErr, http.URLError) as ex:
-            logger.error("provisioning failed - {}".format(ex))
-            raise HubProvisionError
+            logger.error("initializing hub failed - {}".format(ex))
+            raise HubInitializationError
         except json.JSONDecodeError as ex:
-            logger.error("could not decode response - {}".format(ex))
-            raise HubProvisionError
+            logger.error("initializing hub failed - could not decode response - {}".format(ex))
+            raise HubInitializationError
         except KeyError as ex:
-            logger.error("malformed response - missing key {}".format(ex))
-            raise HubProvisionError
+            logger.error("initializing hub failed - malformed response - missing key {}".format(ex))
+            raise HubInitializationError
+
+    def __syncHub(self):
+        if not cc_conf.hub.id:
+            raise HubNotInitializedError
+        try:
+            logger.info("synchronizing hub ...")
+            devices = self.__device_manager.devices()
+            device_ids = __class__.__listDeviceIDs(devices)
+            devices_hash = __class__.__hashDevices(devices)
+            logger.debug("hub ID '{}'".format(cc_conf.hub.id))
+            logger.debug("devices {}".format(device_ids))
+            logger.debug("hash '{}'".format(devices_hash))
+            access_token = self.__open_id.getAccessToken()
+            req = http.Request(
+                url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, http.urlEncode(cc_conf.hub.id)),
+                method=http.Method.GET,
+                content_type=http.ContentType.json,
+                headers={"Authorization": "Bearer {}".format(access_token)})
+            resp = req.send()
+            if resp.status == 200:
+                hub = json.loads(resp.body)
+                if not hub["name"] == cc_conf.hub.name:
+                    logger.warning("synchronizing hub - local name '{}' differs from remote name '{}'".format(cc_conf.hub.name, hub["name"]))
+                    logger.info("synchronizing hub - setting hub name to '{}'".format(hub["name"]))
+                    cc_conf.hub.name = hub["name"]
+                if not hub["hash"] == devices_hash:
+                    logger.debug("synchronizing hub - local hash differs from remote hash")
+                    logger.info("synchronizing hub - updating devices ...")
+                    req = http.Request(
+                        url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, http.urlEncode(cc_conf.hub.id)),
+                        method=http.Method.PUT,
+                        body={
+                            "id": cc_conf.hub.id,
+                            "name": cc_conf.hub.name,
+                            "hash": devices_hash,
+                            "devices": device_ids
+                        },
+                        content_type=http.ContentType.json,
+                        headers={"Authorization": "Bearer {}".format(access_token)})
+                    if devices:
+                        logger.debug("synchronizing hub - waiting 4s for eventual consistency")
+                        time.sleep(4)
+                    resp = req.send()
+                    if not resp.status == 200:
+                        logger.error("synchronizing hub failed - {} could not update devices".format(resp.status, resp.body))
+                        raise HubSynchronizationError
+                logger.info("synchronizing hub completed")
+            elif resp.status == 404:
+                logger.error("synchronizing hub failed - hub not found on platform")
+                cc_conf.hub.id = None
+                raise HubNotFoundError
+            else:
+                logger.error("synchronizing hub failed - {} {}".format(resp.status, resp.body))
+                raise HubSynchronizationError
+        except NoTokenError:
+            logger.error("could not retrieve access token")
+            raise HubSynchronizationError
+        except (http.TimeoutErr, http.URLError) as ex:
+            logger.error("synchronizing hub failed - {}".format(ex))
+            raise HubSynchronizationError
+        except json.JSONDecodeError as ex:
+            logger.error("synchronizing hub failed - could not decode response - {}".format(ex))
+            raise HubSynchronizationError
+        except KeyError as ex:
+            logger.error("synchronizing hub failed - malformed response - missing key {}".format(ex))
+            raise HubSynchronizationError
 
     def __addDevice(self, device):
         logger.info("adding device '{}' to device manager ...".format(device.id))
@@ -348,19 +395,19 @@ class Client(metaclass=Singleton):
                 resp = req.send()
                 if not resp.status == 200:
                     logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
-                    raise DeviceProvisionError
+                    raise DeviceAddError
                 logger.info("adding device '{}' to platform completed".format(device.id))
             elif resp.status == 200:
                 logger.warning("adding device '{}' to platform - device already on platform".format(device.id))
             else:
                 logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
-                raise DeviceProvisionError
+                raise DeviceAddError
         except NoTokenError:
             logger.error("adding device '{}' to platform failed - could not retrieve access token".format(device.id))
-            raise DeviceProvisionError
+            raise DeviceAddError
         except (http.TimeoutErr, http.URLError) as ex:
             logger.error("adding device '{}' to platform failed - {}".format(device.id, ex))
-            raise DeviceProvisionError
+            raise DeviceAddError
 
     def __deleteDevice(self, device_id):
         logger.info("delete device '{}' from device manager ...".format(device_id))
@@ -395,7 +442,7 @@ class Client(metaclass=Singleton):
             access_token = self.__open_id.getAccessToken()
             req = http.Request(
                 url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.hub.device_id_prefix, http.urlEncode(device.id)),
-                method=http.Method.GET,
+                method=http.Method.HEAD,
                 headers={"Authorization": "Bearer {}".format(access_token)})
             resp = req.send()
             if resp.status == 200:
@@ -412,7 +459,7 @@ class Client(metaclass=Singleton):
                 resp = req.send()
                 if not resp.status == 200:
                     logger.error("updating device '{}' on platform failed - {} {}".format(device.id, resp.status, resp.body))
-                    raise DeviceProvisionError
+                    raise DeviceAddError
                 logger.info("updating device '{}' on platform completed".format(device.id))
             elif resp.status == 404:
                 logger.error("updating device '{}' on platform failed - device not found".format(device.id))
@@ -433,13 +480,13 @@ class Client(metaclass=Singleton):
         :param start_cb: Callback function to be executed after startup.
         :return: None.
         """
-        logger.info(12 * "-" + " Starting client-connector v{} ".format(VERSION) + 12 * "-")
+
         while True:
             try:
-                self.__provisionHub()
+                self.__initHub()
                 # start mqtt client
                 break
-            except HubProvisionError:
+            except HubInitializationError:
                 pass
         if start_cb:
             start_cb()
@@ -461,10 +508,30 @@ class Client(metaclass=Singleton):
             self.__starter_thread.join()
 
     def initHub(self, asynchronous: bool = False) -> Union[Future, None]:
-        pass
+        """
+
+        :param asynchronous:
+        :return:
+        """
+        if asynchronous:
+            worker = Worker(target=self.__initHub, name="init-hub", daemon=True)
+            future = worker.start()
+            return future
+        else:
+            self.__initHub()
 
     def syncHub(self, asynchronous: bool = False) -> Union[Future, None]:
-        pass # futures as arg???
+        """
+
+        :param asynchronous:
+        :return:
+        """
+        if asynchronous:
+            worker = Worker(target=self.__syncHub, name="sync-hub", daemon=True)
+            future = worker.start()
+            return future
+        else:
+            self.__syncHub()
 
     def emmitEvent(self):
         pass
