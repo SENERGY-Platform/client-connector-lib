@@ -209,10 +209,8 @@ class Client(metaclass=Singleton):
             ).decode().rstrip('=')
         self.__starter_thread = None
 
-        self.__hub_provision_event = Event()
-        self.__hub_provision_event.set()
-        self.__device_sync_event = Event()
-        self.__device_sync_event.set()
+        self.__hub_sync_event = Event()
+        self.__hub_sync_event.set()
 
         self.__open_id = OpenIdClient(
             "https://{}/{}".format(cc_conf.auth.host, cc_conf.auth.path),
@@ -448,11 +446,6 @@ class Client(metaclass=Singleton):
 
     # ------------- user methods ------------- #
 
-    def test(self):
-        self.__device_sync_event.set()
-        time.sleep(5)
-        self.__device_sync_event.clear()
-
     def start(self, clbk: Callable[[], None] = None, block: bool = False) -> None:
         """
         Check if starter thread exists, if not create starter thread.
@@ -466,6 +459,12 @@ class Client(metaclass=Singleton):
         self.__starter_thread.start()
         if block:
             self.__starter_thread.join()
+
+    def initHub(self, asynchronous: bool = False) -> Union[Future, None]:
+        pass
+
+    def syncHub(self, asynchronous: bool = False) -> Union[Future, None]:
+        pass # futures as arg???
 
     def emmitEvent(self):
         pass
