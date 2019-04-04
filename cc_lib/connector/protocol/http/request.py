@@ -86,7 +86,7 @@ class ContentType:
 
 
 class Request:
-    def __init__(self, url: str, method: str = Method.GET, body: Union[Iterable, SupportsAbs] = None, content_type: str = None, headers: dict = None, timeout: int = 10):
+    def __init__(self, url: str, method: str = Method.GET, body: Union[Iterable, SupportsAbs] = None, content_type: str = None, headers: dict = None, timeout: int = 30):
         self.__url = url
         self.__method = method
         self.__body = body
