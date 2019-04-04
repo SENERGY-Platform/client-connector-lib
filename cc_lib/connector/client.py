@@ -26,10 +26,9 @@ from .protocol import http
 from cc_lib import __version__ as VERSION
 from inspect import isclass
 from typing import Callable, Union, Any
-from threading import Thread, Event
 from getpass import getuser
 from hashlib import sha1
-import datetime, hashlib, base64, json, time
+import datetime, hashlib, base64, json, time, threading
 
 
 logger = _getLibLogger(__name__.split(".", 1)[-1])
@@ -175,7 +174,7 @@ class Future:
         self.__thread.callback = func
 
 
-class Worker(Thread):
+class Worker(threading.Thread):
 
     def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, *, daemon=None):
         super().__init__(group=group, target=target, name=name, args=args, kwargs=kwargs, daemon=daemon)
@@ -231,8 +230,10 @@ class Client(metaclass=Singleton):
             ).decode().rstrip('=')
         self.__starter_thread = None
 
-        self.__hub_sync_event = Event()
+        self.__workers = list()
+        self.__hub_sync_event = threading.Event()
         self.__hub_sync_event.set()
+        self.__hub_sync_lock = threading.Lock()
 
         self.__open_id = OpenIdClient(
             "https://{}/{}".format(cc_conf.auth.host, cc_conf.auth.path),
@@ -291,7 +292,7 @@ class Client(metaclass=Singleton):
                     logger.error("initializing hub failed - {} {}".format(resp.status, resp.body))
                     raise HubInitializationError
         except NoTokenError:
-            logger.error("could not retrieve access token")
+            logger.error("initializing hub failed - could not retrieve access token")
             raise HubInitializationError
         except (http.TimeoutErr, http.URLError) as ex:
             logger.error("initializing hub failed - {}".format(ex))
@@ -304,72 +305,92 @@ class Client(metaclass=Singleton):
             raise HubInitializationError
 
     def __syncHub(self):
+        self.__hub_sync_lock.acquire()
         if not cc_conf.hub.id:
+            self.__hub_sync_lock.release()
+            logger.error("hub not initialized - synchronizing hub not possible")
             raise HubNotInitializedError
         try:
-            logger.info("synchronizing hub ...")
-            devices = self.__device_manager.devices()
-            device_ids = __class__.__listDeviceIDs(devices)
-            devices_hash = __class__.__hashDevices(devices)
-            logger.debug("hub ID '{}'".format(cc_conf.hub.id))
-            logger.debug("devices {}".format(device_ids))
-            logger.debug("hash '{}'".format(devices_hash))
-            access_token = self.__open_id.getAccessToken()
-            req = http.Request(
-                url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, http.urlEncode(cc_conf.hub.id)),
-                method=http.Method.GET,
-                content_type=http.ContentType.json,
-                headers={"Authorization": "Bearer {}".format(access_token)})
-            resp = req.send()
-            if resp.status == 200:
-                hub = json.loads(resp.body)
-                if not hub["name"] == cc_conf.hub.name:
-                    logger.warning("synchronizing hub - local name '{}' differs from remote name '{}'".format(cc_conf.hub.name, hub["name"]))
-                    logger.info("synchronizing hub - setting hub name to '{}'".format(hub["name"]))
-                    cc_conf.hub.name = hub["name"]
-                if not hub["hash"] == devices_hash:
-                    logger.debug("synchronizing hub - local hash differs from remote hash")
-                    logger.info("synchronizing hub - updating devices ...")
-                    req = http.Request(
-                        url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, http.urlEncode(cc_conf.hub.id)),
-                        method=http.Method.PUT,
-                        body={
-                            "id": cc_conf.hub.id,
-                            "name": cc_conf.hub.name,
-                            "hash": devices_hash,
-                            "devices": device_ids
-                        },
-                        content_type=http.ContentType.json,
-                        headers={"Authorization": "Bearer {}".format(access_token)})
-                    if devices:
-                        logger.debug("synchronizing hub - waiting 4s for eventual consistency")
-                        time.sleep(4)
-                    resp = req.send()
-                    if not resp.status == 200:
-                        logger.error("synchronizing hub failed - {} could not update devices".format(resp.status, resp.body))
-                        raise HubSynchronizationError
-                logger.info("synchronizing hub completed")
-            elif resp.status == 404:
-                logger.error("synchronizing hub failed - hub not found on platform")
-                cc_conf.hub.id = None
-                raise HubNotFoundError
-            else:
-                logger.error("synchronizing hub failed - {} {}".format(resp.status, resp.body))
+            try:
+                self.__hub_sync_event.clear()
+                logger.info("synchronizing hub ...")
+                if self.__workers:
+                    logger.info("synchronizing hub - waiting for running tasks: {}".format(len(self.__workers)))
+                    for worker in self.__workers:
+                        worker.join()
+                        logger.debug("synchronizing hub - task '{}' finished".format(worker.name))
+                    self.__workers.clear()
+                devices = self.__device_manager.devices()
+                device_ids = __class__.__listDeviceIDs(devices)
+                devices_hash = __class__.__hashDevices(devices)
+                logger.debug("hub ID '{}'".format(cc_conf.hub.id))
+                logger.debug("devices {}".format(device_ids))
+                logger.debug("hash '{}'".format(devices_hash))
+                access_token = self.__open_id.getAccessToken()
+                req = http.Request(
+                    url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, http.urlEncode(cc_conf.hub.id)),
+                    method=http.Method.GET,
+                    content_type=http.ContentType.json,
+                    headers={"Authorization": "Bearer {}".format(access_token)})
+                resp = req.send()
+                if resp.status == 200:
+                    hub = json.loads(resp.body)
+                    if not hub["name"] == cc_conf.hub.name:
+                        logger.warning("synchronizing hub - local name '{}' differs from remote name '{}'".format(cc_conf.hub.name, hub["name"]))
+                        logger.info("synchronizing hub - setting hub name to '{}'".format(hub["name"]))
+                        cc_conf.hub.name = hub["name"]
+                    if not hub["hash"] == devices_hash:
+                        logger.debug("synchronizing hub - local hash differs from remote hash")
+                        logger.info("synchronizing hub - updating devices ...")
+                        req = http.Request(
+                            url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, http.urlEncode(cc_conf.hub.id)),
+                            method=http.Method.PUT,
+                            body={
+                                "id": cc_conf.hub.id,
+                                "name": cc_conf.hub.name,
+                                "hash": devices_hash,
+                                "devices": device_ids
+                            },
+                            content_type=http.ContentType.json,
+                            headers={"Authorization": "Bearer {}".format(access_token)})
+                        if devices:
+                            logger.debug("synchronizing hub - waiting 4s for eventual consistency")
+                            time.sleep(4)
+                        resp = req.send()
+                        if not resp.status == 200:
+                            logger.error("synchronizing hub failed - {} could not update devices".format(resp.status, resp.body))
+                            raise HubSynchronizationError
+                    logger.info("synchronizing hub completed")
+                elif resp.status == 404:
+                    logger.error("synchronizing hub failed - hub not found on platform")
+                    cc_conf.hub.id = None
+                    raise HubNotFoundError
+                else:
+                    logger.error("synchronizing hub failed - {} {}".format(resp.status, resp.body))
+                    raise HubSynchronizationError
+            except NoTokenError:
+                logger.error("synchronizing hub failed - could not retrieve access token")
                 raise HubSynchronizationError
-        except NoTokenError:
-            logger.error("could not retrieve access token")
-            raise HubSynchronizationError
-        except (http.TimeoutErr, http.URLError) as ex:
-            logger.error("synchronizing hub failed - {}".format(ex))
-            raise HubSynchronizationError
-        except json.JSONDecodeError as ex:
-            logger.error("synchronizing hub failed - could not decode response - {}".format(ex))
-            raise HubSynchronizationError
-        except KeyError as ex:
-            logger.error("synchronizing hub failed - malformed response - missing key {}".format(ex))
-            raise HubSynchronizationError
+            except (http.TimeoutErr, http.URLError) as ex:
+                logger.error("synchronizing hub failed - {}".format(ex))
+                raise HubSynchronizationError
+            except json.JSONDecodeError as ex:
+                logger.error("synchronizing hub failed - could not decode response - {}".format(ex))
+                raise HubSynchronizationError
+            except KeyError as ex:
+                logger.error("synchronizing hub failed - malformed response - missing key {}".format(ex))
+                raise HubSynchronizationError
+        except Exception as ex:
+            self.__hub_sync_event.set()
+            self.__hub_sync_lock.release()
+            raise ex
+        self.__hub_sync_event.set()
+        self.__hub_sync_lock.release()
 
-    def __addDevice(self, device):
+    def __addDevice(self, device, worker=False):
+        self.__hub_sync_event.wait()
+        if worker:
+            self.__workers.append(threading.current_thread())
         logger.info("adding device '{}' to device manager ...".format(device.id))
         self.__device_manager.add(device)
         try:
@@ -409,7 +430,10 @@ class Client(metaclass=Singleton):
             logger.error("adding device '{}' to platform failed - {}".format(device.id, ex))
             raise DeviceAddError
 
-    def __deleteDevice(self, device_id):
+    def __deleteDevice(self, device_id, worker=False):
+        self.__hub_sync_event.wait()
+        if worker:
+            self.__workers.append(threading.current_thread())
         logger.info("delete device '{}' from device manager ...".format(device_id))
         self.__device_manager.delete(device_id)
         try:
@@ -434,7 +458,10 @@ class Client(metaclass=Singleton):
             logger.error("deleting device '{}' from platform failed - {}".format(device_id, ex))
             raise DeviceDeleteError
 
-    def __updateDevice(self, device):
+    def __updateDevice(self, device, worker=False):
+        self.__hub_sync_event.wait()
+        if worker:
+            self.__workers.append(threading.current_thread())
         logger.info("updating device '{}' in device manager ...".format(device.id))
         self.__device_manager.update(device)
         try:
@@ -502,7 +529,7 @@ class Client(metaclass=Singleton):
         """
         if self.__starter_thread:
             raise StartError
-        self.__starter_thread = Thread(target=self.__start, args=(clbk,), name="Starter", daemon=True)
+        self.__starter_thread = threading.Thread(target=self.__start, args=(clbk,), name="Starter", daemon=True)
         self.__starter_thread.start()
         if block:
             self.__starter_thread.join()
@@ -555,7 +582,7 @@ class Client(metaclass=Singleton):
             logger.error("device '{}' already in device manager".format(device.id))
             raise DeviceExistsError
         if asynchronous:
-            worker = Worker(target=self.__addDevice, args=(device,), name="add-device-{}".format(device.id), daemon=True)
+            worker = Worker(target=self.__addDevice, args=(device, True), name="add-device-{}".format(device.id), daemon=True)
             future = worker.start()
             return future
         else:
@@ -574,7 +601,7 @@ class Client(metaclass=Singleton):
             logger.error("device '{}' not found in device manager".format(device_id))
             raise DeviceNotFoundError
         if asynchronous:
-            worker = Worker(target=self.__deleteDevice, args=(device_id,), name="delete-device-{}".format(device_id), daemon=True)
+            worker = Worker(target=self.__deleteDevice, args=(device_id, True), name="delete-device-{}".format(device_id), daemon=True)
             future = worker.start()
             return future
         else:
@@ -593,7 +620,7 @@ class Client(metaclass=Singleton):
             logger.error("device '{}' not found in device manager".format(device.id))
             raise DeviceNotFoundError
         if asynchronous:
-            worker = Worker(target=self.__updateDevice, args=(device,), name="update-device-{}".format(device.id), daemon=True)
+            worker = Worker(target=self.__updateDevice, args=(device, True), name="update-device-{}".format(device.id), daemon=True)
             future = worker.start()
             return future
         else:
