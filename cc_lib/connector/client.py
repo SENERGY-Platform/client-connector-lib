@@ -392,7 +392,10 @@ class Client(metaclass=Singleton):
         if worker:
             self.__workers.append(threading.current_thread())
         logger.info("adding device '{}' to device manager ...".format(device.id))
-        self.__device_manager.add(device)
+        if self.__device_manager.get(device.id):
+            logger.warning("adding device '{}' to device manager - device already in device manager".format(device.id))
+        else:
+            self.__device_manager.add(device)
         try:
             logger.info("adding device '{}' to platform ...".format(device.id))
             access_token = self.__open_id.getAccessToken()
@@ -434,8 +437,11 @@ class Client(metaclass=Singleton):
         self.__hub_sync_event.wait()
         if worker:
             self.__workers.append(threading.current_thread())
-        logger.info("delete device '{}' from device manager ...".format(device_id))
-        self.__device_manager.delete(device_id)
+        logger.info("deleting device '{}' from device manager ...".format(device_id))
+        if self.__device_manager.get(device_id):
+            self.__device_manager.delete(device_id)
+        else:
+            logger.warning("deleting device '{}' - not found in device manager".format(device_id))
         try:
             logger.info("deleting device '{}' from platform ...".format(device_id))
             access_token = self.__open_id.getAccessToken()
@@ -447,7 +453,7 @@ class Client(metaclass=Singleton):
             if resp.status == 200:
                 logger.info("deleting device '{}' from platform completed".format(device_id))
             elif resp.status == 404:
-                logger.info("deleting device '{}' from platform - device not found".format(device_id))
+                logger.warning("deleting device '{}' from platform - device not found".format(device_id))
             else:
                 logger.error("deleting device '{}' from platform failed - {} {}".format(device_id, resp.status, resp.body))
                 raise DeviceDeleteError
@@ -459,11 +465,15 @@ class Client(metaclass=Singleton):
             raise DeviceDeleteError
 
     def __updateDevice(self, device, worker=False):
-        self.__hub_sync_event.wait()
-        if worker:
-            self.__workers.append(threading.current_thread())
+        # self.__hub_sync_event.wait()
+        # if worker:
+        #     self.__workers.append(threading.current_thread())
         logger.info("updating device '{}' in device manager ...".format(device.id))
-        self.__device_manager.update(device)
+        if self.__device_manager.get(device.id):
+            self.__device_manager.update(device)
+        else:
+            logger.error("updating device '{}' failed - not found in device manager".format(device.id))
+            raise DeviceNotFoundError
         try:
             logger.info("updating device '{}' on platform ...".format(device.id))
             access_token = self.__open_id.getAccessToken()
@@ -486,7 +496,7 @@ class Client(metaclass=Singleton):
                 resp = req.send()
                 if not resp.status == 200:
                     logger.error("updating device '{}' on platform failed - {} {}".format(device.id, resp.status, resp.body))
-                    raise DeviceAddError
+                    raise DeviceUpdateError
                 logger.info("updating device '{}' on platform completed".format(device.id))
             elif resp.status == 404:
                 logger.error("updating device '{}' on platform failed - device not found".format(device.id))
@@ -578,9 +588,6 @@ class Client(metaclass=Singleton):
         """
         if not __class__.__checkDevice(device):
             raise TypeError(type(device))
-        if self.__device_manager.get(device.id):
-            logger.error("device '{}' already in device manager".format(device.id))
-            raise DeviceExistsError
         if asynchronous:
             worker = Worker(target=self.__addDevice, args=(device, True), name="add-device-{}".format(device.id), daemon=True)
             future = worker.start()
@@ -597,9 +604,6 @@ class Client(metaclass=Singleton):
         """
         if not type(device_id) is str:
             raise TypeError(type(device_id))
-        if not self.__device_manager.get(device_id):
-            logger.error("device '{}' not found in device manager".format(device_id))
-            raise DeviceNotFoundError
         if asynchronous:
             worker = Worker(target=self.__deleteDevice, args=(device_id, True), name="delete-device-{}".format(device_id), daemon=True)
             future = worker.start()
@@ -616,9 +620,6 @@ class Client(metaclass=Singleton):
         """
         if not __class__.__checkDevice(device):
             raise TypeError(type(device))
-        if not self.__device_manager.get(device.id):
-            logger.error("device '{}' not found in device manager".format(device.id))
-            raise DeviceNotFoundError
         if asynchronous:
             worker = Worker(target=self.__updateDevice, args=(device, True), name="update-device-{}".format(device.id), daemon=True)
             future = worker.start()
