@@ -504,38 +504,7 @@ class Client(metaclass=Singleton):
             logger.error("updating device '{}' on platform failed - {}".format(device.id, ex))
             raise DeviceUpdateError
 
-    def __start(self, start_cb=None):
-        """
-        Start the client.
-        :param start_cb: Callback function to be executed after startup.
-        :return: None.
-        """
-
-        while True:
-            try:
-                self.__initHub()
-                # start mqtt client
-                break
-            except HubInitializationError:
-                pass
-        if start_cb:
-            start_cb()
-
     # ------------- user methods ------------- #
-
-    def start(self, clbk: Callable[[], None] = None, block: bool = False) -> None:
-        """
-        Check if starter thread exists, if not create starter thread.
-        :param block: If 'True' blocks till start thread finishes
-        :param clbk: Callback function to be executed when start thread finishes.
-        :return: None.
-        """
-        if self.__starter_thread:
-            raise StartError
-        self.__starter_thread = threading.Thread(target=self.__start, args=(clbk,), name="Starter", daemon=True)
-        self.__starter_thread.start()
-        if block:
-            self.__starter_thread.join()
 
     def initHub(self, asynchronous: bool = False) -> Union[Future, None]:
         """
