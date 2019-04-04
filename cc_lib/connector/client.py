@@ -117,13 +117,6 @@ class DeviceAddError(ClientError):
     pass
 
 
-class DeviceExistsError(ClientError):
-    """
-    Device already added.
-    """
-    pass
-
-
 class DeviceNotFoundError(ClientError):
     """
     Device is missing.
