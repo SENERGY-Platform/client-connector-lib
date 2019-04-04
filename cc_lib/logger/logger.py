@@ -39,7 +39,7 @@ color_code = {
     'CRITICAL': '\033[41m',
     'ERROR': '\033[31m',
     'WARNING': '\033[33m',
-    'DEBUG': '\033[34m',
+    'DEBUG': '\033[94m',
 }
 
 
