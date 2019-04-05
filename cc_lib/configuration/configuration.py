@@ -37,6 +37,7 @@ class ConnectorConf:
         host: str = None
         port: int = None
         tls: bool = None
+        reconn_delay: int = None
 
     @section
     class auth:
@@ -53,7 +54,6 @@ class ConnectorConf:
     class hub:
         name: str = None
         id: str = None
-        device_id_prefix: str = None
 
     @section
     class logger:
@@ -66,6 +66,10 @@ class ConnectorConf:
         host: str = None
         hub: str = None
         device: str = None
+
+    @section
+    class device:
+        id_prefix: str = None
 
 
 cc_conf = ConnectorConf(conf_file='connector.conf', user_path=user_dir, ext_aft_crt=True, init=False)
