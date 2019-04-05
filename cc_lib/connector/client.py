@@ -138,6 +138,20 @@ class DeviceUpdateError(ClientError):
     pass
 
 
+class CommAlreadyInitializedError(ClientError):
+    """
+    Communication has already been initialized.
+    """
+    pass
+
+
+class CommNotInitializedError(ClientError):
+    """
+    Communication has not been initialized.
+    """
+    pass
+
+
 class FutureNotDoneError(ClientError):
     def __init__(self):
         super().__init__("can't retrieve result - future not done")
@@ -213,12 +227,12 @@ class Client(metaclass=Singleton):
         initConnectorConf()
         initLogging()
         logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
-        if not cc_conf.hub.device_id_prefix:
+        if not cc_conf.device.id_prefix:
             usr_time_str = '{}{}'.format(
                 hashlib.md5(bytes(cc_conf.credentials.user, 'UTF-8')).hexdigest(),
                 time.time()
             )
-            cc_conf.hub.device_id_prefix = base64.urlsafe_b64encode(
+            cc_conf.device.id_prefix = base64.urlsafe_b64encode(
                 hashlib.md5(usr_time_str.encode()).digest()
             ).decode().rstrip('=')
         self.__auth = OpenIdClient(
@@ -232,6 +246,7 @@ class Client(metaclass=Singleton):
         self.__hub_sync_event = threading.Event()
         self.__hub_sync_event.set()
         self.__hub_sync_lock = threading.Lock()
+        self.__hub_init = False
 
     # ------------- internal methods ------------- #
 
@@ -264,6 +279,7 @@ class Client(metaclass=Singleton):
                 cc_conf.hub.id = hub["id"]
                 if not cc_conf.hub.name:
                     cc_conf.hub.name = hub_name
+                self.__hub_init = True
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 logger.info("initializing hub completed")
             else:
@@ -274,6 +290,7 @@ class Client(metaclass=Singleton):
                     headers={"Authorization": "Bearer {}".format(access_token)})
                 resp = req.send()
                 if resp.status == 200:
+                    self.__hub_init = True
                     logger.info("initializing hub completed")
                 elif resp.status == 404:
                     logger.error("initializing hub failed - hub not found on platform")
@@ -297,7 +314,7 @@ class Client(metaclass=Singleton):
 
     def __syncHub(self):
         self.__hub_sync_lock.acquire()
-        if not cc_conf.hub.id:
+        if not self.__hub_init:
             self.__hub_sync_lock.release()
             logger.error("hub not initialized - synchronizing hub not possible")
             raise HubNotInitializedError
@@ -391,7 +408,7 @@ class Client(metaclass=Singleton):
             logger.info("adding device '{}' to platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.hub.device_id_prefix, http.urlEncode(device.id)),
+                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.device.id_prefix, http.urlEncode(device.id)),
                 method=http.Method.HEAD,
                 headers={"Authorization": "Bearer {}".format(access_token)})
             resp = req.send()
@@ -402,7 +419,7 @@ class Client(metaclass=Singleton):
                     body={
                         "device_type": device.type,
                         "name": device.name,
-                        "uri": "{}-{}".format(cc_conf.hub.device_id_prefix, device.id),
+                        "uri": "{}-{}".format(cc_conf.device.id_prefix, device.id),
                         "tags": device.tags
                     },
                     content_type=http.ContentType.json,
@@ -437,7 +454,7 @@ class Client(metaclass=Singleton):
             logger.info("deleting device '{}' from platform ...".format(device_id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.hub.device_id_prefix, http.urlEncode(device_id)),
+                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.device.id_prefix, http.urlEncode(device_id)),
                 method=http.Method.DELETE,
                 headers={"Authorization": "Bearer {}".format(access_token)})
             resp = req.send()
@@ -469,13 +486,13 @@ class Client(metaclass=Singleton):
             logger.info("updating device '{}' on platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.hub.device_id_prefix, http.urlEncode(device.id)),
+                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.device.id_prefix, http.urlEncode(device.id)),
                 method=http.Method.HEAD,
                 headers={"Authorization": "Bearer {}".format(access_token)})
             resp = req.send()
             if resp.status == 200:
                 req = http.Request(
-                    url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.hub.device_id_prefix, http.urlEncode(device.id)),
+                    url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.device.id_prefix, http.urlEncode(device.id)),
                     method=http.Method.PUT,
                     body={
                         "device_type": device.type,
@@ -501,6 +518,19 @@ class Client(metaclass=Singleton):
         except (http.TimeoutErr, http.URLError) as ex:
             logger.error("updating device '{}' on platform failed - {}".format(device.id, ex))
             raise DeviceUpdateError
+
+    def __connect(self):
+        if not self.__comm:
+            logger.error("communication not initialized - connecting client to platform not possible")
+            raise CommNotInitializedError
+        self.__comm.connect(
+            cc_conf.connector.host,
+            cc_conf.connector.port,
+            cc_conf.credentials.user,
+            cc_conf.credentials.pw,
+            cc_conf.connector.tls
+        )
+
 
     # ------------- user methods ------------- #
 
@@ -529,15 +559,6 @@ class Client(metaclass=Singleton):
             return future
         else:
             self.__syncHub()
-
-    def emmitEvent(self):
-        pass
-
-    def receiveCommand(self):
-        pass
-
-    def sendResponse(self):
-        pass
 
     def addDevice(self, device: Device, asynchronous: bool = False) -> Union[Future, None]:
         """
@@ -587,10 +608,74 @@ class Client(metaclass=Singleton):
         else:
             self.__updateDevice(device)
 
-    def connectDevice(self):
+    def initComm(self):
+        """
+
+        """
+        if not self.__hub_init:
+            logger.error("hub not initialized - initializing communication not possible")
+            raise HubNotInitializedError
+        if self.__comm:
+            logger.error("communication already initialized")
+            raise CommAlreadyInitializedError
+        self.__comm = mqtt.Client(cc_conf.hub.id, reconnect_delay=cc_conf.connector.reconn_delay)
+
+    def connect(self, asynchronous: bool = False) -> Union[Future, None]:
+        """
+
+        :param asynchronous:
+        :return:
+        """
+        if asynchronous:
+            worker = Worker(target=self.__connect, name="connect-client", daemon=True)
+            future = worker.start()
+            return future
+        else:
+            self.__connect()
+
+    def disconnect(self, asynchronous: bool = False) -> Union[Future, None]:
+        """
+
+        :param asynchronous:
+        :return:
+        """
+        self.__comm.disconnect()
+
+    def connectDevice(self, device: Device, asynchronous: bool = False) -> Union[Future, None]:
+        """
+
+        :param device:
+        :param asynchronous:
+        :return:
+        """
         pass
 
-    def disconnectDevice(self):
+    def disconnectDevice(self, device: Device, asynchronous: bool = False) -> Union[Future, None]:
+        """
+
+        :param device:
+        :param asynchronous:
+        :return:
+        """
+        pass
+
+    def emmitEvent(self, asynchronous: bool = False) -> Union[Future, None]:
+        """
+
+        :param asynchronous:
+        :return:
+        """
+        pass
+
+    def receiveCommand(self):
+        pass
+
+    def sendResponse(self, asynchronous: bool = False) -> Union[Future, None]:
+        """
+
+        :param asynchronous:
+        :return:
+        """
         pass
 
     # ------------- class / static methods ------------- #
@@ -621,7 +706,7 @@ class Client(metaclass=Singleton):
             devices = list(devices.values())
         ids = list()
         for device in devices:
-            ids.append("{}-{}".format(cc_conf.hub.device_id_prefix, device.id))
+            ids.append("{}-{}".format(cc_conf.device.id_prefix, device.id))
         return ids
 
     @staticmethod
