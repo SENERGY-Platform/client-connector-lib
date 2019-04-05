@@ -22,7 +22,7 @@ from ..device import Device
 from ..device.manager.interface import Interface
 from .singleton import Singleton
 from .authentication import OpenIdClient, NoTokenError
-from .protocol import http
+from .protocol import http, mqtt
 from cc_lib import __version__ as VERSION
 from inspect import isclass
 from typing import Callable, Union, Any
@@ -221,26 +221,24 @@ class Client(metaclass=Singleton):
             cc_conf.hub.device_id_prefix = base64.urlsafe_b64encode(
                 hashlib.md5(usr_time_str.encode()).digest()
             ).decode().rstrip('=')
-        self.__starter_thread = None
-
-        self.__workers = list()
-        self.__hub_sync_event = threading.Event()
-        self.__hub_sync_event.set()
-        self.__hub_sync_lock = threading.Lock()
-
-        self.__open_id = OpenIdClient(
+        self.__auth = OpenIdClient(
             "https://{}/{}".format(cc_conf.auth.host, cc_conf.auth.path),
             cc_conf.credentials.user,
             cc_conf.credentials.pw,
             cc_conf.auth.id
         )
+        self.__comm: mqtt.Client = None
+        self.__workers = list()
+        self.__hub_sync_event = threading.Event()
+        self.__hub_sync_event.set()
+        self.__hub_sync_lock = threading.Lock()
 
     # ------------- internal methods ------------- #
 
     def __initHub(self):
         try:
             logger.info("initializing hub ...")
-            access_token = self.__open_id.getAccessToken()
+            access_token = self.__auth.getAccessToken()
             if not cc_conf.hub.id:
                 logger.info("creating new hub ...")
                 hub_name = cc_conf.hub.name
@@ -319,7 +317,7 @@ class Client(metaclass=Singleton):
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 logger.debug("devices {}".format(device_ids))
                 logger.debug("hash '{}'".format(devices_hash))
-                access_token = self.__open_id.getAccessToken()
+                access_token = self.__auth.getAccessToken()
                 req = http.Request(
                     url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, http.urlEncode(cc_conf.hub.id)),
                     method=http.Method.GET,
@@ -391,7 +389,7 @@ class Client(metaclass=Singleton):
             self.__device_manager.add(device)
         try:
             logger.info("adding device '{}' to platform ...".format(device.id))
-            access_token = self.__open_id.getAccessToken()
+            access_token = self.__auth.getAccessToken()
             req = http.Request(
                 url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.hub.device_id_prefix, http.urlEncode(device.id)),
                 method=http.Method.HEAD,
@@ -437,7 +435,7 @@ class Client(metaclass=Singleton):
             logger.warning("deleting device '{}' - not found in device manager".format(device_id))
         try:
             logger.info("deleting device '{}' from platform ...".format(device_id))
-            access_token = self.__open_id.getAccessToken()
+            access_token = self.__auth.getAccessToken()
             req = http.Request(
                 url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.hub.device_id_prefix, http.urlEncode(device_id)),
                 method=http.Method.DELETE,
@@ -469,7 +467,7 @@ class Client(metaclass=Singleton):
             raise DeviceNotFoundError
         try:
             logger.info("updating device '{}' on platform ...".format(device.id))
-            access_token = self.__open_id.getAccessToken()
+            access_token = self.__auth.getAccessToken()
             req = http.Request(
                 url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.hub.device_id_prefix, http.urlEncode(device.id)),
                 method=http.Method.HEAD,
