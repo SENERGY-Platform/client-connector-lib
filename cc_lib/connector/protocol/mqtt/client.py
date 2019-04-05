@@ -14,39 +14,42 @@
    limitations under the License.
 """
 
-__all__ = ('MQTTClient', )
+__all__ = ('Client',)
 
 from ....logger.logger import _getLibLogger
-from paho.mqtt.client import Client, error_string, connack_string, MQTTMessage, MQTTMessageInfo
-from queue import Queue
+from paho.mqtt.client import Client as PahoClient
+from paho.mqtt.client import error_string, connack_string, MQTTMessage, MQTTMessageInfo
+from threading import Event
 
 
 logger = _getLibLogger(__name__.split('.', 1)[-1])
 
 
-class MQTTClient():
-    def __init__(self, id: str, host: str, port: int, keepalive: int, msg_queue: Queue): #store keepalive in conf
-        self.__id = id
-        self.__host = host
-        self.__port = port
-        self.__msg_queue = msg_queue
-        self.__keepalive = keepalive
-
-        self.__mqtt = Client(client_id=self.__id, clean_session=True, userdata=None)
+class Client:
+    def __init__(self, client_id: str, clean_session=True, userdata=None, reconnect_delay=120):
+        self.__mqtt = PahoClient(client_id=client_id, clean_session=clean_session, userdata=userdata)
         self.__mqtt.enable_logger(logger)
+        self.__mqtt.reconnect_delay_set(min_delay=1, max_delay=reconnect_delay)
         self.__mqtt.on_connect = self.__connectClbk
         self.__mqtt.on_disconnect = self.__disconnectClbk
         self.__mqtt.on_message = self.__messageClbk
         self.__mqtt.on_publish = self.__publishClbk
         self.__mqtt.on_subscribe = self.__subscribeClbk
         self.__mqtt.on_unsubscribe = self.__unsubscribeClbk
+        self.__connect_event = Event()
 
-    def connect(self):
-        self.__mqtt.connect_async(host=self.__host, port=self.__port, keepalive=self.__keepalive)
+    def connect(self, host, port, usr, pw, tls=True, keepalive=15):
+        self.__connect_event.clear()
+        if tls:
+            self.__mqtt.tls_set()
+        self.__mqtt.username_pw_set(usr, pw)
+        self.__mqtt.connect_async(host=host, port=port, keepalive=keepalive)
         self.__mqtt.loop_start()
+        self.__connect_event.wait()
 
     def disconnect(self):
         self.__mqtt.disconnect()
+        self.__mqtt.loop_stop()
 
     def subscribe(self, topic: str, qos: int = 0):
         self.__mqtt.subscribe(topic=topic, qos=qos)
@@ -60,40 +63,27 @@ class MQTTClient():
             msg_info.wait_for_publish()
         return msg_info
 
-    def __connectClbk(self, client: Client, userdata, flags: dict, rc: int):
-        pass
-        # called when the broker responds to our connection
-        #   request.
-        #   flags is a dict that contains response flags from the broker:
-        #     flags['session present'] - this flag is useful for clients that are
-        #         using clean session set to 0 only. If a client with clean
-        #         session=0, that reconnects to a broker that it has previously
-        #         connected to, this flag indicates whether the broker still has the
-        #         session information for the client. If 1, the session still exists.
-        #   The value of rc determines success or not:
-        #     0: Connection successful
-        #     1: Connection refused - incorrect protocol version
-        #     2: Connection refused - invalid client identifier
-        #     3: Connection refused - server unavailable
-        #     4: Connection refused - bad username or password
-        #     5: Connection refused - not authorised
-        #     6-255: Currently unused.
+    def __connectClbk(self, client: PahoClient, userdata, flags: dict, rc: int):
+        if rc == 0:
+            logger.info(connack_string(rc).replace(".", "").lower())
+            logger.debug(flags)
+            self.__connect_event.set()
+        else:
+            logger.error(connack_string(rc))
 
-    def __disconnectClbk(self, client: Client, userdata, rc: int):
-        client.reinitialise(client_id=client._client_id, clean_session=True, userdata=None)
-        # called when the client disconnects from the broker.
-        #   The rc parameter indicates the disconnection state. If MQTT_ERR_SUCCESS
-        #   (0), the callback was called in response to a disconnect() call. If any
-        #   other value the disconnection was unexpected, such as might be caused by
-        #   a network error.
+    def __disconnectClbk(self, client: PahoClient, userdata, rc: int):
+        if rc == 0:
+            logger.info("disconnected by user")
+        else:
+            logger.error("unexpected disconnect")
 
-    def __messageClbk(self, client: Client, userdata, message: MQTTMessage):
+    def __messageClbk(self, client: PahoClient, userdata, message: MQTTMessage):
         pass
         # called when a message has been received on a
         #   topic that the client subscribes to. The message variable is a
         #   MQTTMessage that describes all of the message parameters.
 
-    def __publishClbk(self, client: Client, userdata, mid: int):
+    def __publishClbk(self, client: PahoClient, userdata, mid: int):
         pass
         # called when a message that was to be sent using the
         #   publish() call has completed transmission to the broker. For messages
@@ -104,7 +94,7 @@ class MQTTClient():
         #   This callback is important because even if the publish() call returns
         #   success, it does not always mean that the message has been sent.
 
-    def __subscribeClbk(self, client: Client, userdata, mid: int, granted_qos: int):
+    def __subscribeClbk(self, client: PahoClient, userdata, mid: int, granted_qos: int):
         pass
         # called when the broker responds to a
         #   subscribe request. The mid variable matches the mid variable returned
@@ -113,7 +103,7 @@ class MQTTClient():
         #   of the different subscription requests.
         #
 
-    def __unsubscribeClbk(self, client: Client, userdata, mid: int):
+    def __unsubscribeClbk(self, client: PahoClient, userdata, mid: int):
         pass
         # called when the broker responds to an unsubscribe
         #   request. The mid variable matches the mid variable returned from the
