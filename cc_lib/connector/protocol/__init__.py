@@ -14,4 +14,4 @@
    limitations under the License.
 """
 
-import cc_lib.connector.protocol.http, cc_lib.connector.protocol.mqtt, cc_lib.connector.protocol.websocket
+import cc_lib.connector.protocol.http, cc_lib.connector.protocol.mqtt
