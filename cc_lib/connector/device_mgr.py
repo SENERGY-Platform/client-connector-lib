@@ -14,9 +14,6 @@
    limitations under the License.
 """
 
-__all__ = ['DeviceManager']
-
-
 from ..logger.logger import _getLibLogger
 from ..device.device import Device
 from typing import Union
@@ -26,7 +23,7 @@ from threading import Lock
 logger = _getLibLogger(__name__)
 
 
-def _isDevice(obj):
+def isDevice(obj):
     """
     Check if a object is a Device or a Device subclass
     :param obj: object to check
@@ -44,8 +41,8 @@ class DeviceManager:
         self.__lock = Lock()
 
     def add(self, device: Device):
-        if not _isDevice(device):
-            raise TypeError("device must be Device or subclass of Device but got '{}'".format(type(device)))
+        if not isDevice(device):
+            raise TypeError
         self.__lock.acquire()
         if device.id not in self.__device_pool:
             self.__device_pool[device.id] = device
@@ -54,10 +51,10 @@ class DeviceManager:
         self.__lock.release()
 
     def delete(self, device: Union[Device, str]):
-        if _isDevice(device):
+        if isDevice(device):
             device = device.id
         elif type(device) is not str:
-            raise TypeError("device must be a Device, subclass of Device or string (if ID only) but got '{}'".format(type(device)))
+            raise TypeError
         self.__lock.acquire()
         try:
             del self.__device_pool[device]
@@ -67,7 +64,7 @@ class DeviceManager:
 
     def get(self, device_id: str) -> Device:
         if type(device_id) is not str:
-            raise TypeError("device ID must be a string but got '{}'".format(type(device_id)))
+            raise TypeError
         self.__lock.acquire()
         try:
             device = self.__device_pool[device_id]
