@@ -19,7 +19,7 @@ __all__ = ("Client", )
 from ..configuration.configuration import cc_conf, initConnectorConf
 from ..logger.logger import _getLibLogger, initLogging
 from ..device import Device
-from .device_mgr import DeviceManager
+from .device_mgr import DeviceManager, isDevice
 from .singleton import Singleton
 from .authentication import OpenIdClient, NoTokenError
 from .protocol import http, mqtt
@@ -306,8 +306,8 @@ class Client(metaclass=Singleton):
                         logger.debug("synchronizing hub - task '{}' finished".format(worker.name))
                     self.__workers.clear()
                 devices = self.__device_mgr.devices
-                device_ids = __class__.__prefixDeviceIDs(devices.keys())
-                devices_hash = __class__.__hashDevices(devices.values())
+                device_ids = __class__.__prefixDeviceIDs(devices)
+                devices_hash = __class__.__hashDevices(devices)
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 logger.debug("devices {}".format(device_ids))
                 logger.debug("hash '{}'".format(devices_hash))
@@ -443,9 +443,6 @@ class Client(metaclass=Singleton):
             raise DeviceDeleteError
 
     def __updateDevice(self, device, worker=False):
-        # self.__hub_sync_event.wait()
-        # if worker:
-        #     self.__workers.append(threading.current_thread())
         try:
             logger.info("updating device '{}' on platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
@@ -531,7 +528,7 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if not __class__.__checkDevice(device):
+        if not isDevice(device):
             raise TypeError(type(device))
         if asynchronous:
             worker = Worker(target=self.__addDevice, args=(device, True), name="add-device-{}".format(device.id), daemon=True)
@@ -563,7 +560,7 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if not __class__.__checkDevice(device):
+        if not isDevice(device):
             raise TypeError(type(device))
         if asynchronous:
             worker = Worker(target=self.__updateDevice, args=(device, True), name="update-device-{}".format(device.id), daemon=True)
@@ -571,6 +568,15 @@ class Client(metaclass=Singleton):
             return future
         else:
             self.__updateDevice(device)
+
+    def getDevice(self, device_id: str) -> Device:
+        return self.__device_mgr.get(device_id)
+
+    def listDevices(self) -> tuple:
+        return self.__device_mgr.devices
+
+    def listDeviceIDs(self) -> tuple:
+        return tuple(device.id for device in self.__device_mgr.devices)
 
     def initComm(self):
         """
@@ -648,23 +654,18 @@ class Client(metaclass=Singleton):
     def __hashDevices(devices) -> str:
         """
         Hash attributes of the provided devices with SHA1.
-        :param devices: List, tuple or dict (id:device) of local devices.
+        :param devices: List or tuple of devices.
         :return: Hash as string.
         """
-        hashes = list()
-        for device in devices:
-            hashes.append(device.hash)
+        hashes = [device.hash for device in devices]
         hashes.sort()
         return hashlib.sha1("".join(hashes).encode()).hexdigest()
 
     @staticmethod
-    def __prefixDeviceIDs(device_ids) -> list:
+    def __prefixDeviceIDs(devices) -> tuple:
         """
         Prefix the IDs of the provided devices.
-        :param device_ids: List or tuple of device IDs.
-        :return: List of prefixed device IDs
+        :param devices: List or tuple of devices.
+        :return: Tuple of prefixed device IDs
         """
-        ids = list()
-        for device in device_ids:
-            ids.append("{}-{}".format(cc_conf.device.id_prefix, device.id))
-        return ids
+        return tuple("{}-{}".format(cc_conf.device.id_prefix, device.id) for device in devices)
