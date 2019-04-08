@@ -20,17 +20,6 @@ from collections import OrderedDict
 import hashlib
 
 
-def _isDevice(obj):
-    """
-    Check if a object is a Device or a Device subclass
-    :param obj: object to check
-    :return: Boolean
-    """
-    if type(obj) is Device or issubclass(type(obj), Device):
-        return True
-    return False
-
-
 class Device:
     """
     Use this class to create devices for use with the client-connector-lib.
