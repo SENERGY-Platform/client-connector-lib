@@ -19,15 +19,13 @@ __all__ = ("Client", )
 from ..configuration.configuration import cc_conf, initConnectorConf
 from ..logger.logger import _getLibLogger, initLogging
 from ..device import Device
-from ..device.manager.interface import Interface
+from .device_mgr import DeviceManager
 from .singleton import Singleton
 from .authentication import OpenIdClient, NoTokenError
 from .protocol import http, mqtt
 from cc_lib import __version__ as VERSION
-from inspect import isclass
 from typing import Callable, Union, Any
 from getpass import getuser
-from hashlib import sha1
 import datetime, hashlib, base64, json, time, threading
 
 
@@ -59,27 +57,6 @@ class ClientError(Exception):
     Base error.
     """
     pass
-
-
-class DeviceMgrSetError(ClientError):
-    """
-    Device manager can't be set.
-    """
-    __cases = {
-        1: "provided class '{}' does not implement the device manager interface",
-        2: "the class '{}' of the provided object does not implement the device manager interface"
-    }
-
-    def __init__(self, case, *args):
-        super().__init__(__class__.__cases[case].format(*args))
-
-
-class StartError(ClientError):
-    """
-    Errors during client startup.
-    """
-    def __init__(self):
-        super().__init__("client-connector already started")
 
 
 class HubInitializationError(ClientError):
@@ -218,12 +195,11 @@ class Client(metaclass=Singleton):
     To avoid multiple instantiations the Client class implements the singleton pattern.
     """
 
-    def __init__(self, device_manager: Interface):
+    def __init__(self):
         """
         Create a Client instance. Set device manager, initiate configuration and library logging facility.
         :param device_manager: object or class implementing the device manager interface.
         """
-        self.__device_manager = self.__checkDeviceManager(device_manager)
         initConnectorConf()
         initLogging()
         logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
@@ -241,6 +217,7 @@ class Client(metaclass=Singleton):
             cc_conf.credentials.pw,
             cc_conf.auth.id
         )
+        self.__device_mgr = DeviceManager()
         self.__comm: mqtt.Client = None
         self.__workers = list()
         self.__hub_sync_event = threading.Event()
@@ -328,9 +305,9 @@ class Client(metaclass=Singleton):
                         worker.join()
                         logger.debug("synchronizing hub - task '{}' finished".format(worker.name))
                     self.__workers.clear()
-                devices = self.__device_manager.devices()
-                device_ids = __class__.__listDeviceIDs(devices)
-                devices_hash = __class__.__hashDevices(devices)
+                devices = self.__device_mgr.devices
+                device_ids = __class__.__prefixDeviceIDs(devices.keys())
+                devices_hash = __class__.__hashDevices(devices.values())
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 logger.debug("devices {}".format(device_ids))
                 logger.debug("hash '{}'".format(devices_hash))
@@ -399,11 +376,6 @@ class Client(metaclass=Singleton):
         self.__hub_sync_event.wait()
         if worker:
             self.__workers.append(threading.current_thread())
-        logger.info("adding device '{}' to device manager ...".format(device.id))
-        if self.__device_manager.get(device.id):
-            logger.warning("adding device '{}' to device manager - device already in device manager".format(device.id))
-        else:
-            self.__device_manager.add(device)
         try:
             logger.info("adding device '{}' to platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
@@ -429,8 +401,10 @@ class Client(metaclass=Singleton):
                     logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
                     raise DeviceAddError
                 logger.info("adding device '{}' to platform completed".format(device.id))
+                self.__device_mgr.add(device)
             elif resp.status == 200:
                 logger.warning("adding device '{}' to platform - device already on platform".format(device.id))
+                self.__device_mgr.add(device)
             else:
                 logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
                 raise DeviceAddError
@@ -445,11 +419,7 @@ class Client(metaclass=Singleton):
         self.__hub_sync_event.wait()
         if worker:
             self.__workers.append(threading.current_thread())
-        logger.info("deleting device '{}' from device manager ...".format(device_id))
-        if self.__device_manager.get(device_id):
-            self.__device_manager.delete(device_id)
-        else:
-            logger.warning("deleting device '{}' - not found in device manager".format(device_id))
+        self.__device_mgr.delete(device_id)
         try:
             logger.info("deleting device '{}' from platform ...".format(device_id))
             access_token = self.__auth.getAccessToken()
@@ -476,12 +446,6 @@ class Client(metaclass=Singleton):
         # self.__hub_sync_event.wait()
         # if worker:
         #     self.__workers.append(threading.current_thread())
-        logger.info("updating device '{}' in device manager ...".format(device.id))
-        if self.__device_manager.get(device.id):
-            self.__device_manager.update(device)
-        else:
-            logger.error("updating device '{}' failed - not found in device manager".format(device.id))
-            raise DeviceNotFoundError
         try:
             logger.info("updating device '{}' on platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
@@ -687,50 +651,20 @@ class Client(metaclass=Singleton):
         :param devices: List, tuple or dict (id:device) of local devices.
         :return: Hash as string.
         """
-        if type(devices) is dict:
-            devices = list(devices.values())
         hashes = list()
         for device in devices:
             hashes.append(device.hash)
         hashes.sort()
-        return sha1("".join(hashes).encode()).hexdigest()
+        return hashlib.sha1("".join(hashes).encode()).hexdigest()
 
     @staticmethod
-    def __listDeviceIDs(devices) -> list:
+    def __prefixDeviceIDs(device_ids) -> list:
         """
-        List the IDs of the provided devices.
-        :param devices: List, tuple or dict (id:device) of local devices.
-        :return: List of IDs
+        Prefix the IDs of the provided devices.
+        :param device_ids: List or tuple of device IDs.
+        :return: List of prefixed device IDs
         """
-        if type(devices) is dict:
-            devices = list(devices.values())
         ids = list()
-        for device in devices:
+        for device in device_ids:
             ids.append("{}-{}".format(cc_conf.device.id_prefix, device.id))
         return ids
-
-    @staticmethod
-    def __checkDeviceManager(mgr) -> Interface:
-        """
-        Check if provided object or class implements the device manager interface.
-        :param mgr: object or class.
-        :return: object or class implementing the device manager interface.
-        """
-        if isclass(mgr):
-            if not issubclass(mgr, Interface):
-                raise DeviceMgrSetError(1, mgr.__name__)
-        else:
-            if not issubclass(type(mgr), Interface):
-                raise DeviceMgrSetError(2, type(mgr).__name__)
-        return mgr
-
-    @staticmethod
-    def __checkDevice(device):
-        """
-        Check if the type of the provided object is a Device or a Device subclass.
-        :param device: object to check.
-        :return: None.
-        """
-        if type(device) is Device or issubclass(type(device), Device):
-            return True
-        return False
