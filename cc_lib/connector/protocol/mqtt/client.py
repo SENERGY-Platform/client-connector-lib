@@ -14,15 +14,32 @@
    limitations under the License.
 """
 
-__all__ = ('Client',)
+__all__ = ('Client', 'NotConnectedError', 'SubscribeError', 'UnsubscribeError')
 
 from ....logger.logger import _getLibLogger
 from paho.mqtt.client import Client as PahoClient
-from paho.mqtt.client import error_string, connack_string, MQTTMessage, MQTTMessageInfo
+from paho.mqtt.client import error_string, connack_string, MQTTMessage, MQTTMessageInfo, MQTT_ERR_SUCCESS, MQTT_ERR_NO_CONN
 from threading import Event
+import socket
 
 
 logger = _getLibLogger(__name__.split('.', 1)[-1])
+
+
+class MqttClientError(Exception):
+    pass
+
+
+class NotConnectedError(MqttClientError):
+    pass
+
+
+class SubscribeError(MqttClientError):
+    pass
+
+
+class UnsubscribeError(MqttClientError):
+    pass
 
 
 class Client:
@@ -37,6 +54,7 @@ class Client:
         self.__mqtt.on_subscribe = self.__subscribeClbk
         self.__mqtt.on_unsubscribe = self.__unsubscribeClbk
         self.__connect_event = Event()
+        self.__events = dict()
 
     def connect(self, host, port, usr, pw, tls=True, keepalive=15):
         self.__connect_event.clear()
@@ -51,17 +69,47 @@ class Client:
         self.__mqtt.disconnect()
         self.__mqtt.loop_stop()
 
-    def subscribe(self, topic: str, qos: int = 0):
-        self.__mqtt.subscribe(topic=topic, qos=qos)
+    def subscribe(self, topic: str, qos: int = 1, timeout=30):
+        try:
+            res = self.__mqtt.subscribe(topic=topic, qos=qos)
+            if res[0] == MQTT_ERR_SUCCESS:
+                event = Event()
+                self.__events[res[1]] = event
+                if not event.wait(timeout=timeout):
+                    logger.error("subscribe request for '{}' failed - timeout".format(topic))
+                    del self.__events[res[1]]
+                    raise SubscribeError
+                del self.__events[res[1]]
+                logger.debug("subscribe request for '{}' successful".format(topic, res[1]))
+            if res[0] == MQTT_ERR_NO_CONN:
+                logger.error("subscribe request for '{}' failed - not connected".format(topic))
+                raise NotConnectedError
+        except socket.error as ex:
+            logger.error("subscribe request for '{}' failed - {}".format(topic, ex))
+            raise SubscribeError
 
-    def unsubscribe(self, topic: str) -> tuple:
-        return self.__mqtt.unsubscribe(topic=topic)
+    def unsubscribe(self, topic: str, timeout=30):
+        try:
+            res = self.__mqtt.unsubscribe(topic=topic)
+            if res[0] == MQTT_ERR_SUCCESS:
+                event = Event()
+                self.__events[res[1]] = event
+                if not event.wait(timeout=timeout):
+                    logger.error("unsubscribe request for '{}' failed - timeout".format(topic))
+                    del self.__events[res[1]]
+                    raise UnsubscribeError
+                del self.__events[res[1]]
+                logger.debug("unsubscribe request for '{}' successful".format(topic, res[1]))
+            if res[0] == MQTT_ERR_NO_CONN:
+                logger.error("unsubscribe request for '{}' failed - not connected".format(topic))
+                raise NotConnectedError
+        except socket.error as ex:
+            logger.error("unsubscribe request for '{}' failed - {}".format(topic, ex))
+            raise UnsubscribeError
 
-    def publish(self, topic: str, payload: str = None, qos: int = 0, retain: bool = False, block: bool = False) -> MQTTMessageInfo:
+    def publish(self, topic: str, payload: str = None, qos: int = 0, retain: bool = False):
         msg_info = self.__mqtt.publish(topic=topic, payload=payload, qos=qos, retain=retain)
-        if block:
-            msg_info.wait_for_publish()
-        return msg_info
+        msg_info.wait_for_publish()
 
     def __connectClbk(self, client: PahoClient, userdata, flags: dict, rc: int):
         if rc == 0:
@@ -95,17 +143,16 @@ class Client:
         #   success, it does not always mean that the message has been sent.
 
     def __subscribeClbk(self, client: PahoClient, userdata, mid: int, granted_qos: int):
-        pass
-        # called when the broker responds to a
-        #   subscribe request. The mid variable matches the mid variable returned
-        #   from the corresponding subscribe() call. The granted_qos variable is a
-        #   list of integers that give the QoS level the broker has granted for each
-        #   of the different subscription requests.
-        #
+        try:
+            event = self.__events[mid]
+            event.set()
+        except KeyError:
+            pass
 
     def __unsubscribeClbk(self, client: PahoClient, userdata, mid: int):
-        pass
-        # called when the broker responds to an unsubscribe
-        #   request. The mid variable matches the mid variable returned from the
-        #   corresponding unsubscribe() call.
+        try:
+            event = self.__events[mid]
+            event.set()
+        except KeyError:
+            pass
 
