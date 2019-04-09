@@ -46,6 +46,7 @@ class Device:
         self.__name = name
         self.__tags = OrderedDict()
         self.__services = tuple(services)
+        self.__connection_state = 0
 
     @property
     def id(self) -> str:
