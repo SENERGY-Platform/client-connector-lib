@@ -32,26 +32,6 @@ import datetime, hashlib, base64, json, time, threading
 logger = _getLibLogger(__name__.split(".", 1)[-1])
 
 
-def _getMangledAttr(obj, attr):
-    """
-    Read mangled attribute.
-    :param obj: Object with mangled attributes.
-    :param attr: Name of mangled attribute.
-    :return: value of mangled attribute.
-    """
-    return getattr(obj, "_{}__{}".format(obj.__class__.__name__, attr))
-
-
-def _setMangledAttr(obj, attr, arg):
-    """
-    Write to mangled attribute.
-    :param obj: Object with mangled attributes.
-    :param attr: Name of mangled attribute.
-    :param arg: value to be written.
-    """
-    setattr(obj, "_{}__{}".format(obj.__class__.__name__, attr), arg)
-
-
 class ClientError(Exception):
     """
     Base error.
@@ -106,6 +86,18 @@ class DeviceDeleteError(ClientError):
     Error while deleting a device.
     """
     pass
+
+
+class DeviceConnectError(ClientError):
+    """
+    Error connecting a device.
+    """
+
+
+class DeviceDisconnectError(ClientError):
+    """
+    Error disconnecting a device.
+    """
 
 
 class DeviceUpdateError(ClientError):
@@ -194,6 +186,10 @@ class Client(metaclass=Singleton):
     Client class for client-connector projects.
     To avoid multiple instantiations the Client class implements the singleton pattern.
     """
+
+    class __DeviceConnectionState:
+        online = 1
+        offline = 2
 
     def __init__(self):
         """
@@ -306,7 +302,7 @@ class Client(metaclass=Singleton):
                         logger.debug("synchronizing hub - task '{}' finished".format(worker.name))
                     self.__workers.clear()
                 devices = self.__device_mgr.devices
-                device_ids = __class__.__prefixDeviceIDs(devices)
+                device_ids = tuple(__class__.__prefixDeviceID(device.id) for device in devices)
                 devices_hash = __class__.__hashDevices(devices)
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 logger.debug("devices {}".format(device_ids))
@@ -405,6 +401,7 @@ class Client(metaclass=Singleton):
             elif resp.status == 200:
                 logger.warning("adding device '{}' to platform - device already on platform".format(device.id))
                 self.__device_mgr.add(device)
+                ################ update device??? ##################
             else:
                 logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
                 raise DeviceAddError
@@ -442,7 +439,7 @@ class Client(metaclass=Singleton):
             logger.error("deleting device '{}' from platform failed - {}".format(device_id, ex))
             raise DeviceDeleteError
 
-    def __updateDevice(self, device, worker=False):
+    def __updateDevice(self, device):
         try:
             logger.info("updating device '{}' on platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
@@ -481,9 +478,6 @@ class Client(metaclass=Singleton):
             raise DeviceUpdateError
 
     def __connect(self):
-        if not self.__comm:
-            logger.error("communication not initialized - connecting client to platform not possible")
-            raise CommNotInitializedError
         self.__comm.connect(
             cc_conf.connector.host,
             cc_conf.connector.port,
@@ -491,7 +485,51 @@ class Client(metaclass=Singleton):
             cc_conf.credentials.pw,
             cc_conf.connector.tls
         )
+        #self.__syncDevices()
 
+    def __connectDevice(self, device):
+        __class__.__setMangledAttr(device, "connection_state", __class__.__DeviceConnectionState.online)
+        logger.info("connecting device '{}' to platform ...".format(device.id))
+        message_ids = list()
+        try:
+            for service in device.services:
+                if service.input:
+                    message_ids.append(self.__comm.subscribe("command/{}/{}".format(__class__.__prefixDeviceID(device.id), service.uri)))
+            logger.info("connecting device '{}' to platform completed".format(device.id))
+        except mqtt.NotConnectedError:
+            logger.error("connecting device '{}' to platform failed - client not connected".format(device.id))
+            raise DeviceConnectError
+        except mqtt.SubscribeError as ex:
+            logger.error("connecting device '{}' to platform failed - {}".format(device.id, ex))
+            raise DeviceConnectError
+
+    def __disconnectDevice(self, device):
+        __class__.__setMangledAttr(device, "connection_state", __class__.__DeviceConnectionState.offline)
+        logger.info("disconnecting device '{}' from platform ...".format(device.id))
+        message_ids = list()
+        try:
+            for service in device.services:
+                if service.input:
+                    message_ids.append(self.__comm.unsubscribe("command/{}/{}".format(__class__.__prefixDeviceID(device.id), service.uri)))
+                logger.info("disconnecting device '{}' from platform completed".format(device.id))
+        except mqtt.NotConnectedError:
+            logger.error("disconnecting device '{}' from platform failed - client not connected".format(device.id))
+            raise DeviceDisconnectError
+        except mqtt.SubscribeError as ex:
+            logger.error("disconnecting device '{}' from platform failed - {}".format(device.id, ex))
+            raise DeviceDisconnectError
+
+    def __syncDevices(self):
+        futures = list()
+        for device in self.__device_mgr.devices:
+            if __class__.__getMangledAttr(device, "connection_state") == __class__.__DeviceConnectionState.online:
+                worker = Worker(target=self.__connectDevice, args=(device,), name="connect-device-{}".format(device.id), daemon=True)
+                futures.append(worker.start())
+            elif __class__.__getMangledAttr(device, "connection_state") == __class__.__DeviceConnectionState.offline:
+                worker = Worker(target=self.__disconnectDevice, args=(device,), name="disconnect-device-{}".format(device.id), daemon=True)
+                futures.append(worker.start())
+        for future in futures:
+            future.wait()
 
     # ------------- user methods ------------- #
 
@@ -563,7 +601,7 @@ class Client(metaclass=Singleton):
         if not isDevice(device):
             raise TypeError(type(device))
         if asynchronous:
-            worker = Worker(target=self.__updateDevice, args=(device, True), name="update-device-{}".format(device.id), daemon=True)
+            worker = Worker(target=self.__updateDevice, args=(device, ), name="update-device-{}".format(device.id), daemon=True)
             future = worker.start()
             return future
         else:
@@ -596,6 +634,9 @@ class Client(metaclass=Singleton):
         :param asynchronous:
         :return:
         """
+        if not self.__comm:
+            logger.error("communication not initialized - connecting client to platform not possible")
+            raise CommNotInitializedError
         if asynchronous:
             worker = Worker(target=self.__connect, name="connect-client", daemon=True)
             future = worker.start()
@@ -603,7 +644,7 @@ class Client(metaclass=Singleton):
         else:
             self.__connect()
 
-    def disconnect(self, asynchronous: bool = False) -> Union[Future, None]:
+    def disconnect(self):
         """
 
         :param asynchronous:
@@ -618,7 +659,18 @@ class Client(metaclass=Singleton):
         :param asynchronous:
         :return:
         """
-        pass
+        if not isDevice(device):
+            raise TypeError(type(device))
+        if not self.__comm:
+            logger.error("communication not initialized - connecting device to platform not possible")
+            raise CommNotInitializedError
+        if asynchronous:
+            worker = Worker(target=self.__connectDevice, args=(device, ), name="connect-device-{}".format(device.id), daemon=True)
+            future = worker.start()
+            return future
+        else:
+            self.__connectDevice(device)
+
 
     def disconnectDevice(self, device: Device, asynchronous: bool = False) -> Union[Future, None]:
         """
@@ -627,7 +679,17 @@ class Client(metaclass=Singleton):
         :param asynchronous:
         :return:
         """
-        pass
+        if not isDevice(device):
+            raise TypeError(type(device))
+        if not self.__comm:
+            logger.error("communication not initialized - disconnecting device from platform not possible")
+            raise CommNotInitializedError
+        if asynchronous:
+            worker = Worker(target=self.__disconnectDevice, args=(device,), name="connect-device-{}".format(device.id), daemon=True)
+            future = worker.start()
+            return future
+        else:
+            self.__disconnectDevice(device)
 
     def emmitEvent(self, asynchronous: bool = False) -> Union[Future, None]:
         """
@@ -662,10 +724,30 @@ class Client(metaclass=Singleton):
         return hashlib.sha1("".join(hashes).encode()).hexdigest()
 
     @staticmethod
-    def __prefixDeviceIDs(devices) -> tuple:
+    def __prefixDeviceID(device_id) -> str:
         """
-        Prefix the IDs of the provided devices.
-        :param devices: List or tuple of devices.
-        :return: Tuple of prefixed device IDs
+        Prefix a ID.
+        :param device: device ID.
+        :return: prefixed device ID.
         """
-        return tuple("{}-{}".format(cc_conf.device.id_prefix, device.id) for device in devices)
+        return "{}-{}".format(cc_conf.device.id_prefix, device_id)
+
+    @staticmethod
+    def __getMangledAttr(obj, attr):
+        """
+        Read mangled attribute.
+        :param obj: Object with mangled attributes.
+        :param attr: Name of mangled attribute.
+        :return: value of mangled attribute.
+        """
+        return getattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr))
+
+    @staticmethod
+    def __setMangledAttr(obj, attr, arg):
+        """
+        Write to mangled attribute.
+        :param obj: Object with mangled attributes.
+        :param attr: Name of mangled attribute.
+        :param arg: value to be written.
+        """
+        setattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr), arg)
