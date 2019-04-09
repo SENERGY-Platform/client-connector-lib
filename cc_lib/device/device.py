@@ -14,9 +14,11 @@
    limitations under the License.
 """
 
-__all__ = ['Device']
+__all__ = ('Device', )
 
+from .service import Service
 from collections import OrderedDict
+from typing import Union, Tuple, List
 import hashlib
 
 
@@ -25,21 +27,25 @@ class Device:
     Use this class to create devices for use with the client-connector-lib.
     Subclass this class for advanced requirements. Don't forget to call __init__ of this class when subclassing.
     """
-    def __init__(self, id: str, type: str, name: str):
+    def __init__(self, id: str, type: str, name: str, services: Union[List[Service], Tuple[Service]]):
         """
         Create a device object. Checks if parameters meet type requirements.
         :param id: Local device ID.
         :param type: Device type (create device types via platform gui).
         :param name: Device name.
-        :return: Device object
+        :param services: List or tuple of Service objects.
+        :return: Device object.
         """
         __class__.__checkType(id, str)
         __class__.__checkType(type, str)
         __class__.__checkType(name, str)
+        for obj in services:
+            __class__.__checkType(obj, Service)
         self.__id = id
         self.__type = type
         self.__name = name
         self.__tags = OrderedDict()
+        self.__services = tuple(services)
 
     @property
     def id(self) -> str:
@@ -74,6 +80,10 @@ class Device:
         :return: String.
         """
         return hashlib.sha1(''.join((self.__id, self.__type, self.__name, ''.join(['{}{}'.format(key, value) for key, value in self.__tags.items()]))).encode()).hexdigest()
+
+    @property
+    def services(self) -> Tuple[Service]:
+        return self.__services
 
     def addTag(self, tag_id, tag):
         """
@@ -142,7 +152,8 @@ class Device:
             ('type', self.type),
             ('name', self.name),
             ('tags', self.tags),
-            ('hash', self.hash)
+            ('hash', self.hash),
+            ('services', self.services)
         ]
         if kwargs:
             for arg, value in kwargs.items():
