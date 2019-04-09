@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ['Type']
+__all__ = ('Type', )
 
 
 class Type:
