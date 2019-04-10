@@ -75,7 +75,7 @@ class Client:
                 self.__events[res[1]] = event
                 if not event.wait(timeout=timeout):
                     del self.__events[res[1]]
-                    raise SubscribeError("timeout for subscribe acknowledgment")
+                    raise SubscribeError("subscribe acknowledgment timeout")
                 del self.__events[res[1]]
                 logger.debug("subscribe request for '{}' successful".format(topic, res[1]))
             if res[0] == MQTT_ERR_NO_CONN:
@@ -91,7 +91,7 @@ class Client:
                 self.__events[res[1]] = event
                 if not event.wait(timeout=timeout):
                     del self.__events[res[1]]
-                    raise UnsubscribeError("timeout for unsubscribe acknowledgment")
+                    raise UnsubscribeError("unsubscribe acknowledgment timeout")
                 del self.__events[res[1]]
                 logger.debug("unsubscribe request for '{}' successful".format(topic, res[1]))
             if res[0] == MQTT_ERR_NO_CONN:
