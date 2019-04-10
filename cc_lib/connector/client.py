@@ -525,7 +525,10 @@ class Client(metaclass=Singleton):
             self.__updateDevice(device)
 
     def getDevice(self, device_id: str) -> Device:
-        return self.__device_mgr.get(device_id)
+        try:
+            return self.__device_mgr.get(device_id)
+        except KeyError:
+            raise DeviceNotFoundError
 
     def listDevices(self) -> tuple:
         return self.__device_mgr.devices
@@ -563,7 +566,8 @@ class Client(metaclass=Singleton):
             cc_conf.connector.port,
             cc_conf.credentials.user,
             cc_conf.credentials.pw,
-            cc_conf.connector.tls
+            cc_conf.connector.tls,
+            cc_conf.connector.keepalive
         )
 
     def stopComm(self):
@@ -596,13 +600,18 @@ class Client(metaclass=Singleton):
         else:
             self.__connectDevice(device)
 
-    def disconnectDevice(self, device: Device, asynchronous: bool = False) -> Union[Future, None]:
+    def disconnectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Union[Future, None]:
         """
 
         :param device:
         :param asynchronous:
         :return:
         """
+        if type(device) is str:
+            try:
+                device = self.__device_mgr.get(device)
+            except KeyError:
+                raise DeviceNotFoundError
         if not isDevice(device):
             raise TypeError(type(device))
         if not self.__comm:
