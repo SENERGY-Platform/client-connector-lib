@@ -187,10 +187,6 @@ class Client(metaclass=Singleton):
     To avoid multiple instantiations the Client class implements the singleton pattern.
     """
 
-    class __DeviceConnectionState:
-        online = 1
-        offline = 2
-
     def __init__(self):
         """
         Create a Client instance. Set device manager, initiate configuration and library logging facility.
