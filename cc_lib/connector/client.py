@@ -401,12 +401,11 @@ class Client(metaclass=Singleton):
             clbk_thread.start()
 
     def __connectDevice(self, device):
-        logger.debug("connecting device '{}' to client ...".format(device.id))
         __class__.__setMangledAttr(device, "connected_flag", True)
         logger.info("connecting device '{}' to platform ...".format(device.id))
         if not self.__comm:
             logger.error("connecting device '{}' to platform failed - communication not initialized".format(device.id))
-            raise DeviceConnectError
+            raise CommNotInitializedError
         message_ids = list()
         try:
             for service in device.services:
@@ -414,19 +413,18 @@ class Client(metaclass=Singleton):
                     message_ids.append(self.__comm.subscribe("command/{}/{}".format(__class__.__prefixDeviceID(device.id), service.uri)))
             logger.info("connecting device '{}' to platform completed".format(device.id))
         except mqtt.NotConnectedError:
-            logger.error("connecting device '{}' to platform failed - communication closed".format(device.id))
+            logger.error("connecting device '{}' to platform failed - communication not available".format(device.id))
             raise DeviceConnectError
         except mqtt.SubscribeError as ex:
             logger.error("connecting device '{}' to platform failed - {}".format(device.id, ex))
             raise DeviceConnectError
 
     def __disconnectDevice(self, device):
-        logger.debug("disconnecting device '{}' from client ...".format(device.id))
         __class__.__setMangledAttr(device, "connected_flag", False)
         logger.info("disconnecting device '{}' from platform ...".format(device.id))
         if not self.__comm:
-            logger.error("disconnecting device '{}' to platform failed - communication not initialized".format(device.id))
-            raise DeviceDisconnectError
+            logger.error("disconnecting device '{}' from platform failed - communication not initialized".format(device.id))
+            raise CommNotInitializedError
         message_ids = list()
         try:
             for service in device.services:
@@ -434,7 +432,7 @@ class Client(metaclass=Singleton):
                     message_ids.append(self.__comm.unsubscribe("command/{}/{}".format(__class__.__prefixDeviceID(device.id), service.uri)))
                 logger.info("disconnecting device '{}' from platform completed".format(device.id))
         except mqtt.NotConnectedError:
-            logger.error("disconnecting device '{}' from platform failed - communication closed".format(device.id))
+            logger.error("disconnecting device '{}' from platform failed - communication not available".format(device.id))
             raise DeviceDisconnectError
         except mqtt.UnsubscribeError as ex:
             logger.error("disconnecting device '{}' from platform failed - {}".format(device.id, ex))
