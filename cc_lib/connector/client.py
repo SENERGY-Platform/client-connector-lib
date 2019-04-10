@@ -122,6 +122,7 @@ class Client(metaclass=Singleton):
         self.__hub_sync_event.set()
         self.__hub_sync_lock = threading.Lock()
         self.__hub_init = False
+        self.__comm_init = False
         self.__connect_clbk = None
         self.__disconnect_clbk = None
         self.__set_clbk_lock = threading.RLock()
@@ -539,28 +540,21 @@ class Client(metaclass=Singleton):
     def initComm(self):
         """
 
+        :return: None.
         """
         if not self.__hub_init:
             logger.error("hub not initialized - initializing communication not possible")
             raise HubNotInitializedError
-        if self.__comm:
+        if self.__comm_init:
             logger.error("communication already initialized")
             raise CommInitializedError
-        self.__comm = mqtt.Client(cc_conf.hub.id, reconnect_delay=cc_conf.connector.reconn_delay)
-        self.__comm.on_connect = self.__onConnect
-        self.__comm.on_disconnect = self.__onDisconnect
-
-    def startComm(self):
-        """
-
-        :return: None
-        """
         if not self.__comm:
-            logger.error("communication not initialized")
-            raise CommNotInitializedError
-        logger.info("starting communication ...")
+            self.__comm = mqtt.Client(cc_conf.hub.id, reconnect_delay=cc_conf.connector.reconn_delay)
+            self.__comm.on_connect = self.__onConnect
+            self.__comm.on_disconnect = self.__onDisconnect
+        logger.info("initializing communication ...")
         if not cc_conf.connector.tls:
-            logger.warning("starting communication - TLS encryption disabled")
+            logger.warning("initializing communication - TLS encryption disabled")
         self.__comm.connect(
             cc_conf.connector.host,
             cc_conf.connector.port,
@@ -569,17 +563,19 @@ class Client(metaclass=Singleton):
             cc_conf.connector.tls,
             cc_conf.connector.keepalive
         )
+        self.__comm_init = True
 
     def stopComm(self):
         """
 
-        :return:
+        :return: None.
         """
         if not self.__comm:
             logger.error("communication not initialized")
             raise CommNotInitializedError
         logger.info("stopping communication ...")
         self.__comm.disconnect()
+        self.__comm_init = False
 
     def connectDevice(self, device: Device, asynchronous: bool = False) -> Union[Future, None]:
         """
