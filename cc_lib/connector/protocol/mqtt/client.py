@@ -37,7 +37,6 @@ class NotConnectedError(MqttClientError):
 class SubscribeError(MqttClientError):
     pass
 
-
 class UnsubscribeError(MqttClientError):
     pass
 
@@ -53,17 +52,16 @@ class Client:
         self.__mqtt.on_publish = self.__publishClbk
         self.__mqtt.on_subscribe = self.__subscribeClbk
         self.__mqtt.on_unsubscribe = self.__unsubscribeClbk
-        self.__connect_event = Event()
         self.__events = dict()
+        self.on_connect = None
+        self.on_disconnect = None
 
     def connect(self, host, port, usr, pw, tls=True, keepalive=15):
-        self.__connect_event.clear()
         if tls:
             self.__mqtt.tls_set()
         self.__mqtt.username_pw_set(usr, pw)
         self.__mqtt.connect_async(host=host, port=port, keepalive=keepalive)
         self.__mqtt.loop_start()
-        self.__connect_event.wait()
 
     def disconnect(self):
         self.__mqtt.disconnect()
@@ -76,17 +74,14 @@ class Client:
                 event = Event()
                 self.__events[res[1]] = event
                 if not event.wait(timeout=timeout):
-                    logger.error("subscribe request for '{}' failed - timeout".format(topic))
                     del self.__events[res[1]]
-                    raise SubscribeError
+                    raise SubscribeError("timeout for subscribe acknowledgment")
                 del self.__events[res[1]]
                 logger.debug("subscribe request for '{}' successful".format(topic, res[1]))
             if res[0] == MQTT_ERR_NO_CONN:
-                logger.error("subscribe request for '{}' failed - not connected".format(topic))
                 raise NotConnectedError
         except socket.error as ex:
-            logger.error("subscribe request for '{}' failed - {}".format(topic, ex))
-            raise SubscribeError
+            raise SubscribeError(ex)
 
     def unsubscribe(self, topic: str, timeout=30):
         try:
@@ -95,17 +90,14 @@ class Client:
                 event = Event()
                 self.__events[res[1]] = event
                 if not event.wait(timeout=timeout):
-                    logger.error("unsubscribe request for '{}' failed - timeout".format(topic))
                     del self.__events[res[1]]
-                    raise UnsubscribeError
+                    raise UnsubscribeError("timeout for unsubscribe acknowledgment")
                 del self.__events[res[1]]
                 logger.debug("unsubscribe request for '{}' successful".format(topic, res[1]))
             if res[0] == MQTT_ERR_NO_CONN:
-                logger.error("unsubscribe request for '{}' failed - not connected".format(topic))
                 raise NotConnectedError
         except socket.error as ex:
-            logger.error("unsubscribe request for '{}' failed - {}".format(topic, ex))
-            raise UnsubscribeError
+            raise UnsubscribeError(ex)
 
     def publish(self, topic: str, payload: str = None, qos: int = 0, retain: bool = False):
         msg_info = self.__mqtt.publish(topic=topic, payload=payload, qos=qos, retain=retain)
@@ -113,17 +105,16 @@ class Client:
 
     def __connectClbk(self, client: PahoClient, userdata, flags: dict, rc: int):
         if rc == 0:
-            logger.info(connack_string(rc).replace(".", "").lower())
+            logger.debug(connack_string(rc).replace(".", "").lower())
             logger.debug(flags)
-            self.__connect_event.set()
+            if self.on_connect:
+                self.on_connect()
         else:
-            logger.error(connack_string(rc))
+            logger.error(connack_string(rc).replace(".", "").lower())
 
     def __disconnectClbk(self, client: PahoClient, userdata, rc: int):
-        if rc == 0:
-            logger.info("disconnected by user")
-        else:
-            logger.error("unexpected disconnect")
+        if self.on_disconnect:
+            self.on_disconnect(rc)
 
     def __messageClbk(self, client: PahoClient, userdata, message: MQTTMessage):
         pass
@@ -155,4 +146,3 @@ class Client:
             event.set()
         except KeyError:
             pass
-
