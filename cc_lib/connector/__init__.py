@@ -15,6 +15,7 @@
 """
 
 from .client import *
+import cc_lib.connector.exception
 
 __all__ = (
     client.__all__

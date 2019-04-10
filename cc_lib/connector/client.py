@@ -19,6 +19,7 @@ __all__ = ("Client", )
 from ..configuration.configuration import cc_conf, initConnectorConf
 from ..logger.logger import _getLibLogger, initLogging
 from ..device import Device
+from .exception import *
 from .device_mgr import DeviceManager, isDevice
 from .singleton import Singleton
 from .authentication import OpenIdClient, NoTokenError
@@ -30,100 +31,6 @@ import datetime, hashlib, base64, json, time, threading
 
 
 logger = _getLibLogger(__name__.split(".", 1)[-1])
-
-
-class ClientError(Exception):
-    """
-    Base error.
-    """
-    pass
-
-
-class HubInitializationError(ClientError):
-    """
-    Error during hub initialization.
-    """
-    pass
-
-
-class HubNotInitializedError(ClientError):
-    """
-    Hub has not been initialized.
-    """
-    pass
-
-
-class HubNotFoundError(ClientError):
-    """
-    Hub ID not on platform.
-    """
-    pass
-
-
-class HubSynchronizationError(ClientError):
-    """
-    Error during hub synchronization.
-    """
-    pass
-
-
-class DeviceAddError(ClientError):
-    """
-    Error while adding a device.
-    """
-    pass
-
-
-class DeviceNotFoundError(ClientError):
-    """
-    Device is missing.
-    """
-    pass
-
-
-class DeviceDeleteError(ClientError):
-    """
-    Error while deleting a device.
-    """
-    pass
-
-
-class DeviceConnectError(ClientError):
-    """
-    Error connecting a device.
-    """
-
-
-class DeviceDisconnectError(ClientError):
-    """
-    Error disconnecting a device.
-    """
-
-
-class DeviceUpdateError(ClientError):
-    """
-    Error while updating a device.
-    """
-    pass
-
-
-class CommInitializedError(ClientError):
-    """
-    Communication has already been initialized.
-    """
-    pass
-
-
-class CommNotInitializedError(ClientError):
-    """
-    Communication has not been initialized.
-    """
-    pass
-
-
-class FutureNotDoneError(ClientError):
-    def __init__(self):
-        super().__init__("can't retrieve result - future not done")
 
 
 class Future:
@@ -190,7 +97,6 @@ class Client(metaclass=Singleton):
     def __init__(self):
         """
         Create a Client instance. Set device manager, initiate configuration and library logging facility.
-        :param device_manager: object or class implementing the device manager interface.
         """
         initConnectorConf()
         initLogging()
@@ -663,7 +569,6 @@ class Client(metaclass=Singleton):
     def stopComm(self):
         """
 
-        :param asynchronous:
         :return:
         """
         if not self.__comm:
@@ -690,7 +595,6 @@ class Client(metaclass=Singleton):
             return future
         else:
             self.__connectDevice(device)
-
 
     def disconnectDevice(self, device: Device, asynchronous: bool = False) -> Union[Future, None]:
         """
