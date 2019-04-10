@@ -36,8 +36,9 @@ class ConnectorConf:
     class connector:
         host: str = None
         port: int = None
-        tls: bool = None
-        reconn_delay: int = None
+        tls: bool = True
+        reconn_delay: int = 120
+        keepalive: int = 20
 
     @section
     class auth:
