@@ -107,7 +107,7 @@ class DeviceUpdateError(ClientError):
     pass
 
 
-class CommAlreadyInitializedError(ClientError):
+class CommInitializedError(ClientError):
     """
     Communication has already been initialized.
     """
@@ -214,12 +214,15 @@ class Client(metaclass=Singleton):
             cc_conf.auth.id
         )
         self.__device_mgr = DeviceManager()
-        self.__comm: mqtt.Client = None
+        self.__comm = None
         self.__workers = list()
         self.__hub_sync_event = threading.Event()
         self.__hub_sync_event.set()
         self.__hub_sync_lock = threading.Lock()
         self.__hub_init = False
+        self.__connect_clbk = None
+        self.__disconnect_clbk = None
+        self.__set_clbk_lock = threading.RLock()
 
     # ------------- internal methods ------------- #
 
@@ -477,18 +480,25 @@ class Client(metaclass=Singleton):
             logger.error("updating device '{}' on platform failed - {}".format(device.id, ex))
             raise DeviceUpdateError
 
-    def __connect(self):
-        self.__comm.connect(
-            cc_conf.connector.host,
-            cc_conf.connector.port,
-            cc_conf.credentials.user,
-            cc_conf.credentials.pw,
-            cc_conf.connector.tls
-        )
-        #self.__syncDevices()
+    def __onConnect(self):
+        logger.info("starting communication completed - connected to '{}' on '{}'".format(cc_conf.connector.host, cc_conf.connector.port))
+        sync_thread = threading.Thread(target=self.__connectOnlineDevices, name="connect-online-devices", daemon=True)
+        sync_thread.start()
+        if self.__connect_clbk:
+            clbk_thread = threading.Thread(target=self.__connect_clbk, name="user-connect-callback", daemon=True)
+            clbk_thread.start()
+
+    def __onDisconnect(self, reason):
+        if reason > 0:
+            logger.warning("communication stopped unexpectedly")
+        else:
+            logger.info("stopping communication completed")
+        if self.__disconnect_clbk:
+            clbk_thread = threading.Thread(target=self.__disconnect_clbk, name="user-disconnect-callback", daemon=True)
+            clbk_thread.start()
 
     def __connectDevice(self, device):
-        __class__.__setMangledAttr(device, "connection_state", __class__.__DeviceConnectionState.online)
+        __class__.__setMangledAttr(device, "connected_flag", True)
         logger.info("connecting device '{}' to platform ...".format(device.id))
         message_ids = list()
         try:
@@ -504,7 +514,7 @@ class Client(metaclass=Singleton):
             raise DeviceConnectError
 
     def __disconnectDevice(self, device):
-        __class__.__setMangledAttr(device, "connection_state", __class__.__DeviceConnectionState.offline)
+        __class__.__setMangledAttr(device, "connected_flag", False)
         logger.info("disconnecting device '{}' from platform ...".format(device.id))
         message_ids = list()
         try:
@@ -515,23 +525,28 @@ class Client(metaclass=Singleton):
         except mqtt.NotConnectedError:
             logger.error("disconnecting device '{}' from platform failed - client not connected".format(device.id))
             raise DeviceDisconnectError
-        except mqtt.SubscribeError as ex:
+        except mqtt.UnsubscribeError as ex:
             logger.error("disconnecting device '{}' from platform failed - {}".format(device.id, ex))
             raise DeviceDisconnectError
 
-    def __syncDevices(self):
+    def __connectOnlineDevices(self):
         futures = list()
         for device in self.__device_mgr.devices:
-            if __class__.__getMangledAttr(device, "connection_state") == __class__.__DeviceConnectionState.online:
+            if __class__.__getMangledAttr(device, "connected_flag"):
                 worker = Worker(target=self.__connectDevice, args=(device,), name="connect-device-{}".format(device.id), daemon=True)
                 futures.append(worker.start())
-            elif __class__.__getMangledAttr(device, "connection_state") == __class__.__DeviceConnectionState.offline:
-                worker = Worker(target=self.__disconnectDevice, args=(device,), name="disconnect-device-{}".format(device.id), daemon=True)
-                futures.append(worker.start())
-        for future in futures:
-            future.wait()
+        # for future in futures:
+        #     future.wait()
 
     # ------------- user methods ------------- #
+
+    def setConnectClbk(self, func: Callable):
+        with self.__set_clbk_lock:
+            self.__connect_clbk = func
+
+    def setDisconnectClbk(self, func: Callable):
+        with self.__set_clbk_lock:
+            self.__disconnect_clbk = func
 
     def initHub(self, asynchronous: bool = False) -> Union[Future, None]:
         """
@@ -625,31 +640,40 @@ class Client(metaclass=Singleton):
             raise HubNotInitializedError
         if self.__comm:
             logger.error("communication already initialized")
-            raise CommAlreadyInitializedError
+            raise CommInitializedError
         self.__comm = mqtt.Client(cc_conf.hub.id, reconnect_delay=cc_conf.connector.reconn_delay)
+        self.__comm.on_connect = self.__onConnect
+        self.__comm.on_disconnect = self.__onDisconnect
 
-    def connect(self, asynchronous: bool = False) -> Union[Future, None]:
+    def startComm(self):
+        """
+
+        :return: None
+        """
+        if not self.__comm:
+            logger.error("communication not initialized")
+            raise CommNotInitializedError
+        logger.info("starting communication ...")
+        if not cc_conf.connector.tls:
+            logger.warning("starting communication - TLS encryption disabled")
+        self.__comm.connect(
+            cc_conf.connector.host,
+            cc_conf.connector.port,
+            cc_conf.credentials.user,
+            cc_conf.credentials.pw,
+            cc_conf.connector.tls
+        )
+
+    def stopComm(self):
         """
 
         :param asynchronous:
         :return:
         """
         if not self.__comm:
-            logger.error("communication not initialized - connecting client to platform not possible")
+            logger.error("communication not initialized")
             raise CommNotInitializedError
-        if asynchronous:
-            worker = Worker(target=self.__connect, name="connect-client", daemon=True)
-            future = worker.start()
-            return future
-        else:
-            self.__connect()
-
-    def disconnect(self):
-        """
-
-        :param asynchronous:
-        :return:
-        """
+        logger.info("stopping communication ...")
         self.__comm.disconnect()
 
     def connectDevice(self, device: Device, asynchronous: bool = False) -> Union[Future, None]:
