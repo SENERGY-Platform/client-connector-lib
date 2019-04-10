@@ -37,6 +37,7 @@ class NotConnectedError(MqttClientError):
 class SubscribeError(MqttClientError):
     pass
 
+
 class UnsubscribeError(MqttClientError):
     pass
 
@@ -56,7 +57,7 @@ class Client:
         self.on_connect = None
         self.on_disconnect = None
 
-    def connect(self, host, port, usr, pw, tls=True, keepalive=15):
+    def connect(self, host, port, usr, pw, tls, keepalive):
         if tls:
             self.__mqtt.tls_set()
         self.__mqtt.username_pw_set(usr, pw)
@@ -99,7 +100,7 @@ class Client:
         except socket.error as ex:
             raise UnsubscribeError(ex)
 
-    def publish(self, topic: str, payload: str = None, qos: int = 0, retain: bool = False):
+    def publish(self, topic: str, payload: str = None, qos: int = 1, retain: bool = False):
         msg_info = self.__mqtt.publish(topic=topic, payload=payload, qos=qos, retain=retain)
         msg_info.wait_for_publish()
 
