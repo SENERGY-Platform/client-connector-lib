@@ -351,24 +351,17 @@ class Client(metaclass=Singleton):
             access_token = self.__auth.getAccessToken()
             req = http.Request(
                 url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.device.id_prefix, http.urlEncode(device.id)),
-                method=http.Method.HEAD,
+                method=http.Method.PUT,
+                body={
+                    "device_type": device.type,
+                    "name": device.name,
+                    "uri": "{}-{}".format(cc_conf.device.id_prefix, device.id),
+                    "tags": device.tags
+                },
+                content_type=http.ContentType.json,
                 headers={"Authorization": "Bearer {}".format(access_token)})
             resp = req.send()
             if resp.status == 200:
-                req = http.Request(
-                    url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.device.id_prefix, http.urlEncode(device.id)),
-                    method=http.Method.PUT,
-                    body={
-                        "device_type": device.type,
-                        "name": device.name,
-                        "tags": device.tags
-                    },
-                    content_type=http.ContentType.json,
-                    headers={"Authorization": "Bearer {}".format(access_token)})
-                resp = req.send()
-                if not resp.status == 200:
-                    logger.error("updating device '{}' on platform failed - {} {}".format(device.id, resp.status, resp.body))
-                    raise DeviceUpdateError
                 logger.info("updating device '{}' on platform completed".format(device.id))
             elif resp.status == 404:
                 logger.error("updating device '{}' on platform failed - device not found".format(device.id))
