@@ -22,7 +22,9 @@ from .response import Response
 from typing import Union, Iterable, SupportsAbs
 from socket import timeout as TimeoutErr
 from urllib.error import URLError, HTTPError
-import urllib.request, urllib.parse, json
+import urllib.request
+import urllib.parse
+import json
 
 
 logger = _getLibLogger(__name__.split('.', 1)[-1])
@@ -59,7 +61,7 @@ reserved_chars = {
 }
 
 
-def urlEncode(s):
+def urlEncode(s: str) -> str:
     """
     Encode string to URL encoded format.
     :param s: String to encode.
