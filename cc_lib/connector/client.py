@@ -505,29 +505,36 @@ class Client(metaclass=Singleton):
         else:
             self.__addDevice(device)
 
-    def deleteDevice(self, device_id: str, asynchronous: bool = False) -> Union[Future, None]:
+    def deleteDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Union[Future, None]:
         """
         Delete a device from local device manager and remote platform. Blocks by default.
-        :param device_id: Device ID.
+        :param device: Device ID or Device object.
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if not type(device_id) is str:
-            raise TypeError(type(device_id))
+        if isDevice(device):
+            device = device.id
+        if not type(device) is str:
+            raise TypeError(type(device))
         if asynchronous:
-            worker = Worker(target=self.__deleteDevice, args=(device_id, True), name="delete-device-{}".format(device_id), daemon=True)
+            worker = Worker(target=self.__deleteDevice, args=(device, True), name="delete-device-{}".format(device), daemon=True)
             future = worker.start()
             return future
         else:
-            self.__deleteDevice(device_id)
+            self.__deleteDevice(device)
 
-    def updateDevice(self, device: Device, asynchronous: bool = False) -> Union[Future, None]:
+    def updateDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Union[Future, None]:
         """
         Update a device in local device manager and on remote platform.
         :param device: Device object.
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
+        if type(device) is str:
+            try:
+                device = self.__device_mgr.get(device)
+            except KeyError:
+                raise DeviceNotFoundError
         if not isDevice(device):
             raise TypeError(type(device))
         if asynchronous:
@@ -589,15 +596,22 @@ class Client(metaclass=Singleton):
         self.__comm.disconnect()
         self.__comm_init = False
 
-    def connectDevice(self, device: Device, asynchronous: bool = False) -> Union[Future, None]:
+    def connectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Union[Future, None]:
         """
 
         :param device:
         :param asynchronous:
         :return:
         """
-        if not isDevice(device):
-            raise TypeError(type(device))
+        try:
+            if isDevice(device):
+                self.__device_mgr.get(device.id)
+            elif type(device) is str:
+                device = self.__device_mgr.get(device)
+            else:
+                raise TypeError(type(device))
+        except KeyError:
+            raise DeviceNotFoundError
         if asynchronous:
             worker = Worker(target=self.__connectDevice, args=(device, ), name="connect-device-{}".format(device.id), daemon=True)
             future = worker.start()
