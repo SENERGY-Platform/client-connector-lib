@@ -42,15 +42,21 @@ class Device:
         for obj in services:
             __class__.__checkType(obj, Service)
         self.__id = id
+        self.__remote_id = None
         self.__type = type
         self.__name = name
         self.__tags = OrderedDict()
         self.__services = tuple(services)
+        # self.__img_url = None
         self.__connected_flag = False
 
     @property
     def id(self) -> str:
         return self.__id
+
+    @property
+    def remote_id(self) -> str:
+        return self.__remote_id
 
     @property
     def type(self) -> str:
@@ -85,6 +91,16 @@ class Device:
     @property
     def services(self) -> Tuple[Service]:
         return self.__services
+
+    # @property
+    # def img_url(self) -> str:
+    #     return self.__img_url
+    #
+    # @img_url.setter
+    # def img_url(self, arg):
+    #     if type(arg) is not str:
+    #         raise TypeError("image url must be a string but got '{}'".format(type(arg)))
+    #     self.__img_url = arg
 
     def addTag(self, tag_id, tag):
         """
@@ -154,6 +170,8 @@ class Device:
             ('name', self.name),
             ('tags', self.tags),
             ('hash', self.hash),
+            # ('img_url', self.img_url),
+            ('remote_id', self.remote_id),
             ('services', self.services)
         ]
         if kwargs:
