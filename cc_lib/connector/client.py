@@ -25,7 +25,7 @@ from .singleton import Singleton
 from .authentication import OpenIdClient, NoTokenError
 from .protocol import http, mqtt
 from cc_lib import __version__ as VERSION
-from typing import Callable, Union, Any
+from typing import Callable, Union, Any, Tuple
 from getpass import getuser
 import datetime, hashlib, base64, json, time, threading
 
@@ -483,18 +483,28 @@ class Client(metaclass=Singleton):
     # ------------- user methods ------------- #
 
     def setConnectClbk(self, func: Callable):
+        """
+        Set a callback function to be called when the client successfully connects to the platform.
+        :param func: User function.
+        :return: None.
+        """
         with self.__set_clbk_lock:
             self.__connect_clbk = func
 
     def setDisconnectClbk(self, func: Callable):
+        """
+        Set a callback function to be called when the client disconnects from the platform.
+        :param func: User function.
+        :return: None.
+        """
         with self.__set_clbk_lock:
             self.__disconnect_clbk = func
 
     def initHub(self, asynchronous: bool = False) -> Union[Future, None]:
         """
-
-        :param asynchronous:
-        :return:
+        Initialize a hub. Check if hub exists and create new hub if necessary.
+        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :return: Future or None.
         """
         if asynchronous:
             worker = Worker(target=self.__initHub, name="init-hub", daemon=True)
@@ -505,9 +515,10 @@ class Client(metaclass=Singleton):
 
     def syncHub(self, asynchronous: bool = False) -> Union[Future, None]:
         """
-
-        :param asynchronous:
-        :return:
+        Synchronize a hub. Associate devices managed by the client with the hub and update hub name.
+        Devices must be added via addDevice.
+        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :return: Future or None.
         """
         if asynchronous:
             worker = Worker(target=self.__syncHub, name="sync-hub", daemon=True)
@@ -552,8 +563,8 @@ class Client(metaclass=Singleton):
 
     def updateDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Union[Future, None]:
         """
-        Update a device in local device manager and on remote platform.
-        :param device: Device object.
+        Update a device on the platform.
+        :param device: Device object or device ID.
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
@@ -572,20 +583,34 @@ class Client(metaclass=Singleton):
             self.__updateDevice(device)
 
     def getDevice(self, device_id: str) -> Device:
+        """
+        Get a Device object from the client. Raises an exception if device not found.
+        :param device_id: ID of a device.
+        :return: Device object.
+        """
         try:
             return self.__device_mgr.get(device_id)
         except KeyError:
             raise DeviceNotFoundError
 
-    def listDevices(self) -> tuple:
+    def listDevices(self) -> Tuple[Device]:
+        """
+        List all devices managed by the client.
+        :return: Tuple of Device objects.
+        """
         return self.__device_mgr.devices
 
-    def listDeviceIDs(self) -> tuple:
+    def listDeviceIDs(self) -> Tuple[str]:
+        """
+        List IDs of all devices managed by the client.
+        :return: Tuple of device IDs
+        """
         return tuple(device.id for device in self.__device_mgr.devices)
 
     def initComm(self):
         """
-
+        Initiate communication with platform. Raise exceptions if hub isn't initialized or if communication
+        already initialized.
         :return: None.
         """
         if not self.__hub_init:
@@ -613,7 +638,7 @@ class Client(metaclass=Singleton):
 
     def stopComm(self):
         """
-
+        Stop communication with platform. Call initComm to reinitialize  communication.
         :return: None.
         """
         if not self.__comm:
@@ -625,10 +650,10 @@ class Client(metaclass=Singleton):
 
     def connectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Union[Future, None]:
         """
-
-        :param device:
-        :param asynchronous:
-        :return:
+        Connect a device to the platform.
+        :param device: Device object or device ID.
+        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :return: Future or None.
         """
         try:
             if isDevice(device):
@@ -648,10 +673,10 @@ class Client(metaclass=Singleton):
 
     def disconnectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Union[Future, None]:
         """
-
-        :param device:
-        :param asynchronous:
-        :return:
+        Disconnect a device from the platform.
+        :param device: Device object or device ID.
+        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :return: Future or None.
         """
         if type(device) is str:
             try:
