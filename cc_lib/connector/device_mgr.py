@@ -16,14 +16,14 @@
 
 from ..logger.logger import _getLibLogger
 from ..device.device import Device
-from typing import Union, Tuple, List
+from typing import Tuple
 from threading import Lock
 
 
 logger = _getLibLogger(__name__)
 
 
-def isDevice(obj):
+def isDevice(obj: object) -> bool:
     """
     Check if a object is a Device or a Device subclass
     :param obj: object to check
@@ -40,7 +40,7 @@ class DeviceManager:
         self.__device_pool = dict()
         self.__lock = Lock()
 
-    def add(self, device: Device):
+    def add(self, device: Device) -> None:
         if not isDevice(device):
             raise TypeError
         self.__lock.acquire()
@@ -50,16 +50,14 @@ class DeviceManager:
             logger.warning("device '{}' already in pool".format(device.id))
         self.__lock.release()
 
-    def delete(self, device: Union[Device, str]):
-        if isDevice(device):
-            device = device.id
-        elif type(device) is not str:
+    def delete(self, device_id: str) -> None:
+        if not type(device_id) is str:
             raise TypeError
         self.__lock.acquire()
         try:
-            del self.__device_pool[device]
+            del self.__device_pool[device_id]
         except KeyError:
-            logger.warning("device '{}' does not exist in device pool".format(device))
+            logger.warning("device '{}' does not exist in device pool".format(device_id))
         self.__lock.release()
 
     def get(self, device_id: str) -> Device:
@@ -75,7 +73,7 @@ class DeviceManager:
         self.__lock.release()
         return device
 
-    def clear(self):
+    def clear(self) -> None:
         self.__lock.acquire()
         self.__device_pool.clear()
         self.__lock.release()
@@ -83,6 +81,6 @@ class DeviceManager:
     @property
     def devices(self) -> Tuple[Device]:
         self.__lock.acquire()
-        devices = self.__device_pool.values()
+        devices = tuple(self.__device_pool.values())
         self.__lock.release()
-        return tuple(devices)
+        return devices
