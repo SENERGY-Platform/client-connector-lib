@@ -79,7 +79,7 @@ class Worker(threading.Thread):
         if self.callback:
             try:
                 self.callback()
-            except Exception:
+            except BaseException:
                 logger.exception("exception calling callback for '{}'".format(self.name))
 
     def start(self) -> Future:
@@ -166,7 +166,11 @@ class Client(metaclass=Singleton):
             else:
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 req = http.Request(
-                    url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub_endpt, http.urlEncode(cc_conf.hub.id)),
+                    url="https://{}/{}/{}".format(
+                        cc_conf.api.host,
+                        cc_conf.api.hub_endpt,
+                        http.urlEncode(cc_conf.hub.id)
+                    ),
                     method=http.Method.HEAD,
                     headers={"Authorization": "Bearer {}".format(access_token)},
                     timeout=cc_conf.api.req_timeout
@@ -219,7 +223,11 @@ class Client(metaclass=Singleton):
                 logger.debug("hash '{}'".format(devices_hash))
                 access_token = self.__auth.getAccessToken()
                 req = http.Request(
-                    url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub_endpt, http.urlEncode(cc_conf.hub.id)),
+                    url="https://{}/{}/{}".format(
+                        cc_conf.api.host,
+                        cc_conf.api.hub_endpt,
+                        http.urlEncode(cc_conf.hub.id)
+                    ),
                     method=http.Method.GET,
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
@@ -229,14 +237,23 @@ class Client(metaclass=Singleton):
                 if resp.status == 200:
                     hub = json.loads(resp.body)
                     if not hub["name"] == cc_conf.hub.name:
-                        logger.warning("synchronizing hub - local name '{}' differs from remote name '{}'".format(cc_conf.hub.name, hub["name"]))
+                        logger.warning(
+                            "synchronizing hub - local name '{}' differs from remote name '{}'".format(
+                                cc_conf.hub.name,
+                                hub["name"]
+                            )
+                        )
                         logger.info("synchronizing hub - setting hub name to '{}'".format(hub["name"]))
                         cc_conf.hub.name = hub["name"]
                     if not hub["hash"] == devices_hash:
                         logger.debug("synchronizing hub - local hash differs from remote hash")
                         logger.info("synchronizing hub - updating devices ...")
                         req = http.Request(
-                            url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub_endpt, http.urlEncode(cc_conf.hub.id)),
+                            url="https://{}/{}/{}".format(
+                                cc_conf.api.host,
+                                cc_conf.api.hub_endpt,
+                                http.urlEncode(cc_conf.hub.id)
+                            ),
                             method=http.Method.PUT,
                             body={
                                 "id": cc_conf.hub.id,
@@ -253,7 +270,9 @@ class Client(metaclass=Singleton):
                             time.sleep(4)
                         resp = req.send()
                         if not resp.status == 200:
-                            logger.error("synchronizing hub failed - {} could not update devices".format(resp.status, resp.body))
+                            logger.error(
+                                "synchronizing hub failed - {} could not update devices".format(resp.status, resp.body)
+                            )
                             raise HubSynchronizationError
                     logger.info("synchronizing hub completed")
                 elif resp.status == 404:
@@ -290,7 +309,12 @@ class Client(metaclass=Singleton):
             logger.info("adding device '{}' to platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device_endpt, cc_conf.device.id_prefix, http.urlEncode(device.id)),
+                url="https://{}/{}/{}-{}".format(
+                    cc_conf.api.host,
+                    cc_conf.api.device_endpt,
+                    cc_conf.device.id_prefix,
+                    http.urlEncode(device.id)
+                ),
                 method=http.Method.GET,
                 headers={"Authorization": "Bearer {}".format(access_token)},
                 timeout=cc_conf.api.req_timeout
@@ -313,7 +337,9 @@ class Client(metaclass=Singleton):
                 )
                 resp = req.send()
                 if not resp.status == 200:
-                    logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
+                    logger.error(
+                        "adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body)
+                    )
                     raise DeviceAddError
                 logger.info("adding device '{}' to platform completed".format(device.id))
                 device_atr = json.loads(resp.body)
@@ -350,7 +376,12 @@ class Client(metaclass=Singleton):
             logger.info("deleting device '{}' from platform ...".format(device_id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device_endpt, cc_conf.device.id_prefix, http.urlEncode(device_id)),
+                url="https://{}/{}/{}-{}".format(
+                    cc_conf.api.host,
+                    cc_conf.api.device_endpt,
+                    cc_conf.device.id_prefix,
+                    http.urlEncode(device_id)
+                ),
                 method=http.Method.DELETE,
                 headers={"Authorization": "Bearer {}".format(access_token)},
                 timeout=cc_conf.api.req_timeout
@@ -361,10 +392,14 @@ class Client(metaclass=Singleton):
             elif resp.status == 404:
                 logger.warning("deleting device '{}' from platform - device not found".format(device_id))
             else:
-                logger.error("deleting device '{}' from platform failed - {} {}".format(device_id, resp.status, resp.body))
+                logger.error(
+                    "deleting device '{}' from platform failed - {} {}".format(device_id, resp.status, resp.body)
+                )
                 raise DeviceDeleteError
         except NoTokenError:
-            logger.error("deleting device '{}' from platform failed - could not retrieve access token".format(device_id))
+            logger.error(
+                "deleting device '{}' from platform failed - could not retrieve access token".format(device_id)
+            )
             raise DeviceDeleteError
         except (http.TimeoutErr, http.URLError) as ex:
             logger.error("deleting device '{}' from platform failed - {}".format(device_id, ex))
@@ -375,7 +410,12 @@ class Client(metaclass=Singleton):
             logger.info("updating device '{}' on platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device_endpt, cc_conf.device.id_prefix, http.urlEncode(device.id)),
+                url="https://{}/{}/{}-{}".format(
+                    cc_conf.api.host,
+                    cc_conf.api.device_endpt,
+                    cc_conf.device.id_prefix,
+                    http.urlEncode(device.id)
+                ),
                 method=http.Method.PUT,
                 body={
                     "id": device.remote_id,
@@ -396,7 +436,9 @@ class Client(metaclass=Singleton):
                 logger.error("updating device '{}' on platform failed - device not found".format(device.id))
                 raise DeviceNotFoundError
             else:
-                logger.error("updating device '{}' on platform failed - {} {}".format(device.id, resp.status, resp.body))
+                logger.error(
+                    "updating device '{}' on platform failed - {} {}".format(device.id, resp.status, resp.body)
+                )
                 raise DeviceUpdateError
         except NoTokenError:
             logger.error("updating device '{}' on platform failed - could not retrieve access token".format(device.id))
@@ -406,7 +448,12 @@ class Client(metaclass=Singleton):
             raise DeviceUpdateError
 
     def __onConnect(self) -> None:
-        logger.info("initializing communication completed - connected to '{}' on '{}'".format(cc_conf.connector.host, cc_conf.connector.port))
+        logger.info(
+            "initializing communication completed - connected to '{}' on '{}'".format(
+                cc_conf.connector.host,
+                cc_conf.connector.port
+            )
+        )
         sync_thread = threading.Thread(target=self.__connectOnlineDevices, name="connect-online-devices", daemon=True)
         sync_thread.start()
         if self.__connect_clbk:
@@ -451,7 +498,9 @@ class Client(metaclass=Singleton):
         __class__.__setMangledAttr(device, "connected_flag", False)
         logger.info("disconnecting device '{}' from platform ...".format(device.id))
         if not self.__comm:
-            logger.error("disconnecting device '{}' from platform failed - communication not initialized".format(device.id))
+            logger.error(
+                "disconnecting device '{}' from platform failed - communication not initialized".format(device.id)
+            )
             raise CommNotInitializedError
         message_ids = list()
         try:
@@ -465,7 +514,9 @@ class Client(metaclass=Singleton):
                     )
                 logger.info("disconnecting device '{}' from platform completed".format(device.id))
         except mqtt.NotConnectedError:
-            logger.error("disconnecting device '{}' from platform failed - communication not available".format(device.id))
+            logger.error(
+                "disconnecting device '{}' from platform failed - communication not available".format(device.id)
+            )
             raise DeviceDisconnectError
         except mqtt.UnsubscribeError as ex:
             logger.error("disconnecting device '{}' from platform failed - {}".format(device.id, ex))
@@ -475,7 +526,12 @@ class Client(metaclass=Singleton):
         futures = list()
         for device in self.__device_mgr.devices:
             if __class__.__getMangledAttr(device, "connected_flag"):
-                worker = Worker(target=self.__connectDevice, args=(device,), name="connect-device-{}".format(device.id), daemon=True)
+                worker = Worker(
+                    target=self.__connectDevice,
+                    args=(device,),
+                    name="connect-device-{}".format(device.id),
+                    daemon=True
+                )
                 futures.append(worker.start())
         # for future in futures:
         #     future.wait()
@@ -537,7 +593,12 @@ class Client(metaclass=Singleton):
         if not isDevice(device):
             raise TypeError(type(device))
         if asynchronous:
-            worker = Worker(target=self.__addDevice, args=(device, True), name="add-device-{}".format(device.id), daemon=True)
+            worker = Worker(
+                target=self.__addDevice,
+                args=(device, True),
+                name="add-device-{}".format(device.id),
+                daemon=True
+            )
             future = worker.start()
             return future
         else:
@@ -555,7 +616,12 @@ class Client(metaclass=Singleton):
         if not type(device) is str:
             raise TypeError(type(device))
         if asynchronous:
-            worker = Worker(target=self.__deleteDevice, args=(device, True), name="delete-device-{}".format(device), daemon=True)
+            worker = Worker(
+                target=self.__deleteDevice,
+                args=(device, True),
+                name="delete-device-{}".format(device),
+                daemon=True
+            )
             future = worker.start()
             return future
         else:
@@ -576,7 +642,12 @@ class Client(metaclass=Singleton):
         if not isDevice(device):
             raise TypeError(type(device))
         if asynchronous:
-            worker = Worker(target=self.__updateDevice, args=(device, ), name="update-device-{}".format(device.id), daemon=True)
+            worker = Worker(
+                target=self.__updateDevice,
+                args=(device, ),
+                name="update-device-{}".format(device.id),
+                daemon=True
+            )
             future = worker.start()
             return future
         else:
@@ -665,7 +736,12 @@ class Client(metaclass=Singleton):
         except KeyError:
             raise DeviceNotFoundError
         if asynchronous:
-            worker = Worker(target=self.__connectDevice, args=(device, ), name="connect-device-{}".format(device.id), daemon=True)
+            worker = Worker(
+                target=self.__connectDevice,
+                args=(device, ),
+                name="connect-device-{}".format(device.id),
+                daemon=True
+            )
             future = worker.start()
             return future
         else:
@@ -686,7 +762,12 @@ class Client(metaclass=Singleton):
         if not isDevice(device):
             raise TypeError(type(device))
         if asynchronous:
-            worker = Worker(target=self.__disconnectDevice, args=(device,), name="connect-device-{}".format(device.id), daemon=True)
+            worker = Worker(
+                target=self.__disconnectDevice,
+                args=(device,),
+                name="connect-device-{}".format(device.id),
+                daemon=True
+            )
             future = worker.start()
             return future
         else:
