@@ -140,7 +140,7 @@ class Client(metaclass=Singleton):
                     logger.info("generating hub name ...")
                     hub_name = "{}-{}".format(getuser(), datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
                 req = http.Request(
-                    url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.hub),
+                    url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.hub_endpt),
                     method=http.Method.POST,
                     body={
                         "id": None,
@@ -149,7 +149,9 @@ class Client(metaclass=Singleton):
                         "devices": list()
                     },
                     content_type=http.ContentType.json,
-                    headers={"Authorization": "Bearer {}".format(access_token)})
+                    headers={"Authorization": "Bearer {}".format(access_token)},
+                    timeout=cc_conf.api.req_timeout
+                )
                 resp = req.send()
                 if not resp.status == 200:
                     logger.error("initializing hub failed - {} {}".format(resp.status, resp.body))
@@ -164,9 +166,11 @@ class Client(metaclass=Singleton):
             else:
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 req = http.Request(
-                    url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, http.urlEncode(cc_conf.hub.id)),
+                    url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub_endpt, http.urlEncode(cc_conf.hub.id)),
                     method=http.Method.HEAD,
-                    headers={"Authorization": "Bearer {}".format(access_token)})
+                    headers={"Authorization": "Bearer {}".format(access_token)},
+                    timeout=cc_conf.api.req_timeout
+                )
                 resp = req.send()
                 if resp.status == 200:
                     self.__hub_init = True
@@ -215,10 +219,12 @@ class Client(metaclass=Singleton):
                 logger.debug("hash '{}'".format(devices_hash))
                 access_token = self.__auth.getAccessToken()
                 req = http.Request(
-                    url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, http.urlEncode(cc_conf.hub.id)),
+                    url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub_endpt, http.urlEncode(cc_conf.hub.id)),
                     method=http.Method.GET,
                     content_type=http.ContentType.json,
-                    headers={"Authorization": "Bearer {}".format(access_token)})
+                    headers={"Authorization": "Bearer {}".format(access_token)},
+                    timeout=cc_conf.api.req_timeout
+                )
                 resp = req.send()
                 if resp.status == 200:
                     hub = json.loads(resp.body)
@@ -230,7 +236,7 @@ class Client(metaclass=Singleton):
                         logger.debug("synchronizing hub - local hash differs from remote hash")
                         logger.info("synchronizing hub - updating devices ...")
                         req = http.Request(
-                            url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub, http.urlEncode(cc_conf.hub.id)),
+                            url="https://{}/{}/{}".format(cc_conf.api.host, cc_conf.api.hub_endpt, http.urlEncode(cc_conf.hub.id)),
                             method=http.Method.PUT,
                             body={
                                 "id": cc_conf.hub.id,
@@ -239,7 +245,9 @@ class Client(metaclass=Singleton):
                                 "devices": device_ids
                             },
                             content_type=http.ContentType.json,
-                            headers={"Authorization": "Bearer {}".format(access_token)})
+                            headers={"Authorization": "Bearer {}".format(access_token)},
+                            timeout=cc_conf.api.req_timeout
+                        )
                         if devices:
                             logger.debug("synchronizing hub - waiting 4s for eventual consistency")
                             time.sleep(4)
@@ -282,13 +290,15 @@ class Client(metaclass=Singleton):
             logger.info("adding device '{}' to platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.device.id_prefix, http.urlEncode(device.id)),
+                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device_endpt, cc_conf.device.id_prefix, http.urlEncode(device.id)),
                 method=http.Method.GET,
-                headers={"Authorization": "Bearer {}".format(access_token)})
+                headers={"Authorization": "Bearer {}".format(access_token)},
+                timeout=cc_conf.api.req_timeout
+            )
             resp = req.send()
             if resp.status == 404:
                 req = http.Request(
-                    url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.device),
+                    url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.device_endpt),
                     method=http.Method.POST,
                     body={
                         "name": device.name,
@@ -298,7 +308,9 @@ class Client(metaclass=Singleton):
                         # "img": device.img_url
                     },
                     content_type=http.ContentType.json,
-                    headers={"Authorization": "Bearer {}".format(access_token)})
+                    headers={"Authorization": "Bearer {}".format(access_token)},
+                    timeout=cc_conf.api.req_timeout
+                )
                 resp = req.send()
                 if not resp.status == 200:
                     logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
@@ -338,9 +350,11 @@ class Client(metaclass=Singleton):
             logger.info("deleting device '{}' from platform ...".format(device_id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.device.id_prefix, http.urlEncode(device_id)),
+                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device_endpt, cc_conf.device.id_prefix, http.urlEncode(device_id)),
                 method=http.Method.DELETE,
-                headers={"Authorization": "Bearer {}".format(access_token)})
+                headers={"Authorization": "Bearer {}".format(access_token)},
+                timeout=cc_conf.api.req_timeout
+            )
             resp = req.send()
             if resp.status == 200:
                 logger.info("deleting device '{}' from platform completed".format(device_id))
@@ -361,7 +375,7 @@ class Client(metaclass=Singleton):
             logger.info("updating device '{}' on platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.device.id_prefix, http.urlEncode(device.id)),
+                url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device_endpt, cc_conf.device.id_prefix, http.urlEncode(device.id)),
                 method=http.Method.PUT,
                 body={
                     "id": device.remote_id,
@@ -372,7 +386,9 @@ class Client(metaclass=Singleton):
                     # "img": device.img_url
                 },
                 content_type=http.ContentType.json,
-                headers={"Authorization": "Bearer {}".format(access_token)})
+                headers={"Authorization": "Bearer {}".format(access_token)},
+                timeout=cc_conf.api.req_timeout
+            )
             resp = req.send()
             if resp.status == 200:
                 logger.info("updating device '{}' on platform completed".format(device.id))
@@ -416,7 +432,13 @@ class Client(metaclass=Singleton):
         try:
             for service in device.services:
                 if service.input:
-                    message_ids.append(self.__comm.subscribe("command/{}/{}".format(__class__.__prefixDeviceID(device.id), service.uri)))
+                    message_ids.append(
+                        self.__comm.subscribe(
+                            topic="command/{}/{}".format(__class__.__prefixDeviceID(device.id), service.uri),
+                            qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
+                            timeout=cc_conf.connector.timeout
+                        )
+                    )
             logger.info("connecting device '{}' to platform completed".format(device.id))
         except mqtt.NotConnectedError:
             logger.error("connecting device '{}' to platform failed - communication not available".format(device.id))
@@ -435,7 +457,12 @@ class Client(metaclass=Singleton):
         try:
             for service in device.services:
                 if service.input:
-                    message_ids.append(self.__comm.unsubscribe("command/{}/{}".format(__class__.__prefixDeviceID(device.id), service.uri)))
+                    message_ids.append(
+                        self.__comm.unsubscribe(
+                            topic="command/{}/{}".format(__class__.__prefixDeviceID(device.id), service.uri),
+                            timeout=cc_conf.connector.timeout
+                        )
+                    )
                 logger.info("disconnecting device '{}' from platform completed".format(device.id))
         except mqtt.NotConnectedError:
             logger.error("disconnecting device '{}' from platform failed - communication not available".format(device.id))
