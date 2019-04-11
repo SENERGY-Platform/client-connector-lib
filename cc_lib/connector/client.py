@@ -27,7 +27,12 @@ from .protocol import http, mqtt
 from cc_lib import __version__ as VERSION
 from typing import Callable, Union, Any, Tuple, List
 from getpass import getuser
-import datetime, hashlib, base64, json, time, threading
+import datetime
+import hashlib
+import base64
+import json
+import time
+import threading
 
 
 logger = _getLibLogger(__name__.split(".", 1)[-1])
@@ -809,7 +814,7 @@ class Client(metaclass=Singleton):
     def __prefixDeviceID(device_id: str) -> str:
         """
         Prefix a ID.
-        :param device: device ID.
+        :param device_id: device ID.
         :return: prefixed device ID.
         """
         return "{}-{}".format(cc_conf.device.id_prefix, device_id)
