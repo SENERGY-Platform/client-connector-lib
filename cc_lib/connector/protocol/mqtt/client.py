@@ -20,7 +20,8 @@ from ....logger.logger import _getLibLogger
 from paho.mqtt.client import Client as PahoClient
 from paho.mqtt.client import error_string, connack_string, MQTTMessage, MQTTMessageInfo, MQTT_ERR_SUCCESS, MQTT_ERR_NO_CONN
 from threading import Event
-import socket
+from typing import Any
+from socket import error as SocketError
 
 
 logger = _getLibLogger(__name__.split('.', 1)[-1])
@@ -50,7 +51,7 @@ class UnsubscribeError(MqttClientError):
 
 
 class Client:
-    def __init__(self, client_id: str, clean_session=True, userdata=None, reconnect_delay=120):
+    def __init__(self, client_id: str, clean_session: bool = True, userdata: Any = None, reconnect_delay: int = 120):
         self.__mqtt = PahoClient(client_id=client_id, clean_session=clean_session, userdata=userdata)
         self.__mqtt.enable_logger(logger)
         self.__mqtt.reconnect_delay_set(min_delay=1, max_delay=reconnect_delay)
@@ -64,18 +65,18 @@ class Client:
         self.on_connect = None
         self.on_disconnect = None
 
-    def connect(self, host, port, usr, pw, tls, keepalive):
+    def connect(self, host: str, port: int, usr: str, pw: str, tls: bool, keepalive: int) -> None:
         if tls:
             self.__mqtt.tls_set()
         self.__mqtt.username_pw_set(usr, pw)
         self.__mqtt.connect_async(host=host, port=port, keepalive=keepalive)
         self.__mqtt.loop_start()
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         self.__mqtt.disconnect()
         self.__mqtt.loop_stop()
 
-    def subscribe(self, topic: str, qos: int, timeout: int):
+    def subscribe(self, topic: str, qos: int, timeout: int) -> None:
         try:
             res = self.__mqtt.subscribe(topic=topic, qos=qos)
             if res[0] == MQTT_ERR_SUCCESS:
@@ -88,10 +89,10 @@ class Client:
                 logger.debug("subscribe request for '{}' successful".format(topic, res[1]))
             if res[0] == MQTT_ERR_NO_CONN:
                 raise NotConnectedError
-        except socket.error as ex:
+        except SocketError as ex:
             raise SubscribeError(ex)
 
-    def unsubscribe(self, topic: str, timeout: int):
+    def unsubscribe(self, topic: str, timeout: int) -> None:
         try:
             res = self.__mqtt.unsubscribe(topic=topic)
             if res[0] == MQTT_ERR_SUCCESS:
@@ -104,14 +105,14 @@ class Client:
                 logger.debug("unsubscribe request for '{}' successful".format(topic, res[1]))
             if res[0] == MQTT_ERR_NO_CONN:
                 raise NotConnectedError
-        except socket.error as ex:
+        except SocketError as ex:
             raise UnsubscribeError(ex)
 
     def publish(self, topic: str, payload: str = None, qos: int = 1, retain: bool = False):
         msg_info = self.__mqtt.publish(topic=topic, payload=payload, qos=qos, retain=retain)
         msg_info.wait_for_publish()
 
-    def __connectClbk(self, client: PahoClient, userdata, flags: dict, rc: int):
+    def __connectClbk(self, client: PahoClient, userdata: Any, flags: dict, rc: int) -> None:
         if rc == 0:
             logger.debug(connack_string(rc).replace(".", "").lower())
             logger.debug(flags)
@@ -120,17 +121,17 @@ class Client:
         else:
             logger.error(connack_string(rc).replace(".", "").lower())
 
-    def __disconnectClbk(self, client: PahoClient, userdata, rc: int):
+    def __disconnectClbk(self, client: PahoClient, userdata: Any, rc: int) -> None:
         if self.on_disconnect:
             self.on_disconnect(rc)
 
-    def __messageClbk(self, client: PahoClient, userdata, message: MQTTMessage):
+    def __messageClbk(self, client: PahoClient, userdata: Any, message: MQTTMessage) -> None:
         pass
         # called when a message has been received on a
         #   topic that the client subscribes to. The message variable is a
         #   MQTTMessage that describes all of the message parameters.
 
-    def __publishClbk(self, client: PahoClient, userdata, mid: int):
+    def __publishClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
         pass
         # called when a message that was to be sent using the
         #   publish() call has completed transmission to the broker. For messages
@@ -141,14 +142,14 @@ class Client:
         #   This callback is important because even if the publish() call returns
         #   success, it does not always mean that the message has been sent.
 
-    def __subscribeClbk(self, client: PahoClient, userdata, mid: int, granted_qos: int):
+    def __subscribeClbk(self, client: PahoClient, userdata: Any, mid: int, granted_qos: int) -> None:
         try:
             event = self.__events[mid]
             event.set()
         except KeyError:
             pass
 
-    def __unsubscribeClbk(self, client: PahoClient, userdata, mid: int):
+    def __unsubscribeClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
         try:
             event = self.__events[mid]
             event.set()
