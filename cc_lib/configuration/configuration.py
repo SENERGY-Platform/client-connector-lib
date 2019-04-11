@@ -39,6 +39,8 @@ class ConnectorConf:
         tls: bool = True
         reconn_delay: int = 120
         keepalive: int = 20
+        timeout: int = 30
+        qos: int = "normal"
 
     @section
     class auth:
@@ -65,8 +67,9 @@ class ConnectorConf:
     @section
     class api:
         host: str = None
-        hub: str = None
-        device: str = None
+        hub_endpt: str = None
+        device_endpt: str = None
+        req_timeout: int = 30
 
     @section
     class device:
