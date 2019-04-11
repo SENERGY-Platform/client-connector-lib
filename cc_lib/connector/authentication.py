@@ -43,20 +43,20 @@ class NoTokenError(OpenIdError):
 
 
 class Token:
-    def __init__(self, token, max_age):
+    def __init__(self, token: str, max_age: int):
         self.token = token
         self.max_age = max_age
         self.time_stamp = int(currentTimeStamp())
 
 
 class OpenIdClient:
-    def __init__(self, url, usr, pw, id):
+    def __init__(self, url: str, usr: str, pw: str, id: str):
         self.__url = url
         self.__usr = usr
         self.__pw = pw
         self.__id = id
-        self.__access_token: Token = None
-        self.__refresh_token: Token = None
+        self.__access_token = None
+        self.__refresh_token = None
         self.__token_type = None
         self.__not_before_policy = None
         self.__session_state = None
@@ -77,7 +77,7 @@ class OpenIdClient:
         except (RequestError, ResponseError) as ex:
             raise NoTokenError(ex)
 
-    def __setResponse(self, payload):
+    def __setResponse(self, payload: str) -> None:
         try:
             payload = json.loads(payload)
             self.__access_token = Token(payload['access_token'], payload['expires_in'])
@@ -92,7 +92,7 @@ class OpenIdClient:
             logger.error("malformed response - missing key {}".format(ex))
             raise ResponseError
 
-    def __request(self, r_type, payload):
+    def __request(self, r_type: str, payload: dict) -> None:
         req = http.Request(
             url=self.__url,
             method=http.Method.POST,
@@ -111,7 +111,7 @@ class OpenIdClient:
             logger.error('{} request failed - {}'.format(r_type, ex))
             raise RequestError
 
-    def __tokenRequest(self):
+    def __tokenRequest(self) -> None:
         payload = {
             'grant_type': 'password',
             'username': self.__usr,
@@ -120,7 +120,7 @@ class OpenIdClient:
         }
         self.__request('token', payload)
 
-    def __refreshRequest(self):
+    def __refreshRequest(self) -> None:
         payload = {
             'grant_type': 'refresh_token',
             'client_id': self.__id,
