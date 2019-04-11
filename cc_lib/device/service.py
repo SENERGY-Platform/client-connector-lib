@@ -17,7 +17,7 @@
 __all__ = ('Service', )
 
 
-from typing import Union
+from typing import Union, Type
 
 
 class Service:
@@ -65,12 +65,12 @@ class Service:
         return self.__description
 
     @description.setter
-    def description(self, text: str):
+    def description(self, text: str) -> None:
         __class__.__checkType(text, str)
         self.__description = text
 
     @staticmethod
-    def __checkType(arg, typ):
+    def __checkType(arg: object, typ: Type) -> None:
         """
         Check if arg is the correct type. Raise exception if not.
         :param: arg: object to check
