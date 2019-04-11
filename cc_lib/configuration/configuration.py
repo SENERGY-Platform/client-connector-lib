@@ -79,7 +79,7 @@ class ConnectorConf:
 cc_conf = ConnectorConf(conf_file='connector.conf', user_path=user_dir, ext_aft_crt=True, init=False)
 
 
-def initConnectorConf():
+def initConnectorConf() -> None:
     if not path_exists(user_dir):
         makedirs(user_dir)
     initConfig(cc_conf)
