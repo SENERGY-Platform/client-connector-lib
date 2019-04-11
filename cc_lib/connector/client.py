@@ -283,7 +283,7 @@ class Client(metaclass=Singleton):
             access_token = self.__auth.getAccessToken()
             req = http.Request(
                 url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.device.id_prefix, http.urlEncode(device.id)),
-                method=http.Method.HEAD,
+                method=http.Method.GET,
                 headers={"Authorization": "Bearer {}".format(access_token)})
             resp = req.send()
             if resp.status == 404:
@@ -291,10 +291,11 @@ class Client(metaclass=Singleton):
                     url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.device),
                     method=http.Method.POST,
                     body={
-                        "device_type": device.type,
                         "name": device.name,
+                        "device_type": device.type,
                         "uri": "{}-{}".format(cc_conf.device.id_prefix, device.id),
                         "tags": device.tags
+                        # "img": device.img_url
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)})
@@ -303,11 +304,17 @@ class Client(metaclass=Singleton):
                     logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
                     raise DeviceAddError
                 logger.info("adding device '{}' to platform completed".format(device.id))
+                device_atr = json.loads(resp.body)
+                __class__.__setMangledAttr(device, "remote_id", device_atr["id"])
                 self.__device_mgr.add(device)
             elif resp.status == 200:
-                logger.warning("adding device '{}' to platform - device already on platform".format(device.id))
+                logger.warning("adding device '{}' to platform - device exists - updating device ...".format(device.id))
                 self.__device_mgr.add(device)
-                ################ update device??? ##################
+                device_atr = json.loads(resp.body)
+                __class__.__setMangledAttr(device, "remote_id", device_atr["id"])
+                # if not device.img_url == device_atr["img"]:
+                #     device.img_url = device_atr["img"]
+                self.__updateDevice(device)
             else:
                 logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
                 raise DeviceAddError
@@ -317,6 +324,10 @@ class Client(metaclass=Singleton):
         except (http.TimeoutErr, http.URLError) as ex:
             logger.error("adding device '{}' to platform failed - {}".format(device.id, ex))
             raise DeviceAddError
+        except json.JSONDecodeError as ex:
+            logger.warning("adding device '{}' to platform - could not decode response - {}".format(device.id, ex))
+        except KeyError as ex:
+            logger.warning("adding device '{}' to platform - malformed response - missing key {}".format(device.id, ex))
 
     def __deleteDevice(self, device_id, worker=False):
         self.__hub_sync_event.wait()
@@ -353,10 +364,12 @@ class Client(metaclass=Singleton):
                 url="https://{}/{}/{}-{}".format(cc_conf.api.host, cc_conf.api.device, cc_conf.device.id_prefix, http.urlEncode(device.id)),
                 method=http.Method.PUT,
                 body={
-                    "device_type": device.type,
+                    "id": device.remote_id,
                     "name": device.name,
+                    "device_type": device.type,
                     "uri": "{}-{}".format(cc_conf.device.id_prefix, device.id),
                     "tags": device.tags
+                    # "img": device.img_url
                 },
                 content_type=http.ContentType.json,
                 headers={"Authorization": "Bearer {}".format(access_token)})
