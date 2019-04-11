@@ -67,7 +67,7 @@ usr_logger.propagate = False
 usr_logger.addHandler(stream_handler)
 
 
-def initLogging():
+def initLogging() -> None:
     lib_logger.setLevel(logging_levels[cc_conf.logger.level])
     if cc_conf.logger.rotating_log:
         lock.acquire()
@@ -89,7 +89,7 @@ def initLogging():
         lock.release()
 
 
-def _getLibHandler():
+def _getLibHandler() -> logging.Handler:
     lock.acquire()
     log_handler = lib_logger.handlers[0]
     lock.release()
