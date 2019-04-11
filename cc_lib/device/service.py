@@ -17,7 +17,7 @@
 __all__ = ('Service', )
 
 
-from typing import Union, NoReturn
+from typing import Union
 
 
 class Service:
@@ -51,12 +51,12 @@ class Service:
         return self.__name
 
     @property
-    def input(self) -> Union[dict, NoReturn]:
+    def input(self) -> Union[dict, None]:
         if self.__input:
             return self.__input.copy()
 
     @property
-    def output(self) -> Union[dict, NoReturn]:
+    def output(self) -> Union[dict, None]:
         if self.__output:
             return self.__output.copy()
 

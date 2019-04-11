@@ -16,7 +16,7 @@
 
 from ..logger.logger import _getLibLogger
 from ..device.device import Device
-from typing import Union
+from typing import Union, Tuple, List
 from threading import Lock
 
 
@@ -81,7 +81,7 @@ class DeviceManager:
         self.__lock.release()
 
     @property
-    def devices(self) -> tuple:
+    def devices(self) -> Tuple[Device]:
         self.__lock.acquire()
         devices = self.__device_pool.values()
         self.__lock.release()

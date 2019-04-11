@@ -25,7 +25,7 @@ from .singleton import Singleton
 from .authentication import OpenIdClient, NoTokenError
 from .protocol import http, mqtt
 from cc_lib import __version__ as VERSION
-from typing import Callable, Union, Any, Tuple
+from typing import Callable, Union, Any, Tuple, List
 from getpass import getuser
 import datetime, hashlib, base64, json, time, threading
 
@@ -50,10 +50,10 @@ class Future:
     def running(self) -> bool:
         return not self.__thread.done
 
-    def wait(self, timeout: float = None):
+    def wait(self, timeout: float = None) -> None:
         self.__thread.join(timeout)
 
-    def addDoneCallback(self, func: Callable):
+    def addDoneCallback(self, func: Callable[[], None]) -> None:
         self.__thread.callback = func
 
 
@@ -129,7 +129,7 @@ class Client(metaclass=Singleton):
 
     # ------------- internal methods ------------- #
 
-    def __initHub(self):
+    def __initHub(self) -> None:
         try:
             logger.info("initializing hub ...")
             access_token = self.__auth.getAccessToken()
@@ -195,7 +195,7 @@ class Client(metaclass=Singleton):
             logger.error("initializing hub failed - malformed response - missing key {}".format(ex))
             raise HubInitializationError
 
-    def __syncHub(self):
+    def __syncHub(self) -> None:
         self.__hub_sync_lock.acquire()
         if not self.__hub_init:
             self.__hub_sync_lock.release()
@@ -282,7 +282,7 @@ class Client(metaclass=Singleton):
         self.__hub_sync_event.set()
         self.__hub_sync_lock.release()
 
-    def __addDevice(self, device, worker=False):
+    def __addDevice(self, device: Device, worker: bool = False) -> None:
         self.__hub_sync_event.wait()
         if worker:
             self.__workers.append(threading.current_thread())
@@ -341,7 +341,7 @@ class Client(metaclass=Singleton):
         except KeyError as ex:
             logger.warning("adding device '{}' to platform - malformed response - missing key {}".format(device.id, ex))
 
-    def __deleteDevice(self, device_id, worker=False):
+    def __deleteDevice(self, device_id: str, worker: bool = False) -> None:
         self.__hub_sync_event.wait()
         if worker:
             self.__workers.append(threading.current_thread())
@@ -370,7 +370,7 @@ class Client(metaclass=Singleton):
             logger.error("deleting device '{}' from platform failed - {}".format(device_id, ex))
             raise DeviceDeleteError
 
-    def __updateDevice(self, device):
+    def __updateDevice(self, device: Device) -> None:
         try:
             logger.info("updating device '{}' on platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
@@ -405,15 +405,15 @@ class Client(metaclass=Singleton):
             logger.error("updating device '{}' on platform failed - {}".format(device.id, ex))
             raise DeviceUpdateError
 
-    def __onConnect(self):
-        logger.info("starting communication completed - connected to '{}' on '{}'".format(cc_conf.connector.host, cc_conf.connector.port))
+    def __onConnect(self) -> None:
+        logger.info("initializing communication completed - connected to '{}' on '{}'".format(cc_conf.connector.host, cc_conf.connector.port))
         sync_thread = threading.Thread(target=self.__connectOnlineDevices, name="connect-online-devices", daemon=True)
         sync_thread.start()
         if self.__connect_clbk:
             clbk_thread = threading.Thread(target=self.__connect_clbk, name="user-connect-callback", daemon=True)
             clbk_thread.start()
 
-    def __onDisconnect(self, reason):
+    def __onDisconnect(self, reason: int) -> None:
         if reason > 0:
             logger.warning("communication stopped unexpectedly")
         else:
@@ -422,7 +422,7 @@ class Client(metaclass=Singleton):
             clbk_thread = threading.Thread(target=self.__disconnect_clbk, name="user-disconnect-callback", daemon=True)
             clbk_thread.start()
 
-    def __connectDevice(self, device):
+    def __connectDevice(self, device: Device) -> None:
         __class__.__setMangledAttr(device, "connected_flag", True)
         logger.info("connecting device '{}' to platform ...".format(device.id))
         if not self.__comm:
@@ -447,7 +447,7 @@ class Client(metaclass=Singleton):
             logger.error("connecting device '{}' to platform failed - {}".format(device.id, ex))
             raise DeviceConnectError
 
-    def __disconnectDevice(self, device):
+    def __disconnectDevice(self, device: Device) -> None:
         __class__.__setMangledAttr(device, "connected_flag", False)
         logger.info("disconnecting device '{}' from platform ...".format(device.id))
         if not self.__comm:
@@ -471,7 +471,7 @@ class Client(metaclass=Singleton):
             logger.error("disconnecting device '{}' from platform failed - {}".format(device.id, ex))
             raise DeviceDisconnectError
 
-    def __connectOnlineDevices(self):
+    def __connectOnlineDevices(self) -> None:
         futures = list()
         for device in self.__device_mgr.devices:
             if __class__.__getMangledAttr(device, "connected_flag"):
@@ -482,7 +482,7 @@ class Client(metaclass=Singleton):
 
     # ------------- user methods ------------- #
 
-    def setConnectClbk(self, func: Callable):
+    def setConnectClbk(self, func: Callable[[], None]) -> None:
         """
         Set a callback function to be called when the client successfully connects to the platform.
         :param func: User function.
@@ -491,7 +491,7 @@ class Client(metaclass=Singleton):
         with self.__set_clbk_lock:
             self.__connect_clbk = func
 
-    def setDisconnectClbk(self, func: Callable):
+    def setDisconnectClbk(self, func: Callable[[], None]) -> None:
         """
         Set a callback function to be called when the client disconnects from the platform.
         :param func: User function.
@@ -607,7 +607,7 @@ class Client(metaclass=Singleton):
         """
         return tuple(device.id for device in self.__device_mgr.devices)
 
-    def initComm(self):
+    def initComm(self) -> None:
         """
         Initiate communication with platform. Raise exceptions if hub isn't initialized or if communication
         already initialized.
@@ -636,7 +636,7 @@ class Client(metaclass=Singleton):
         )
         self.__comm_init = True
 
-    def stopComm(self):
+    def stopComm(self) -> None:
         """
         Stop communication with platform. Call initComm to reinitialize  communication.
         :return: None.
@@ -714,7 +714,7 @@ class Client(metaclass=Singleton):
     # ------------- class / static methods ------------- #
 
     @staticmethod
-    def __hashDevices(devices) -> str:
+    def __hashDevices(devices: Union[Tuple[Device], List[Device]]) -> str:
         """
         Hash attributes of the provided devices with SHA1.
         :param devices: List or tuple of devices.
@@ -725,7 +725,7 @@ class Client(metaclass=Singleton):
         return hashlib.sha1("".join(hashes).encode()).hexdigest()
 
     @staticmethod
-    def __prefixDeviceID(device_id) -> str:
+    def __prefixDeviceID(device_id: str) -> str:
         """
         Prefix a ID.
         :param device: device ID.
@@ -734,7 +734,7 @@ class Client(metaclass=Singleton):
         return "{}-{}".format(cc_conf.device.id_prefix, device_id)
 
     @staticmethod
-    def __getMangledAttr(obj, attr):
+    def __getMangledAttr(obj: object, attr: str) -> None:
         """
         Read mangled attribute.
         :param obj: Object with mangled attributes.
@@ -744,7 +744,7 @@ class Client(metaclass=Singleton):
         return getattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr))
 
     @staticmethod
-    def __setMangledAttr(obj, attr, arg):
+    def __setMangledAttr(obj: object, attr: str, arg: Any) -> None:
         """
         Write to mangled attribute.
         :param obj: Object with mangled attributes.
