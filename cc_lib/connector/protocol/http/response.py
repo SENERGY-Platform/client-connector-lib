@@ -16,21 +16,21 @@
 
 
 class Response:
-    def __init__(self, status, body=None, headers=None):
+    def __init__(self, status: int, body: str = None, headers: dict = None):
         self.__headers = headers
         self.__body = body
         self.__status = status
 
     @property
-    def body(self):
+    def body(self) -> str:
         return self.__body
 
     @property
-    def headers(self):
+    def headers(self) -> dict:
         return self.__headers
 
     @property
-    def status(self):
+    def status(self) -> int:
         return self.__status
 
     def __repr__(self):
