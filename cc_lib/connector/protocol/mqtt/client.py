@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('Client', 'NotConnectedError', 'SubscribeError', 'UnsubscribeError')
+__all__ = ('Client', 'NotConnectedError', 'SubscribeError', 'UnsubscribeError', 'qos_map')
 
 from ....logger.logger import _getLibLogger
 from paho.mqtt.client import Client as PahoClient
@@ -24,6 +24,13 @@ import socket
 
 
 logger = _getLibLogger(__name__.split('.', 1)[-1])
+
+
+qos_map = {
+    "low": 0,
+    "normal": 1,
+    "high": 2
+}
 
 
 class MqttClientError(Exception):
@@ -68,7 +75,7 @@ class Client:
         self.__mqtt.disconnect()
         self.__mqtt.loop_stop()
 
-    def subscribe(self, topic: str, qos: int = 1, timeout=30):
+    def subscribe(self, topic: str, qos: int, timeout: int):
         try:
             res = self.__mqtt.subscribe(topic=topic, qos=qos)
             if res[0] == MQTT_ERR_SUCCESS:
@@ -84,7 +91,7 @@ class Client:
         except socket.error as ex:
             raise SubscribeError(ex)
 
-    def unsubscribe(self, topic: str, timeout=30):
+    def unsubscribe(self, topic: str, timeout: int):
         try:
             res = self.__mqtt.unsubscribe(topic=topic)
             if res[0] == MQTT_ERR_SUCCESS:
