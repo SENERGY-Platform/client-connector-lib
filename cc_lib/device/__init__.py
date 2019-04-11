@@ -16,10 +16,8 @@
 
 from .device import *
 from .service import *
-from .type import *
 
 __all__ = (
     device.__all__,
-    service.__all__,
-    type.__all__
+    service.__all__
 )
