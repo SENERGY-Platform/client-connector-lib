@@ -779,22 +779,12 @@ class Client(metaclass=Singleton):
             self.__disconnectDevice(device)
 
     def emmitEvent(self, asynchronous: bool = False) -> Union[Future, None]:
-        """
-
-        :param asynchronous:
-        :return:
-        """
         pass
 
     def receiveCommand(self):
         pass
 
     def sendResponse(self, asynchronous: bool = False) -> Union[Future, None]:
-        """
-
-        :param asynchronous:
-        :return:
-        """
         pass
 
     # ------------- class / static methods ------------- #
