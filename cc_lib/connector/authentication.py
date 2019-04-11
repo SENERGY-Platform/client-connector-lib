@@ -17,6 +17,7 @@
 __all__ = ('OpenIdClient', 'NoTokenError')
 
 from ..logger.logger import _getLibLogger
+from ..configuration.configuration import cc_conf
 from .protocol import http
 from time import time as currentTimeStamp
 import json
@@ -92,7 +93,13 @@ class OpenIdClient:
             raise ResponseError
 
     def __request(self, r_type, payload):
-        req = http.Request(url=self.__url, method=http.Method.POST, body=payload, content_type=http.ContentType.form)
+        req = http.Request(
+            url=self.__url,
+            method=http.Method.POST,
+            body=payload,
+            content_type=http.ContentType.form,
+            timeout=cc_conf.api.req_timeout
+        )
         try:
             resp = req.send()
             if resp.status == 200:
