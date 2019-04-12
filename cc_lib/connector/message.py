@@ -14,47 +14,34 @@
    limitations under the License.
 """
 
-from ..logger.logger import _getLibLogger
+from typing import Union
 from uuid import uuid4 as uuid
-import json
-
-
-logger = _getLibLogger(__name__.split('.', 1)[-1])
 
 
 class Message:
-    """
-    Class mapping the message (or envelope) structure used by the platform.
-    """
-    def __init__(self, handler=str()):
-        """
-        Create a Message object. Attributes must be set after instantiation.
-        Users can only access 'status', 'content_type', 'payload'.
-        :param handler: Optional handler. Use platform handlers map above.
-        """
-        self.__status = int()
-        self.__handler = handler
-        self.__token = str(uuid())
-        self.__content_type = str()
-        self.__payload = None
+    def __init__(self, data: str, metadata: str):
+        self.metadata = metadata
+        self.data = data
 
     @property
-    def status(self):
-        return self.__status
+    def metadata(self) -> str:
+        return self.__metadata
+
+    @metadata.setter
+    def metadata(self, arg: str):
+        if not type(arg) is str:
+            raise TypeError(type(arg))
+        self.__metadata = arg
 
     @property
-    def content_type(self):
-        return self.__content_type
+    def data(self) -> str:
+        return self.__data
 
-    @property
-    def payload(self):
-        return self.__payload
-
-    @payload.setter
-    def payload(self, arg):
-        if type(arg) not in (int, str, dict, list, bool, float, type(None)):
-            raise TypeError("unsupported type '{}' provided for payload".format(type(arg)))
-        self.__payload = arg
+    @data.setter
+    def data(self, arg: str):
+        if not type(arg) is str:
+            raise TypeError(type(arg))
+        self.__data = arg
 
     def __repr__(self):
         """
@@ -62,55 +49,64 @@ class Message:
         :return: String.
         """
         attributes = [
-            ('status', self.status),
-            ('content_type', self.content_type),
-            ('payload', self.payload),
+            ('metadata', self.metadata),
+            ('data', self.data)
         ]
         return "{}({})".format(__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
 
 
-def getMangledAttr(obj, attr):
-    """
-    Read mangled attribute.
-    :param obj: Object with mangled attributes.
-    :param attr: Name of mangled attribute.
-    :return: value of mangled attribute.
-    """
-    return getattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr))
+class Envelope:
+    def __init__(self, device_id: str, service_uri: str, message: Message, corr_id: Union[str, None] = None):
+        if corr_id and not type(corr_id) is str:
+            raise TypeError(type(corr_id))
+        self.__correlation_id = corr_id or uuid().hex
+        self.device_id = device_id
+        self.service_uri = service_uri
+        self.message = message
 
+    @property
+    def correlation_id(self) -> str:
+        return self.__correlation_id
 
-def setMangledAttr(obj, attr, arg):
-    """
-    Write to mangled attribute.
-    :param obj: Object with mangled attributes.
-    :param attr: Name of mangled attribute.
-    :param arg: value to be written.
-    """
-    setattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr), arg)
+    @property
+    def device_id(self) -> str:
+        return self.__device_id
 
+    @device_id.setter
+    def device_id(self, arg: str):
+        if not type(arg) is str:
+            raise TypeError(type(arg))
+        self.__device_id = arg
 
-def marshalMsg(msg_obj: Message) -> str:
-    """
-    Marshal a Message object to JSON.
-    :param msg_obj: Message object.
-    :return: String.
-    """
-    return json.dumps({key.replace('_{}__'.format(msg_obj.__class__.__name__), ''): msg_obj.__dict__[key] for key in msg_obj.__dict__})
+    @property
+    def service_uri(self) -> str:
+        return self.__service_uri
 
+    @service_uri.setter
+    def service_uri(self, arg):
+        if not type(arg) is str:
+            raise TypeError(type(arg))
+        self.__service_uri = arg
 
-def unmarshalMsg(msg_str: str) -> Message:
-    """
-    Unmarshal JSON message.
-    :param msg_str: JSON message as string.
-    :return: Message object.
-    """
-    try:
-        msg = json.loads(msg_str)
-        msg_obj = Message()
-        for key in msg:
-            if msg[key]:
-                setMangledAttr(msg_obj, key, msg[key])
-        return msg_obj
-    except Exception as ex:
-        logger.error("malformed message: '{}'".format(msg_str))
-        logger.debug(ex)
+    @property
+    def message(self) -> Message:
+        return self.__message
+
+    @message.setter
+    def message(self, arg):
+        if not type(arg) is Message:
+            raise TypeError(type(arg))
+        self.__message = arg
+
+    def __repr__(self):
+        """
+        Provide a string representation.
+        :return: String.
+        """
+        attributes = [
+            ('correlation_id', self.correlation_id),
+            ('device_id', self.device_id),
+            ('service_uri', self.service_uri),
+            ('message', self.message)
+        ]
+        return "{}({})".format(__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
