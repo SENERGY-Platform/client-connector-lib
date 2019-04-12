@@ -18,7 +18,7 @@
 __all__ = ("Message", "Envelope")
 
 
-from typing import Optional
+from typing import Optional, Type
 from uuid import uuid4 as uuid
 
 
@@ -33,8 +33,7 @@ class Message:
 
     @metadata.setter
     def metadata(self, arg: str):
-        if not type(arg) is str:
-            raise TypeError(type(arg))
+        __class__.__checkType(arg, str)
         self.__metadata = arg
 
     @property
@@ -43,9 +42,18 @@ class Message:
 
     @data.setter
     def data(self, arg: str):
-        if not type(arg) is str:
-            raise TypeError(type(arg))
+        __class__.__checkType(arg, str)
         self.__data = arg
+
+    @staticmethod
+    def __checkType(arg: object, typ: Type) -> None:
+        """
+        Check if arg is the correct type. Raise exception if not.
+        :param: arg: object to check
+        :param: typ: type
+        """
+        if not type(arg) is typ:
+            raise TypeError(type(arg))
 
     def __repr__(self):
         """
@@ -61,11 +69,13 @@ class Message:
 
 class Envelope:
     def __init__(self, device_id: str, service_uri: str, message: Message, corr_id: Optional[str] = None):
-        if corr_id and not type(corr_id) is str:
-            raise TypeError(type(corr_id))
+        __class__.__checkType(device_id, str)
+        __class__.__checkType(service_uri, str)
+        if corr_id:
+            __class__.__checkType(corr_id, str)
         self.__correlation_id = corr_id or uuid().hex
-        self.device_id = device_id
-        self.service_uri = service_uri
+        self.__device_id = device_id
+        self.__service_uri = service_uri
         self.message = message
 
     @property
@@ -76,21 +86,9 @@ class Envelope:
     def device_id(self) -> str:
         return self.__device_id
 
-    @device_id.setter
-    def device_id(self, arg: str):
-        if not type(arg) is str:
-            raise TypeError(type(arg))
-        self.__device_id = arg
-
     @property
     def service_uri(self) -> str:
         return self.__service_uri
-
-    @service_uri.setter
-    def service_uri(self, arg):
-        if not type(arg) is str:
-            raise TypeError(type(arg))
-        self.__service_uri = arg
 
     @property
     def message(self) -> Message:
@@ -98,9 +96,18 @@ class Envelope:
 
     @message.setter
     def message(self, arg):
-        if not type(arg) is Message:
-            raise TypeError(type(arg))
+        __class__.__checkType(arg, Message)
         self.__message = arg
+
+    @staticmethod
+    def __checkType(arg: object, typ: Type) -> None:
+        """
+        Check if arg is the correct type. Raise exception if not.
+        :param: arg: object to check
+        :param: typ: type
+        """
+        if not type(arg) is typ:
+            raise TypeError(type(arg))
 
     def __repr__(self):
         """
