@@ -24,9 +24,11 @@ from .device_mgr import DeviceManager, isDevice
 from .singleton import Singleton
 from .authentication import OpenIdClient, NoTokenError
 from .protocol import http, mqtt
+from .message import Envelope, Message
 from cc_lib import __version__ as VERSION
 from typing import Callable, Union, Any, Tuple, List
 from getpass import getuser
+from queue import Queue
 import datetime
 import hashlib
 import base64
@@ -122,6 +124,7 @@ class Client(metaclass=Singleton):
         )
         self.__device_mgr = DeviceManager()
         self.__comm = None
+        self.__cmd_queue = Queue()
         self.__workers = list()
         self.__hub_sync_event = threading.Event()
         self.__hub_sync_event.set()
@@ -531,6 +534,26 @@ class Client(metaclass=Singleton):
         # for future in futures:
         #     future.wait()
 
+    def __parseCommand(self, envelope: Union[str, bytes], uri: Union[str, bytes]) -> None:
+        try:
+            uri = uri.split("/")
+            envelope = json.loads(envelope)
+            self.__cmd_queue.put_nowait(
+                Envelope(
+                    device_id=__class__.__parseDeviceID(uri[1]),
+                    service_uri=uri[2],
+                    message=Message(
+                        data=envelope["payload"].setdefault("data", str()),
+                        metadata=envelope["payload"].setdefault("metadata", str())
+                    ),
+                    corr_id=envelope["correlation_id"]
+                )
+            )
+        except json.JSONDecodeError as ex:
+            logger.error(ex)
+        except (KeyError, AttributeError) as ex:
+            logger.error(ex)
+
     # ------------- user methods ------------- #
 
     def setConnectClbk(self, func: Callable[[], None]) -> None:
@@ -686,9 +709,10 @@ class Client(metaclass=Singleton):
             logger.error("communication already initialized")
             raise CommInitializedError
         if not self.__comm:
-            self.__comm = mqtt.Client(cc_conf.hub.id, reconnect_delay=cc_conf.connector.reconn_delay)
+            self.__comm = mqtt.Client(client_id=cc_conf.hub.id, reconnect_delay=cc_conf.connector.reconn_delay)
             self.__comm.on_connect = self.__onConnect
             self.__comm.on_disconnect = self.__onDisconnect
+            self.__comm.on_message = self.__parseCommand
         logger.info("initializing communication ...")
         if not cc_conf.connector.tls:
             logger.warning("initializing communication - TLS encryption disabled")
@@ -794,10 +818,19 @@ class Client(metaclass=Singleton):
     def __prefixDeviceID(device_id: str) -> str:
         """
         Prefix a ID.
-        :param device_id: device ID.
-        :return: prefixed device ID.
+        :param device_id: Device ID.
+        :return: Prefixed device ID.
         """
         return "{}-{}".format(cc_conf.device.id_prefix, device_id)
+
+    @staticmethod
+    def __parseDeviceID(device_id: str) -> str:
+        """
+        Remove prefix from device ID.
+        :param device_id: Device ID with prefix.
+        :return: Device ID.
+        """
+        return device_id.replace("{}-".format(cc_conf.device.id_prefix), "")
 
     @staticmethod
     def __getMangledAttr(obj: object, attr: str) -> None:
