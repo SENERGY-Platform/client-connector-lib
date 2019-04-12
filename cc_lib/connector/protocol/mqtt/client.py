@@ -51,8 +51,8 @@ class UnsubscribeError(MqttClientError):
 
 
 class Client:
-    def __init__(self, client_id: str, clean_session: bool = True, userdata: Any = None, reconnect_delay: int = 120):
-        self.__mqtt = PahoClient(client_id=client_id, clean_session=clean_session, userdata=userdata)
+    def __init__(self, client_id: str, reconnect_delay: int = 120):
+        self.__mqtt = PahoClient(client_id=client_id, clean_session=True)
         self.__mqtt.enable_logger(logger)
         self.__mqtt.reconnect_delay_set(min_delay=1, max_delay=reconnect_delay)
         self.__mqtt.on_connect = self.__connectClbk
@@ -64,6 +64,7 @@ class Client:
         self.__events = dict()
         self.on_connect = None
         self.on_disconnect = None
+        self.on_message = None
 
     def connect(self, host: str, port: int, usr: str, pw: str, tls: bool, keepalive: int) -> None:
         if tls:
@@ -108,9 +109,8 @@ class Client:
         except SocketError as ex:
             raise UnsubscribeError(ex)
 
-    def publish(self, topic: str, payload: str = None, qos: int = 1, retain: bool = False):
-        msg_info = self.__mqtt.publish(topic=topic, payload=payload, qos=qos, retain=retain)
-        msg_info.wait_for_publish()
+    def publish(self, topic: str, payload: str, qos: int, timeout: int) -> MQTTMessageInfo:
+        return self.__mqtt.publish(topic=topic, payload=payload, qos=qos, retain=False)
 
     def __connectClbk(self, client: PahoClient, userdata: Any, flags: dict, rc: int) -> None:
         if rc == 0:
@@ -126,10 +126,7 @@ class Client:
             self.on_disconnect(rc)
 
     def __messageClbk(self, client: PahoClient, userdata: Any, message: MQTTMessage) -> None:
-        pass
-        # called when a message has been received on a
-        #   topic that the client subscribes to. The message variable is a
-        #   MQTTMessage that describes all of the message parameters.
+        self.on_message(message.payload, message.topic)
 
     def __publishClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
         pass
