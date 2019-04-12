@@ -480,17 +480,12 @@ class Client(metaclass=Singleton):
         if not self.__comm:
             logger.error("connecting device '{}' to platform failed - communication not initialized".format(device.id))
             raise CommNotInitializedError
-        message_ids = list()
         try:
-            for service in device.services:
-                if service.input:
-                    message_ids.append(
-                        self.__comm.subscribe(
-                            topic="command/{}/{}".format(__class__.__prefixDeviceID(device.id), service.uri),
-                            qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
-                            timeout=cc_conf.connector.timeout
-                        )
-                    )
+            self.__comm.subscribe(
+                topic="command/{}/+".format(__class__.__prefixDeviceID(device.id)),
+                qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
+                timeout=cc_conf.connector.timeout
+            )
             logger.info("connecting device '{}' to platform completed".format(device.id))
         except mqtt.NotConnectedError:
             logger.error("connecting device '{}' to platform failed - communication not available".format(device.id))
@@ -507,17 +502,12 @@ class Client(metaclass=Singleton):
                 "disconnecting device '{}' from platform failed - communication not initialized".format(device.id)
             )
             raise CommNotInitializedError
-        message_ids = list()
         try:
-            for service in device.services:
-                if service.input:
-                    message_ids.append(
-                        self.__comm.unsubscribe(
-                            topic="command/{}/{}".format(__class__.__prefixDeviceID(device.id), service.uri),
-                            timeout=cc_conf.connector.timeout
-                        )
-                    )
-                logger.info("disconnecting device '{}' from platform completed".format(device.id))
+            self.__comm.unsubscribe(
+                topic="command/{}/+".format(__class__.__prefixDeviceID(device.id)),
+                timeout=cc_conf.connector.timeout
+            )
+            logger.info("disconnecting device '{}' from platform completed".format(device.id))
         except mqtt.NotConnectedError:
             logger.error(
                 "disconnecting device '{}' from platform failed - communication not available".format(device.id)
