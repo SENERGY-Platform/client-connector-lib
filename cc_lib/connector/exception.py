@@ -75,12 +75,14 @@ class DeviceConnectError(ClientError):
     """
     Error connecting a device.
     """
+    pass
 
 
 class DeviceDisconnectError(ClientError):
     """
     Error disconnecting a device.
     """
+    pass
 
 
 class DeviceUpdateError(ClientError):
@@ -104,7 +106,15 @@ class CommNotInitializedError(ClientError):
     pass
 
 
+class CommandQueueEmptyError(ClientError):
+    """
+    Command queue is empty.
+    """
+    pass
+
+
 class FutureNotDoneError(Exception):
     """
     Can't retrieve result - future not done.
     """
+    pass
