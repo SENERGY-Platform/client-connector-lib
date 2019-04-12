@@ -26,15 +26,15 @@ from .authentication import OpenIdClient, NoTokenError
 from .protocol import http, mqtt
 from .message import Envelope, Message
 from cc_lib import __version__ as VERSION
-from typing import Callable, Union, Any, Tuple, List
+from typing import Callable, Union, Any, Tuple, List, Optional
 from getpass import getuser
-from queue import Queue
 import datetime
 import hashlib
 import base64
 import json
 import time
 import threading
+import queue
 
 
 logger = _getLibLogger(__name__.split(".", 1)[-1])
@@ -124,7 +124,7 @@ class Client(metaclass=Singleton):
         )
         self.__device_mgr = DeviceManager()
         self.__comm = None
-        self.__cmd_queue = Queue()
+        self.__cmd_queue = queue.Queue()
         self.__workers = list()
         self.__hub_sync_event = threading.Event()
         self.__hub_sync_event.set()
@@ -553,6 +553,8 @@ class Client(metaclass=Singleton):
             logger.error(ex)
         except (KeyError, AttributeError) as ex:
             logger.error(ex)
+        except queue.Full as ex:
+            logger.error(ex)
 
     # ------------- user methods ------------- #
 
@@ -574,7 +576,7 @@ class Client(metaclass=Singleton):
         with self.__set_clbk_lock:
             self.__disconnect_clbk = func
 
-    def initHub(self, asynchronous: bool = False) -> Union[Future, None]:
+    def initHub(self, asynchronous: bool = False) -> Optional[Future]:
         """
         Initialize a hub. Check if hub exists and create new hub if necessary.
         :param asynchronous: If 'True' method returns a ClientFuture object.
@@ -587,7 +589,7 @@ class Client(metaclass=Singleton):
         else:
             self.__initHub()
 
-    def syncHub(self, asynchronous: bool = False) -> Union[Future, None]:
+    def syncHub(self, asynchronous: bool = False) -> Optional[Future]:
         """
         Synchronize a hub. Associate devices managed by the client with the hub and update hub name.
         Devices must be added via addDevice.
@@ -601,7 +603,7 @@ class Client(metaclass=Singleton):
         else:
             self.__syncHub()
 
-    def addDevice(self, device: Device, asynchronous: bool = False) -> Union[Future, None]:
+    def addDevice(self, device: Device, asynchronous: bool = False) -> Optional[Future]:
         """
         Add a device to local device manager and remote platform. Blocks by default.
         :param device: Device object.
@@ -622,7 +624,7 @@ class Client(metaclass=Singleton):
         else:
             self.__addDevice(device)
 
-    def deleteDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Union[Future, None]:
+    def deleteDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
         """
         Delete a device from local device manager and remote platform. Blocks by default.
         :param device: Device ID or Device object.
@@ -645,7 +647,7 @@ class Client(metaclass=Singleton):
         else:
             self.__deleteDevice(device)
 
-    def updateDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Union[Future, None]:
+    def updateDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
         """
         Update a device on the platform.
         :param device: Device object or device ID.
@@ -738,7 +740,7 @@ class Client(metaclass=Singleton):
         self.__comm.disconnect()
         self.__comm_init = False
 
-    def connectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Union[Future, None]:
+    def connectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
         """
         Connect a device to the platform.
         :param device: Device object or device ID.
@@ -766,7 +768,7 @@ class Client(metaclass=Singleton):
         else:
             self.__connectDevice(device)
 
-    def disconnectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Union[Future, None]:
+    def disconnectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
         """
         Disconnect a device from the platform.
         :param device: Device object or device ID.
@@ -792,13 +794,16 @@ class Client(metaclass=Singleton):
         else:
             self.__disconnectDevice(device)
 
-    def emmitEvent(self, asynchronous: bool = False) -> Union[Future, None]:
+    def emmitEvent(self, asynchronous: bool = False) -> Optional[Future]:
         pass
 
-    def receiveCommand(self):
-        pass
+    def receiveCommand(self, block: bool = True, timeout: Optional[int] = None) -> Envelope:
+        try:
+            return self.__cmd_queue.get(block=block, timeout=timeout)
+        except queue.Empty:
+            raise CommandQueueEmptyError
 
-    def sendResponse(self, asynchronous: bool = False) -> Union[Future, None]:
+    def sendResponse(self, asynchronous: bool = False) -> Optional[Future]:
         pass
 
     # ------------- class / static methods ------------- #
