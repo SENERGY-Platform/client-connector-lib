@@ -17,7 +17,7 @@
 __all__ = ('Service', )
 
 
-from typing import Union, Type
+from typing import Type, Optional
 
 
 class Service:
@@ -51,12 +51,12 @@ class Service:
         return self.__name
 
     @property
-    def input(self) -> Union[dict, None]:
+    def input(self) -> Optional[dict]:
         if self.__input:
             return self.__input.copy()
 
     @property
-    def output(self) -> Union[dict, None]:
+    def output(self) -> Optional[dict]:
         if self.__output:
             return self.__output.copy()
 
@@ -76,8 +76,8 @@ class Service:
         :param: arg: object to check
         :param: typ: type
         """
-        if type(arg) is not typ:
-            raise TypeError("'{}' must be '{}' but is '{}'".format(arg, type(typ).__name__, type(arg)))
+        if not type(arg) is typ:
+            raise TypeError(type(arg))
 
     def __repr__(self, **kwargs):
         """
