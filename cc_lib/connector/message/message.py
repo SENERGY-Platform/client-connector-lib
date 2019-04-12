@@ -18,7 +18,7 @@
 __all__ = ("Message", "Envelope")
 
 
-from typing import Union
+from typing import Optional
 from uuid import uuid4 as uuid
 
 
@@ -60,7 +60,7 @@ class Message:
 
 
 class Envelope:
-    def __init__(self, device_id: str, service_uri: str, message: Message, corr_id: Union[str, None] = None):
+    def __init__(self, device_id: str, service_uri: str, message: Message, corr_id: Optional[str] = None):
         if corr_id and not type(corr_id) is str:
             raise TypeError(type(corr_id))
         self.__correlation_id = corr_id or uuid().hex
