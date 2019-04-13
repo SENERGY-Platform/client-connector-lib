@@ -462,8 +462,12 @@ class Client(metaclass=Singleton):
                 cc_conf.connector.port
             )
         )
-        sync_thread = threading.Thread(target=self.__connectOnlineDevices, name="connect-online-devices", daemon=True)
-        sync_thread.start()
+        connect_thread = threading.Thread(
+            target=self.__connectOnlineDevices,
+            name="connect-online-devices",
+            daemon=True
+        )
+        connect_thread.start()
         if self.__connect_clbk:
             clbk_thread = threading.Thread(target=self.__connect_clbk, name="user-connect-callback", daemon=True)
             clbk_thread.start()
@@ -531,8 +535,8 @@ class Client(metaclass=Singleton):
                     daemon=True
                 )
                 futures.append(worker.start())
-        # for future in futures:
-        #     future.wait()
+        for future in futures:
+            future.wait()
 
     def __parseCommand(self, envelope: Union[str, bytes], uri: Union[str, bytes]) -> None:
         try:
