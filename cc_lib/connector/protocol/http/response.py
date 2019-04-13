@@ -15,18 +15,21 @@
 """
 
 
+from typing import Optional
+
+
 class Response:
-    def __init__(self, status: int, body: str = None, headers: dict = None):
+    def __init__(self, status: int, body: Optional[str] = None, headers: Optional[dict] = None):
         self.__headers = headers
         self.__body = body
         self.__status = status
 
     @property
-    def body(self) -> str:
+    def body(self) -> Optional[str]:
         return self.__body
 
     @property
-    def headers(self) -> dict:
+    def headers(self) -> Optional[dict]:
         return self.__headers
 
     @property
