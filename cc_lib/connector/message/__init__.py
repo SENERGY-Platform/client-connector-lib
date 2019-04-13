@@ -14,8 +14,12 @@
    limitations under the License.
 """
 
+
 from .message import *
+from .envelope import *
+
 
 __all__ = (
-    message.__all__
+    message.__all__,
+    envelope.__all__
 )
