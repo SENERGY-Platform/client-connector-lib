@@ -22,4 +22,6 @@ __author__ = 'Yann Dumont'
 __license__ = 'Apache License 2.0'
 __copyright__ = 'Copyright 2019 InfAI (CC SES)'
 
-import cc_lib.connector, cc_lib.device, cc_lib.logger
+import cc_lib.connector
+import cc_lib.device
+import cc_lib.logger
