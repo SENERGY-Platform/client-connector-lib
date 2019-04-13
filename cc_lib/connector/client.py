@@ -20,7 +20,7 @@ from ..configuration.configuration import cc_conf, initConnectorConf
 from ..logger.logger import _getLibLogger, initLogging
 from ..device import Device
 from .exception import *
-from .device_mgr import DeviceManager, isDevice
+from .device_manager import DeviceManager, isDevice
 from .singleton import Singleton
 from .authentication import OpenIdClient, NoTokenError
 from .protocol import http, mqtt
