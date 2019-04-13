@@ -19,7 +19,7 @@ __all__ = ('urlEncode', 'Method', 'ContentType', 'Request', 'URLError', 'Timeout
 
 from ....logger.logger import _getLibLogger
 from .response import Response
-from typing import Union, Iterable, SupportsAbs
+from typing import Union, Iterable, SupportsAbs, Optional
 from socket import timeout as TimeoutErr
 from urllib.error import URLError, HTTPError
 import urllib.request
@@ -88,7 +88,7 @@ class ContentType:
 
 
 class Request:
-    def __init__(self, url: str, method: str = Method.GET, body: Union[Iterable, SupportsAbs] = None, content_type: str = None, headers: dict = None, timeout: int = 30):
+    def __init__(self, url: str, method: str = Method.GET, body: Optional[Iterable, SupportsAbs] = None, content_type: Optional[str] = None, headers: Optional[dict] = None, timeout: int = 30):
         self.__url = url
         self.__method = method
         self.__body = body
