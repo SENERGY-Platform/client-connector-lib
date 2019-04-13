@@ -21,7 +21,7 @@ from typing import Type, Optional
 
 
 class Service:
-    def __init__(self, uri: str, name: str = None, type: str = None, input: dict = None, output: dict = None):
+    def __init__(self, uri: str, name: Optional[str] = None, type: Optional[str] = None, input: Optional[dict] = None, output: Optional[dict] = None):
         __class__.__checkType(uri, str)
         if type:
             __class__.__checkType(type, str)
