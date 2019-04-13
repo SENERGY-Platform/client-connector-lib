@@ -14,6 +14,7 @@
    limitations under the License.
 """
 
+
 class Singleton(type):
     """
     Subclass this class for singleton behavior
