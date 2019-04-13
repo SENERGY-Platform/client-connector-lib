@@ -57,7 +57,7 @@ class Future:
     def running(self) -> bool:
         return not self.__thread.done
 
-    def wait(self, timeout: float = None) -> None:
+    def wait(self, timeout: Optional[float] = None) -> None:
         self.__thread.join(timeout)
 
     def addDoneCallback(self, func: Callable[[], None]) -> None:
