@@ -22,7 +22,7 @@ from ..device import Device
 from .exception import *
 from .device_manager import DeviceManager, isDevice
 from .singleton import Singleton
-from .authentication import OpenIdClient, NoTokenError
+from .auth import OpenIdClient, NoTokenError
 from .protocol import http, mqtt
 from .message import Envelope, Message
 from cc_lib import __version__ as VERSION
