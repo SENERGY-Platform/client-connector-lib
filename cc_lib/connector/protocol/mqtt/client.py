@@ -88,9 +88,11 @@ class Client:
                     del self.__events[res[1]]
                     raise SubscribeError("subscribe acknowledgment timeout")
                 del self.__events[res[1]]
-                logger.debug("subscribe request for '{}' successful".format(topic, res[1]))
-            if res[0] == MQTT_ERR_NO_CONN:
+                logger.debug("subscribe request for '{}' successful".format(topic))
+            elif res[0] == MQTT_ERR_NO_CONN:
                 raise NotConnectedError
+            else:
+                raise SubscribeError(error_string(res[0]).replace(".", "").lower())
         except SocketError as ex:
             raise SubscribeError(ex)
 
@@ -104,9 +106,11 @@ class Client:
                     del self.__events[res[1]]
                     raise UnsubscribeError("unsubscribe acknowledgment timeout")
                 del self.__events[res[1]]
-                logger.debug("unsubscribe request for '{}' successful".format(topic, res[1]))
-            if res[0] == MQTT_ERR_NO_CONN:
+                logger.debug("unsubscribe request for '{}' successful".format(topic))
+            elif res[0] == MQTT_ERR_NO_CONN:
                 raise NotConnectedError
+            else:
+                raise UnsubscribeError(error_string(res[0]).replace(".", "").lower())
         except SocketError as ex:
             raise UnsubscribeError(ex)
 
