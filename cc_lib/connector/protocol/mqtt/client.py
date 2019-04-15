@@ -50,6 +50,10 @@ class UnsubscribeError(MqttClientError):
     pass
 
 
+class PublishError(MqttClientError):
+    pass
+
+
 class Client:
     def __init__(self, client_id: str, reconnect_delay: int, msg_retry: int):
         self.__mqtt = PahoClient(client_id=client_id, clean_session=True)
