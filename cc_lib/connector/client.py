@@ -63,6 +63,10 @@ class Future:
     def addDoneCallback(self, func: Callable[[], None]) -> None:
         self.__worker.callback = func
 
+    @property
+    def name(self) -> str:
+        return self.__worker.name
+
 
 class Worker(threading.Thread):
 
