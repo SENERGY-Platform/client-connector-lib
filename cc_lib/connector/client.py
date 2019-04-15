@@ -727,7 +727,11 @@ class Client(metaclass=Singleton):
             logger.error("communication already initialized")
             raise CommInitializedError
         if not self.__comm:
-            self.__comm = mqtt.Client(client_id=cc_conf.hub.id, reconnect_delay=cc_conf.connector.reconn_delay)
+            self.__comm = mqtt.Client(
+                client_id=cc_conf.hub.id,
+                reconnect_delay=cc_conf.connector.reconn_delay,
+                msg_retry=cc_conf.connector.msg_retry
+            )
             self.__comm.on_connect = self.__onConnect
             self.__comm.on_disconnect = self.__onDisconnect
             self.__comm.on_message = self.__handleCommand
