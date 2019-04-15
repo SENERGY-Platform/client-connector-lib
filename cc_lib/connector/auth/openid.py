@@ -107,7 +107,7 @@ class OpenIdClient:
             else:
                 logger.error('{} request got bad response - {}'.format(r_type, resp))
                 raise RequestError
-        except (http.TimeoutErr, http.URLError) as ex:
+        except (http.SocketTimeout, http.URLError) as ex:
             logger.error('{} request failed - {}'.format(r_type, ex))
             raise RequestError
 

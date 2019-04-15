@@ -14,13 +14,13 @@
    limitations under the License.
 """
 
-__all__ = ('urlEncode', 'Method', 'ContentType', 'Request', 'URLError', 'TimeoutErr')
+__all__ = ('urlEncode', 'Method', 'ContentType', 'Request', 'URLError', 'SocketTimeout')
 
 
 from ....logger.logger import _getLibLogger
 from .response import Response
 from typing import Union, Iterable, SupportsAbs, Optional
-from socket import timeout as TimeoutErr
+from socket import timeout as SocketTimeout
 from urllib.error import URLError, HTTPError
 import urllib.request
 import urllib.parse
@@ -138,7 +138,7 @@ class Request:
         except URLError as ex:
             logger.error("{} - '{}'".format(ex, self.__url))
             raise
-        except TimeoutErr:
+        except SocketTimeout:
             logger.error("timed out - '{}' - {}".format(self.__url, self.__method))
             raise
 

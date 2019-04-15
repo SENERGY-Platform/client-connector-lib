@@ -201,7 +201,7 @@ class Client(metaclass=Singleton):
         except NoTokenError:
             logger.error("initializing hub failed - could not retrieve access token")
             raise HubInitializationError
-        except (http.TimeoutErr, http.URLError) as ex:
+        except (http.SocketTimeout, http.URLError) as ex:
             logger.error("initializing hub failed - {}".format(ex))
             raise HubInitializationError
         except json.JSONDecodeError as ex:
@@ -297,7 +297,7 @@ class Client(metaclass=Singleton):
             except NoTokenError:
                 logger.error("synchronizing hub failed - could not retrieve access token")
                 raise HubSynchronizationError
-            except (http.TimeoutErr, http.URLError) as ex:
+            except (http.SocketTimeout, http.URLError) as ex:
                 logger.error("synchronizing hub failed - {}".format(ex))
                 raise HubSynchronizationError
             except json.JSONDecodeError as ex:
@@ -371,7 +371,7 @@ class Client(metaclass=Singleton):
         except NoTokenError:
             logger.error("adding device '{}' to platform failed - could not retrieve access token".format(device.id))
             raise DeviceAddError
-        except (http.TimeoutErr, http.URLError) as ex:
+        except (http.SocketTimeout, http.URLError) as ex:
             logger.error("adding device '{}' to platform failed - {}".format(device.id, ex))
             raise DeviceAddError
         except json.JSONDecodeError as ex:
@@ -413,7 +413,7 @@ class Client(metaclass=Singleton):
                 "deleting device '{}' from platform failed - could not retrieve access token".format(device_id)
             )
             raise DeviceDeleteError
-        except (http.TimeoutErr, http.URLError) as ex:
+        except (http.SocketTimeout, http.URLError) as ex:
             logger.error("deleting device '{}' from platform failed - {}".format(device_id, ex))
             raise DeviceDeleteError
 
@@ -455,7 +455,7 @@ class Client(metaclass=Singleton):
         except NoTokenError:
             logger.error("updating device '{}' on platform failed - could not retrieve access token".format(device.id))
             raise DeviceUpdateError
-        except (http.TimeoutErr, http.URLError) as ex:
+        except (http.SocketTimeout, http.URLError) as ex:
             logger.error("updating device '{}' on platform failed - {}".format(device.id, ex))
             raise DeviceUpdateError
 
