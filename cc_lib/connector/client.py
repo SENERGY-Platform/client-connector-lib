@@ -41,27 +41,27 @@ logger = _getLibLogger(__name__.split(".", 1)[-1])
 
 
 class Future:
-    def __init__(self, thread):
-        self.__thread = thread
+    def __init__(self, worker):
+        self.__worker = worker
 
     def result(self) -> Any:
-        if not self.__thread.done:
+        if not self.__worker.done:
             raise FutureNotDoneError
-        if self.__thread.exception:
-            raise self.__thread.exception
-        return self.__thread.result
+        if self.__worker.exception:
+            raise self.__worker.exception
+        return self.__worker.result
 
     def done(self) -> bool:
-        return self.__thread.done
+        return self.__worker.done
 
     def running(self) -> bool:
-        return not self.__thread.done
+        return not self.__worker.done
 
     def wait(self, timeout: Optional[float] = None) -> None:
-        self.__thread.join(timeout)
+        self.__worker.join(timeout)
 
     def addDoneCallback(self, func: Callable[[], None]) -> None:
-        self.__thread.callback = func
+        self.__worker.callback = func
 
 
 class Worker(threading.Thread):
