@@ -110,8 +110,23 @@ class Client:
         except SocketError as ex:
             raise UnsubscribeError(ex)
 
-    def publish(self, topic: str, payload: str, qos: int, timeout: int) -> MQTTMessageInfo:
-        return self.__mqtt.publish(topic=topic, payload=payload, qos=qos, retain=False)
+    def publish(self, topic: str, payload: str, qos: int, timeout: int) -> None:
+        try:
+            msg_info = self.__mqtt.publish(topic=topic, payload=payload, qos=qos, retain=False)
+            if msg_info.rc == MQTT_ERR_SUCCESS:
+                event = Event()
+                self.__events[msg_info.mid] = event
+                if not event.wait(timeout=timeout):
+                    del self.__events[msg_info.mid]
+                    raise PublishError("publish acknowledgment timeout")
+                del self.__events[msg_info.mid]
+                logger.debug("published '{}' on '{}'".format(payload, topic))
+            elif msg_info.rc == MQTT_ERR_NO_CONN:
+                raise NotConnectedError
+            else:
+                raise PublishError(error_string(msg_info.rc).replace(".", "").lower())
+        except (ValueError, SocketError) as ex:
+            raise PublishError(ex)
 
     def __connectClbk(self, client: PahoClient, userdata: Any, flags: dict, rc: int) -> None:
         if rc == 0:
