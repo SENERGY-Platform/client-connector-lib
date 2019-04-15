@@ -153,15 +153,11 @@ class Client:
         self.on_message(message.payload, message.topic)
 
     def __publishClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
-        pass
-        # called when a message that was to be sent using the
-        #   publish() call has completed transmission to the broker. For messages
-        #   with QoS levels 1 and 2, this means that the appropriate handshakes have
-        #   completed. For QoS 0, this simply means that the message has left the
-        #   client. The mid variable matches the mid variable returned from the
-        #   corresponding publish() call, to allow outgoing messages to be tracked.
-        #   This callback is important because even if the publish() call returns
-        #   success, it does not always mean that the message has been sent.
+        try:
+            event = self.__events[mid]
+            event.set()
+        except KeyError:
+            pass
 
     def __subscribeClbk(self, client: PahoClient, userdata: Any, mid: int, granted_qos: int) -> None:
         try:
