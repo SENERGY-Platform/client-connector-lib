@@ -51,10 +51,11 @@ class UnsubscribeError(MqttClientError):
 
 
 class Client:
-    def __init__(self, client_id: str, reconnect_delay: int = 120):
+    def __init__(self, client_id: str, reconnect_delay: int, msg_retry: int):
         self.__mqtt = PahoClient(client_id=client_id, clean_session=True)
         self.__mqtt.enable_logger(logger)
         self.__mqtt.reconnect_delay_set(min_delay=1, max_delay=reconnect_delay)
+        self.__mqtt.message_retry_set(msg_retry)
         self.__mqtt.on_connect = self.__connectClbk
         self.__mqtt.on_disconnect = self.__disconnectClbk
         self.__mqtt.on_message = self.__messageClbk
