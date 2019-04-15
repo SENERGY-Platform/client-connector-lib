@@ -538,7 +538,8 @@ class Client(metaclass=Singleton):
         for future in futures:
             future.wait()
 
-    def __parseCommand(self, envelope: Union[str, bytes], uri: Union[str, bytes]) -> None:
+    def __handleCommand(self, envelope: Union[str, bytes], uri: Union[str, bytes]) -> None:
+        logger.debug("received command ...\nservice uri: '{}'\ncommand: '{}'".format(uri, envelope))
         try:
             uri = uri.split("/")
             envelope = json.loads(envelope)
@@ -554,11 +555,18 @@ class Client(metaclass=Singleton):
                 )
             )
         except json.JSONDecodeError as ex:
-            logger.error(ex)
+            logger.error("could not parse command - '{}'\nservice uri: '{}'\ncommand: '{}'".format(ex, uri, envelope))
         except (KeyError, AttributeError) as ex:
-            logger.error(ex)
-        except queue.Full as ex:
-            logger.error(ex)
+            logger.error(
+                "malformed service uri or command - '{}'\nservice uri: '{}'\ncommand: '{}'".format(ex, uri, envelope)
+            )
+        except queue.Full:
+            logger.error(
+                "could not route command to user - queue full - \nservice uri: '{}'\ncommand: '{}'".format(
+                    uri,
+                    envelope
+                )
+            )
 
     # ------------- user methods ------------- #
 
@@ -718,7 +726,7 @@ class Client(metaclass=Singleton):
             self.__comm = mqtt.Client(client_id=cc_conf.hub.id, reconnect_delay=cc_conf.connector.reconn_delay)
             self.__comm.on_connect = self.__onConnect
             self.__comm.on_disconnect = self.__onDisconnect
-            self.__comm.on_message = self.__parseCommand
+            self.__comm.on_message = self.__handleCommand
         logger.info("initializing communication ...")
         if not cc_conf.connector.tls:
             logger.warning("initializing communication - TLS encryption disabled")
