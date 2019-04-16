@@ -99,6 +99,11 @@ class Worker(threading.Thread):
         return future
 
 
+class SendHandler:
+    event = "event"
+    response = "response"
+
+
 class Client(metaclass=Singleton):
     """
     Client class for client-connector projects.
