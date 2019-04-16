@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('Client', 'NotConnectedError', 'SubscribeError', 'UnsubscribeError', 'qos_map')
+__all__ = ('Client', 'NotConnectedError', 'SubscribeError', 'UnsubscribeError', 'PublishError', 'qos_map')
 
 from ....logger.logger import _getLibLogger
 from paho.mqtt.client import Client as PahoClient
