@@ -855,7 +855,7 @@ class Client(metaclass=Singleton):
             worker = Worker(
                 target=self.__disconnectDevice,
                 args=(device,),
-                name="connect-device-{}".format(device.id),
+                name="disconnect-device-{}".format(device.id),
                 daemon=True
             )
             future = worker.start()
