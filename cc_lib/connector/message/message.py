@@ -54,6 +54,11 @@ class Message:
         if not type(arg) is typ:
             raise TypeError(type(arg))
 
+    def __iter__(self):
+        items = (('metadata', self.metadata), ('data', self.data))
+        for item in items:
+            yield item
+
     def __repr__(self):
         """
         Provide a string representation.
