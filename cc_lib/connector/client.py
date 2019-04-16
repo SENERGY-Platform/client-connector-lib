@@ -867,6 +867,12 @@ class Client(metaclass=Singleton):
             self.__disconnectDevice(device)
 
     def receiveCommand(self, block: bool = True, timeout: Optional[int] = None) -> Envelope:
+        """
+        Receive a command.
+        :param block: If 'True' blocks until a command is available.
+        :param timeout: Return after set amount of time if no command is available.
+        :return: Envelope object.
+        """
         try:
             return self.__cmd_queue.get(block=block, timeout=timeout)
         except queue.Empty:
@@ -874,10 +880,10 @@ class Client(metaclass=Singleton):
 
     def sendResponse(self, envelope: Envelope, asynchronous: bool = False) -> Optional[Future]:
         """
-
-        :param envelope:
-        :param asynchronous:
-        :return:
+        Send a response to the platform after handling a command.
+        :param envelope: Envelope object received from a command via receiveCommand.
+        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :return: Future or None.
         """
         if not type(envelope) is Envelope:
             raise TypeError(type(envelope))
@@ -895,10 +901,10 @@ class Client(metaclass=Singleton):
 
     def emmitEvent(self, envelope: Envelope, asynchronous: bool = False) -> Optional[Future]:
         """
-
-        :param envelope:
-        :param asynchronous:
-        :return:
+        Send an event to the platform.
+        :param envelope: Envelope object.
+        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :return: Future or None.
         """
         if not type(envelope) is Envelope:
             raise TypeError(type(envelope))
