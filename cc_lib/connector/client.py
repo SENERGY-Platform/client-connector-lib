@@ -476,11 +476,15 @@ class Client(metaclass=Singleton):
             clbk_thread = threading.Thread(target=self.__connect_clbk, name="user-connect-callback", daemon=True)
             clbk_thread.start()
 
-    def __onDisconnect(self, reason: int) -> None:
-        if reason > 0:
-            logger.warning("communication stopped unexpectedly")
+    def __onDisconnect(self, reason: Optional[int] = None) -> None:
+        if reason is not None:
+            if reason > 0:
+                logger.warning("communication stopped unexpectedly")
+            else:
+                logger.info("stopping communication completed")
         else:
-            logger.info("stopping communication completed")
+            logger.warning("communication could not be established")
+        self.__comm.reset(cc_conf.hub.id)
         if self.__disconnect_clbk:
             clbk_thread = threading.Thread(target=self.__disconnect_clbk, name="user-disconnect-callback", daemon=True)
             clbk_thread.start()
