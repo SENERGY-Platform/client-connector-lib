@@ -866,17 +866,54 @@ class Client(metaclass=Singleton):
         else:
             self.__disconnectDevice(device)
 
-    def emmitEvent(self, asynchronous: bool = False) -> Optional[Future]:
-        pass
-
     def receiveCommand(self, block: bool = True, timeout: Optional[int] = None) -> Envelope:
         try:
             return self.__cmd_queue.get(block=block, timeout=timeout)
         except queue.Empty:
             raise CommandQueueEmptyError
 
-    def sendResponse(self, asynchronous: bool = False) -> Optional[Future]:
-        pass
+    def sendResponse(self, envelope: Envelope, asynchronous: bool = False) -> Optional[Future]:
+        """
+
+        :param envelope:
+        :param asynchronous:
+        :return:
+        """
+        if not type(envelope) is Envelope:
+            raise TypeError(type(envelope))
+        if asynchronous:
+            worker = Worker(
+                target=self.__send,
+                args=(SendHandler.response, envelope),
+                name="send-response-".format(envelope.correlation_id),
+                daemon=True
+            )
+            future = worker.start()
+            return future
+        else:
+            self.__send(handler=SendHandler.response, envelope=envelope)
+
+    def emmitEvent(self, envelope: Envelope, asynchronous: bool = False) -> Optional[Future]:
+        """
+
+        :param envelope:
+        :param asynchronous:
+        :return:
+        """
+        if not type(envelope) is Envelope:
+            raise TypeError(type(envelope))
+        if asynchronous:
+            worker = Worker(
+                target=self.__send,
+                args=(SendHandler.event, envelope),
+                name="send-event-".format(envelope.correlation_id),
+                daemon=True
+            )
+            future = worker.start()
+            return future
+        else:
+            self.__send(handler=SendHandler.event, envelope=envelope)
+
 
     # ------------- class / static methods ------------- #
 
