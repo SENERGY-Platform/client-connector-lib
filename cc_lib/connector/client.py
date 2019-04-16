@@ -127,14 +127,14 @@ class Client(metaclass=Singleton):
             cc_conf.auth.id
         )
         self.__device_mgr = DeviceManager()
-        self.__comm = None
+        self.__comm: mqtt.Client = None
+        self.__comm_init = False
         self.__cmd_queue = queue.Queue()
         self.__workers = list()
         self.__hub_sync_event = threading.Event()
         self.__hub_sync_event.set()
         self.__hub_sync_lock = threading.Lock()
         self.__hub_init = False
-        self.__comm_init = False
         self.__connect_clbk = None
         self.__disconnect_clbk = None
         self.__set_clbk_lock = threading.RLock()
