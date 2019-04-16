@@ -581,6 +581,46 @@ class Client(metaclass=Singleton):
                 )
             )
 
+    def __send(self, handler: str, envelope: Envelope):
+        logger.debug("sending {} '{}' to platform ...".format(handler, envelope.correlation_id))
+        if not self.__comm:
+            logger.error(
+                "sending {} '{}' to platform failed - communication not initialized".format(
+                    handler,
+                    envelope.correlation_id
+                )
+            )
+            raise CommNotInitializedError
+        try:
+            self.__comm.publish(
+                topic="{}/{}/{}".format(handler, __class__.__prefixDeviceID(envelope.device_id), envelope.service_uri),
+                payload=json.dumps(dict(envelope)),
+                qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
+                timeout=cc_conf.connector.timeout
+            )
+            logger.debug("sending {} '{}' to platform completed".format(handler, envelope.correlation_id))
+        except mqtt.NotConnectedError:
+            logger.error(
+                "sending {} '{}' to platform failed - communication not available".format(
+                    handler,
+                    envelope.correlation_id
+                )
+            )
+            if handler == SendHandler.event:
+                raise SendEventError
+            elif handler == SendHandler.response:
+                raise SendResponseError
+            else:
+                raise SendError
+        except mqtt.PublishError as ex:
+            logger.error("sending {} '{}' to platform failed - {}".format(handler, envelope.correlation_id, ex))
+            if handler == SendHandler.event:
+                raise SendEventError
+            elif handler == SendHandler.response:
+                raise SendResponseError
+            else:
+                raise SendError
+
     # ------------- user methods ------------- #
 
     def setConnectClbk(self, func: Callable[[], None]) -> None:
