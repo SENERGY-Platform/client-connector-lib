@@ -113,6 +113,27 @@ class CommandQueueEmptyError(ClientError):
     pass
 
 
+class SendError(ClientError):
+    """
+    Error sending a message.
+    """
+    pass
+
+
+class SendResponseError(SendError):
+    """
+    Error sending a response.
+    """
+    pass
+
+
+class SendEventError(SendError):
+    """
+    Error sending an event.
+    """
+    pass
+
+
 class FutureNotDoneError(Exception):
     """
     Can't retrieve result - future not done.
