@@ -805,8 +805,11 @@ class Client(metaclass=Singleton):
         if not self.__comm:
             logger.error("communication not initialized")
             raise CommNotInitializedError
-        logger.info("stopping communication ...")
-        self.__comm.disconnect()
+        try:
+            self.__comm.disconnect()
+            logger.info("stopping communication ...")
+        except mqtt.NotConnectedError:
+            pass
         self.__comm_init = False
 
     def connectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
