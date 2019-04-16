@@ -79,6 +79,8 @@ class Client:
         self.__setup_mqtt()
 
     def disconnect(self) -> None:
+        if self.__mqtt._sock is None:
+            raise NotConnectedError
         self.__usr_disconn = True
 
     def subscribe(self, topic: str, qos: int, timeout: int) -> None:
