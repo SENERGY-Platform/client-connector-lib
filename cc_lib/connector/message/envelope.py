@@ -65,6 +65,11 @@ class Envelope:
         if not type(arg) is typ:
             raise TypeError(type(arg))
 
+    def __iter__(self):
+        items = (('correlation_id', self.correlation_id), ('payload', dict(self.message)))
+        for item in items:
+            yield item
+
     def __repr__(self):
         """
         Provide a string representation.
