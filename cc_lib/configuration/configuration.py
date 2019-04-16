@@ -40,7 +40,7 @@ class ConnectorConf:
         reconn_delay: int = 120
         keepalive: int = 20
         timeout: int = 30
-        msg_retry: int = 20
+        msg_retry: int = 5
         qos: int = "normal"
 
     @section
