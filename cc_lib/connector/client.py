@@ -324,7 +324,8 @@ class Client(metaclass=Singleton):
         self.__hub_sync_lock.release()
 
     def __addDevice(self, device: Device, worker: bool = False) -> None:
-        self.__hub_sync_event.wait()
+        if self.__hub_init:
+            self.__hub_sync_event.wait()
         if worker:
             self.__workers.append(current_thread())
         try:
@@ -390,7 +391,8 @@ class Client(metaclass=Singleton):
             logger.warning("adding device '{}' to platform - malformed response - missing key {}".format(device.id, ex))
 
     def __deleteDevice(self, device_id: str, worker: bool = False) -> None:
-        self.__hub_sync_event.wait()
+        if self.__hub_init:
+            self.__hub_sync_event.wait()
         if worker:
             self.__workers.append(current_thread())
         self.__device_mgr.delete(device_id)
@@ -774,15 +776,14 @@ class Client(metaclass=Singleton):
         already initialized.
         :return: None.
         """
-        if not self.__hub_init:
-            logger.error("hub not initialized - initializing communication not possible")
-            raise HubNotInitializedError
         if self.__comm_init:
             logger.error("communication already initialized")
             raise CommInitializedError
         if not self.__comm:
             self.__comm = mqtt.Client(
-                client_id=cc_conf.hub.id,
+                client_id=cc_conf.hub.id if self.__hub_init else md5(
+                    bytes(cc_conf.credentials.user, "UTF-8")
+                ).hexdigest(),
                 msg_retry=cc_conf.connector.msg_retry
             )
             self.__comm.on_connect = self.__onConnect
