@@ -502,7 +502,7 @@ class Client(metaclass=Singleton):
             clbk_thread.start()
 
     def __connectDevice(self, device: Device) -> None:
-        __class__.__setMangledAttr(device, "connected_flag", True)
+        __class__.__setMangledAttr(device, "online_flag", True)
         logger.info("connecting device '{}' to platform ...".format(device.id))
         if not self.__comm:
             logger.error("connecting device '{}' to platform failed - communication not initialized".format(device.id))
@@ -522,7 +522,7 @@ class Client(metaclass=Singleton):
             raise DeviceConnectError
 
     def __disconnectDevice(self, device: Device) -> None:
-        __class__.__setMangledAttr(device, "connected_flag", False)
+        __class__.__setMangledAttr(device, "online_flag", False)
         logger.info("disconnecting device '{}' from platform ...".format(device.id))
         if not self.__comm:
             logger.error(
@@ -547,7 +547,7 @@ class Client(metaclass=Singleton):
     def __connectOnlineDevices(self) -> None:
         futures = list()
         for device in self.__device_mgr.devices:
-            if __class__.__getMangledAttr(device, "connected_flag"):
+            if __class__.__getMangledAttr(device, "online_flag"):
                 worker = Worker(
                     target=self.__connectDevice,
                     args=(device,),
