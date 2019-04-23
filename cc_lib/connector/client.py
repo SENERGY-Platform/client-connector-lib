@@ -148,6 +148,7 @@ class Client(metaclass=Singleton):
         self.__connect_clbk = None
         self.__disconnect_clbk = None
         self.__set_clbk_lock = RLock()
+        self.__comm_retry = 0
 
     # ------------- internal methods ------------- #
 
@@ -472,8 +473,9 @@ class Client(metaclass=Singleton):
             raise DeviceUpdateError
 
     def __onConnect(self) -> None:
+        self.__comm_retry = 0
         logger.info(
-            "initializing communication completed - connected to '{}' on '{}'".format(
+            "communication established - connected to '{}' on '{}'".format(
                 cc_conf.connector.host,
                 cc_conf.connector.port
             )
@@ -496,10 +498,32 @@ class Client(metaclass=Singleton):
                 logger.info("stopping communication completed")
         else:
             logger.warning("communication could not be established")
-        self.__comm.reset(cc_conf.hub.id)
         if self.__disconnect_clbk:
             clbk_thread = Thread(target=self.__disconnect_clbk, name="user-disconnect-callback", daemon=True)
             clbk_thread.start()
+        self.__comm.reset(cc_conf.hub.id)
+        if self.__comm_init:
+            comm_restart_thread = Thread(target=self.__restartComm, name="restart-communication", daemon=True)
+            comm_restart_thread.start()
+
+    def __restartComm(self):
+        self.__comm_retry += 1
+        duration = __class__.__calcDuration(
+            min_duration=cc_conf.connector.reconn_delay_min,
+            max_duration=cc_conf.connector.reconn_delay_max,
+            retry_num=self.__comm_retry,
+            speed=cc_conf.connector.reconn_delay_speed
+        )
+        logger.info("retrying to establish communication in {}s ...".format(duration))
+        sleep(duration)
+        self.__comm.connect(
+            cc_conf.connector.host,
+            cc_conf.connector.port,
+            cc_conf.credentials.user,
+            cc_conf.credentials.pw,
+            cc_conf.connector.tls,
+            cc_conf.connector.keepalive
+        )
 
     def __connectDevice(self, device: Device) -> None:
         __class__.__setMangledAttr(device, "online_flag", True)
