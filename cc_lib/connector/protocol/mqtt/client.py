@@ -151,7 +151,7 @@ class Client:
                     raise SubscribeError("subscribe acknowledgment timeout")
                 del self.__events[res[1]]
                 if event.err:
-                    raise SubscribeError("subscribe request failed")
+                    raise SubscribeError("subscribe request not allowed")
                 logger.debug("subscribe request for '{}' successful".format(topic))
             elif res[0] == MQTT_ERR_NO_CONN:
                 raise NotConnectedError
