@@ -110,6 +110,8 @@ class Client:
     def __subscribeClbk(self, client: PahoClient, userdata: Any, mid: int, granted_qos: int) -> None:
         try:
             event = self.__events[mid]
+            if 128 in granted_qos:
+                event.err = True
             event.set()
         except KeyError:
             pass
@@ -142,11 +144,14 @@ class Client:
             res = self.__mqtt.subscribe(topic=topic, qos=qos)
             if res[0] == MQTT_ERR_SUCCESS:
                 event = Event()
+                event.err = False
                 self.__events[res[1]] = event
                 if not event.wait(timeout=timeout):
                     del self.__events[res[1]]
                     raise SubscribeError("subscribe acknowledgment timeout")
                 del self.__events[res[1]]
+                if event.err:
+                    raise SubscribeError("subscribe request failed")
                 logger.debug("subscribe request for '{}' successful".format(topic))
             elif res[0] == MQTT_ERR_NO_CONN:
                 raise NotConnectedError
