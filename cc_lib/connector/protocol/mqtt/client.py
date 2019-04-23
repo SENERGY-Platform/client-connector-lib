@@ -55,8 +55,7 @@ class PublishError(MqttClientError):
 
 
 class Client:
-    def __init__(self, client_id: str, reconnect_delay: int, msg_retry: int):
-        self.__reconnect_delay = reconnect_delay
+    def __init__(self, client_id: str, msg_retry: int):
         self.__msg_retry = msg_retry
         self.__events = dict()
         self.__loop_thread = None
@@ -139,7 +138,6 @@ class Client:
 
     def __setup_mqtt(self):
         self.__mqtt.enable_logger(logger)
-        self.__mqtt.reconnect_delay_set(min_delay=1, max_delay=self.__reconnect_delay)
         self.__mqtt.message_retry_set(self.__msg_retry)
         self.__mqtt.on_message = self.__messageClbk
         self.__mqtt.on_publish = self.__publishClbk
