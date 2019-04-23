@@ -28,6 +28,7 @@ from .message import Envelope, Message
 from cc_lib import __version__ as VERSION
 from typing import Callable, Union, Any, Tuple, List, Optional
 from getpass import getuser
+from math import ceil, log10
 import datetime
 import hashlib
 import base64
@@ -971,3 +972,31 @@ class Client(metaclass=Singleton):
         :param arg: value to be written.
         """
         setattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr), arg)
+
+    @staticmethod
+    def __calcNthTerm(a_1: Union[float, int], r: Union[float, int], n: Union[float, int]) -> Union[float, int]:
+        """
+        Calculates the nth term of a geometric progression (an = a1 * r^(n-1)).
+        :param a_1: First term.
+        :param r: Common ratio.
+        :param n: Number of desired term.
+        :return: Float or integer.
+        """
+        return a_1 * r ** (n - 1)
+
+    @staticmethod
+    def __calcDuration(min_duration: int, max_duration: int, retry_num: int, speed: Union[float, int]) -> int:
+        """
+        Calculate a value to be used as sleep duration based on a geometric progression. Won't return values above max_duration.
+        :param min_duration: Minimum value to be returned.
+        :param max_duration: Maximum value to be returned.
+        :param retry_num: Number iterated by a loop calling the method.
+        :param speed: Speed at which the maximum value will be reached.
+        :return: Integer.
+        """
+        base_value = __class__.__calcNthTerm(min_duration, speed, retry_num)
+        magnitude = int(log10(ceil(base_value)))+1
+        duration = ceil(base_value / 10 ** (magnitude - 1)) * 10 ** (magnitude - 1)
+        if duration <= max_duration:
+            return duration
+        return max_duration
