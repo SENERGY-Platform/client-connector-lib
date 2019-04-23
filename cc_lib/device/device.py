@@ -19,7 +19,8 @@ __all__ = ('Device', )
 from .service import Service
 from collections import OrderedDict
 from typing import Union, Tuple, List, Type
-import hashlib
+from hashlib import sha1
+from threading import Lock
 
 
 class Device:
@@ -48,7 +49,9 @@ class Device:
         self.__tags = OrderedDict()
         self.__services = tuple(services)
         # self.__img_url = None
-        self.__connected_flag = False
+        self.__online_flag_lock = Lock()
+        self.__online_flag = False
+
 
     @property
     def id(self) -> str:
@@ -86,7 +89,7 @@ class Device:
         Uses device attributes to calculate a sha1 hash.
         :return: String.
         """
-        return hashlib.sha1(
+        return sha1(
             ''.join(
                 (
                     self.__id,
@@ -110,6 +113,17 @@ class Device:
     #     if type(arg) is not str:
     #         raise TypeError("image url must be a string but got '{}'".format(type(arg)))
     #     self.__img_url = arg
+
+    @property
+    def __online_flag(self) -> bool:
+        with self.__online_flag_lock:
+            flag = self.___online_flag
+        return flag
+
+    @__online_flag.setter
+    def __online_flag(self, arg: bool):
+        with self.__online_flag_lock:
+            self.___online_flag = arg
 
     def addTag(self, tag_id: str, tag: str) -> None:
         """
