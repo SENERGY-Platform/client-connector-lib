@@ -66,6 +66,61 @@ class Client:
         self.on_disconnect = None
         self.on_message = None
 
+    def __setup_mqtt(self):
+        self.__mqtt.enable_logger(logger)
+        self.__mqtt.message_retry_set(self.__msg_retry)
+        self.__mqtt.on_message = self.__messageClbk
+        self.__mqtt.on_publish = self.__publishClbk
+        self.__mqtt.on_subscribe = self.__subscribeClbk
+        self.__mqtt.on_unsubscribe = self.__unsubscribeClbk
+
+    def __loop(self, host: str, port: int, keepalive: int):
+        rc = None
+        try:
+            rc = self.__mqtt.connect(host=host, port=port, keepalive=keepalive)
+            if rc == MQTT_ERR_SUCCESS:
+                self.on_connect()
+                while rc == MQTT_ERR_SUCCESS:
+                    rc = self.__mqtt.loop()
+                    if self.__usr_disconn:
+                        self.__usr_disconn = False
+                        break
+            if rc == MQTT_ERR_SUCCESS:
+                rc = self.__mqtt.disconnect()
+            if not rc == MQTT_ERR_SUCCESS:
+                logger.error(error_string(rc).replace(".", "").lower())
+        except CertificateError as ex:
+            logger.error("certificate error - {}".format(ex))
+        except (ValueError, TypeError) as ex:
+            logger.error("host or port error - {}".format(ex))
+        except OSError as ex:
+            logger.error("socket error - {}".format(ex))
+        self.on_disconnect(rc)
+
+    def __messageClbk(self, client: PahoClient, userdata: Any, message: MQTTMessage) -> None:
+        self.on_message(message.payload, message.topic)
+
+    def __publishClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
+        try:
+            event = self.__events[mid]
+            event.set()
+        except KeyError:
+            pass
+
+    def __subscribeClbk(self, client: PahoClient, userdata: Any, mid: int, granted_qos: int) -> None:
+        try:
+            event = self.__events[mid]
+            event.set()
+        except KeyError:
+            pass
+
+    def __unsubscribeClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
+        try:
+            event = self.__events[mid]
+            event.set()
+        except KeyError:
+            pass
+
     def connect(self, host: str, port: int, usr: str, pw: str, tls: bool, keepalive: int) -> None:
         if tls:
             self.__mqtt.tls_set()
@@ -135,58 +190,3 @@ class Client:
                 raise PublishError(error_string(msg_info.rc).replace(".", "").lower())
         except (ValueError, OSError) as ex:
             raise PublishError(ex)
-
-    def __setup_mqtt(self):
-        self.__mqtt.enable_logger(logger)
-        self.__mqtt.message_retry_set(self.__msg_retry)
-        self.__mqtt.on_message = self.__messageClbk
-        self.__mqtt.on_publish = self.__publishClbk
-        self.__mqtt.on_subscribe = self.__subscribeClbk
-        self.__mqtt.on_unsubscribe = self.__unsubscribeClbk
-
-    def __loop(self, host: str, port: int, keepalive: int):
-        rc = None
-        try:
-            rc = self.__mqtt.connect(host=host, port=port, keepalive=keepalive)
-            if rc == MQTT_ERR_SUCCESS:
-                self.on_connect()
-                while rc == MQTT_ERR_SUCCESS:
-                    rc = self.__mqtt.loop()
-                    if self.__usr_disconn:
-                        self.__usr_disconn = False
-                        break
-            if rc == MQTT_ERR_SUCCESS:
-                rc = self.__mqtt.disconnect()
-            if not rc == MQTT_ERR_SUCCESS:
-                logger.error(error_string(rc).replace(".", "").lower())
-        except CertificateError as ex:
-            logger.error("certificate error - {}".format(ex))
-        except (ValueError, TypeError) as ex:
-            logger.error("host or port error - {}".format(ex))
-        except OSError as ex:
-            logger.error("socket error - {}".format(ex))
-        self.on_disconnect(rc)
-
-    def __messageClbk(self, client: PahoClient, userdata: Any, message: MQTTMessage) -> None:
-        self.on_message(message.payload, message.topic)
-
-    def __publishClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
-        try:
-            event = self.__events[mid]
-            event.set()
-        except KeyError:
-            pass
-
-    def __subscribeClbk(self, client: PahoClient, userdata: Any, mid: int, granted_qos: int) -> None:
-        try:
-            event = self.__events[mid]
-            event.set()
-        except KeyError:
-            pass
-
-    def __unsubscribeClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
-        try:
-            event = self.__events[mid]
-            event.set()
-        except KeyError:
-            pass
