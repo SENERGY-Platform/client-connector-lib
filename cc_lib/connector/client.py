@@ -514,7 +514,13 @@ class Client(metaclass=Singleton):
             retry_num=self.__comm_retry,
             speed=cc_conf.connector.reconn_delay_speed
         )
-        logger.info("retrying to establish communication in {}s ...".format(duration))
+        minutes, seconds = divmod(duration, 60)
+        if minutes and seconds:
+            logger.info("retrying to establish communication in {}m and {}s ...".format(minutes, seconds))
+        elif seconds:
+            logger.info("retrying to establish communication in {}s ...".format(seconds))
+        elif minutes:
+            logger.info("retrying to establish communication in {}m ...".format(minutes))
         sleep(duration)
         self.__comm.connect(
             cc_conf.connector.host,
