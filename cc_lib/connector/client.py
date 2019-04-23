@@ -779,7 +779,6 @@ class Client(metaclass=Singleton):
         if not self.__comm:
             self.__comm = mqtt.Client(
                 client_id=cc_conf.hub.id,
-                reconnect_delay=cc_conf.connector.reconn_delay,
                 msg_retry=cc_conf.connector.msg_retry
             )
             self.__comm.on_connect = self.__onConnect
