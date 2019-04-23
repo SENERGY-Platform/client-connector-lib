@@ -29,13 +29,17 @@ from cc_lib import __version__ as VERSION
 from typing import Callable, Union, Any, Tuple, List, Optional
 from getpass import getuser
 from math import ceil, log10
-import datetime
-import hashlib
-import base64
-import json
-import time
-import threading
-import queue
+from datetime import datetime
+from hashlib import md5, sha1
+from base64 import urlsafe_b64encode
+from time import time, sleep
+from queue import Queue
+from queue import Full as QueueFull
+from queue import Empty as QueueEmpty
+from threading import Thread, Event, Lock, RLock, current_thread
+from json import loads as jsonLoads
+from json import dumps as jsonDumps
+from json import JSONDecodeError
 
 
 logger = _getLibLogger(__name__.split(".", 1)[-1])
@@ -69,7 +73,7 @@ class Future:
         return self.__worker.name
 
 
-class Worker(threading.Thread):
+class Worker(Thread):
 
     def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, *, daemon=None):
         super().__init__(group=group, target=target, name=name, args=args, kwargs=kwargs, daemon=daemon)
@@ -120,11 +124,11 @@ class Client(metaclass=Singleton):
         logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
         if not cc_conf.device.id_prefix:
             usr_time_str = '{}{}'.format(
-                hashlib.md5(bytes(cc_conf.credentials.user, 'UTF-8')).hexdigest(),
-                time.time()
+                md5(bytes(cc_conf.credentials.user, 'UTF-8')).hexdigest(),
+                time()
             )
-            cc_conf.device.id_prefix = base64.urlsafe_b64encode(
-                hashlib.md5(usr_time_str.encode()).digest()
+            cc_conf.device.id_prefix = urlsafe_b64encode(
+                md5(usr_time_str.encode()).digest()
             ).decode().rstrip('=')
         self.__auth = OpenIdClient(
             "https://{}/{}".format(cc_conf.auth.host, cc_conf.auth.path),
@@ -133,17 +137,17 @@ class Client(metaclass=Singleton):
             cc_conf.auth.id
         )
         self.__device_mgr = DeviceManager()
-        self.__comm: mqtt.Client = None
+        self.__comm = None
         self.__comm_init = False
-        self.__cmd_queue = queue.Queue()
+        self.__cmd_queue = Queue()
         self.__workers = list()
-        self.__hub_sync_event = threading.Event()
+        self.__hub_sync_event = Event()
         self.__hub_sync_event.set()
-        self.__hub_sync_lock = threading.Lock()
+        self.__hub_sync_lock = Lock()
         self.__hub_init = False
         self.__connect_clbk = None
         self.__disconnect_clbk = None
-        self.__set_clbk_lock = threading.RLock()
+        self.__set_clbk_lock = RLock()
 
     # ------------- internal methods ------------- #
 
@@ -156,7 +160,7 @@ class Client(metaclass=Singleton):
                 hub_name = cc_conf.hub.name
                 if not hub_name:
                     logger.info("generating hub name ...")
-                    hub_name = "{}-{}".format(getuser(), datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
+                    hub_name = "{}-{}".format(getuser(), datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
                 req = http.Request(
                     url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.hub_endpt),
                     method=http.Method.POST,
@@ -174,7 +178,7 @@ class Client(metaclass=Singleton):
                 if not resp.status == 200:
                     logger.error("initializing hub failed - {} {}".format(resp.status, resp.body))
                     raise HubInitializationError
-                hub = json.loads(resp.body)
+                hub = jsonLoads(resp.body)
                 cc_conf.hub.id = hub["id"]
                 if not cc_conf.hub.name:
                     cc_conf.hub.name = hub_name
@@ -210,7 +214,7 @@ class Client(metaclass=Singleton):
         except (http.SocketTimeout, http.URLError) as ex:
             logger.error("initializing hub failed - {}".format(ex))
             raise HubInitializationError
-        except json.JSONDecodeError as ex:
+        except JSONDecodeError as ex:
             logger.error("initializing hub failed - could not decode response - {}".format(ex))
             raise HubInitializationError
         except KeyError as ex:
@@ -253,7 +257,7 @@ class Client(metaclass=Singleton):
                 )
                 resp = req.send()
                 if resp.status == 200:
-                    hub = json.loads(resp.body)
+                    hub = jsonLoads(resp.body)
                     if not hub["name"] == cc_conf.hub.name:
                         logger.warning(
                             "synchronizing hub - local name '{}' differs from remote name '{}'".format(
@@ -285,7 +289,7 @@ class Client(metaclass=Singleton):
                         )
                         if devices:
                             logger.debug("synchronizing hub - waiting 4s for eventual consistency")
-                            time.sleep(4)
+                            sleep(4)
                         resp = req.send()
                         if not resp.status == 200:
                             logger.error(
@@ -306,7 +310,7 @@ class Client(metaclass=Singleton):
             except (http.SocketTimeout, http.URLError) as ex:
                 logger.error("synchronizing hub failed - {}".format(ex))
                 raise HubSynchronizationError
-            except json.JSONDecodeError as ex:
+            except JSONDecodeError as ex:
                 logger.error("synchronizing hub failed - could not decode response - {}".format(ex))
                 raise HubSynchronizationError
             except KeyError as ex:
@@ -322,7 +326,7 @@ class Client(metaclass=Singleton):
     def __addDevice(self, device: Device, worker: bool = False) -> None:
         self.__hub_sync_event.wait()
         if worker:
-            self.__workers.append(threading.current_thread())
+            self.__workers.append(current_thread())
         try:
             logger.info("adding device '{}' to platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
@@ -360,13 +364,13 @@ class Client(metaclass=Singleton):
                     )
                     raise DeviceAddError
                 logger.info("adding device '{}' to platform completed".format(device.id))
-                device_atr = json.loads(resp.body)
+                device_atr = jsonLoads(resp.body)
                 __class__.__setMangledAttr(device, "remote_id", device_atr["id"])
                 self.__device_mgr.add(device)
             elif resp.status == 200:
                 logger.warning("adding device '{}' to platform - device exists - updating device ...".format(device.id))
                 self.__device_mgr.add(device)
-                device_atr = json.loads(resp.body)
+                device_atr = jsonLoads(resp.body)
                 __class__.__setMangledAttr(device, "remote_id", device_atr["id"])
                 # if not device.img_url == device_atr["img"]:
                 #     device.img_url = device_atr["img"]
@@ -380,7 +384,7 @@ class Client(metaclass=Singleton):
         except (http.SocketTimeout, http.URLError) as ex:
             logger.error("adding device '{}' to platform failed - {}".format(device.id, ex))
             raise DeviceAddError
-        except json.JSONDecodeError as ex:
+        except JSONDecodeError as ex:
             logger.warning("adding device '{}' to platform - could not decode response - {}".format(device.id, ex))
         except KeyError as ex:
             logger.warning("adding device '{}' to platform - malformed response - missing key {}".format(device.id, ex))
@@ -388,7 +392,7 @@ class Client(metaclass=Singleton):
     def __deleteDevice(self, device_id: str, worker: bool = False) -> None:
         self.__hub_sync_event.wait()
         if worker:
-            self.__workers.append(threading.current_thread())
+            self.__workers.append(current_thread())
         self.__device_mgr.delete(device_id)
         try:
             logger.info("deleting device '{}' from platform ...".format(device_id))
@@ -472,14 +476,14 @@ class Client(metaclass=Singleton):
                 cc_conf.connector.port
             )
         )
-        connect_thread = threading.Thread(
+        connect_thread = Thread(
             target=self.__connectOnlineDevices,
             name="connect-online-devices",
             daemon=True
         )
         connect_thread.start()
         if self.__connect_clbk:
-            clbk_thread = threading.Thread(target=self.__connect_clbk, name="user-connect-callback", daemon=True)
+            clbk_thread = Thread(target=self.__connect_clbk, name="user-connect-callback", daemon=True)
             clbk_thread.start()
 
     def __onDisconnect(self, reason: Optional[int] = None) -> None:
@@ -492,7 +496,7 @@ class Client(metaclass=Singleton):
             logger.warning("communication could not be established")
         self.__comm.reset(cc_conf.hub.id)
         if self.__disconnect_clbk:
-            clbk_thread = threading.Thread(target=self.__disconnect_clbk, name="user-disconnect-callback", daemon=True)
+            clbk_thread = Thread(target=self.__disconnect_clbk, name="user-disconnect-callback", daemon=True)
             clbk_thread.start()
 
     def __connectDevice(self, device: Device) -> None:
@@ -556,7 +560,7 @@ class Client(metaclass=Singleton):
         logger.debug("received command ...\nservice uri: '{}'\ncommand: '{}'".format(uri, envelope))
         try:
             uri = uri.split("/")
-            envelope = json.loads(envelope)
+            envelope = jsonLoads(envelope)
             self.__cmd_queue.put_nowait(
                 Envelope(
                     device_id=__class__.__parseDeviceID(uri[1]),
@@ -568,13 +572,13 @@ class Client(metaclass=Singleton):
                     corr_id=envelope["correlation_id"]
                 )
             )
-        except json.JSONDecodeError as ex:
+        except JSONDecodeError as ex:
             logger.error("could not parse command - '{}'\nservice uri: '{}'\ncommand: '{}'".format(ex, uri, envelope))
         except (KeyError, AttributeError) as ex:
             logger.error(
                 "malformed service uri or command - '{}'\nservice uri: '{}'\ncommand: '{}'".format(ex, uri, envelope)
             )
-        except queue.Full:
+        except QueueFull:
             logger.error(
                 "could not route command to user - queue full - \nservice uri: '{}'\ncommand: '{}'".format(
                     uri,
@@ -595,7 +599,7 @@ class Client(metaclass=Singleton):
         try:
             self.__comm.publish(
                 topic="{}/{}/{}".format(handler, __class__.__prefixDeviceID(envelope.device_id), envelope.service_uri),
-                payload=json.dumps(dict(envelope)),
+                payload=jsonDumps(dict(envelope)),
                 qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
                 timeout=cc_conf.connector.timeout
             )
@@ -875,7 +879,7 @@ class Client(metaclass=Singleton):
         """
         try:
             return self.__cmd_queue.get(block=block, timeout=timeout)
-        except queue.Empty:
+        except QueueEmpty:
             raise CommandQueueEmptyError
 
     def sendResponse(self, envelope: Envelope, asynchronous: bool = False) -> Optional[Future]:
@@ -932,7 +936,7 @@ class Client(metaclass=Singleton):
         """
         hashes = [device.hash for device in devices]
         hashes.sort()
-        return hashlib.sha1("".join(hashes).encode()).hexdigest()
+        return sha1("".join(hashes).encode()).hexdigest()
 
     @staticmethod
     def __prefixDeviceID(device_id: str) -> str:
@@ -986,7 +990,8 @@ class Client(metaclass=Singleton):
     @staticmethod
     def __calcDuration(min_duration: int, max_duration: int, retry_num: int, speed: Union[float, int]) -> int:
         """
-        Calculate a value to be used as sleep duration based on a geometric progression. Won't return values above max_duration.
+        Calculate a value to be used as sleep duration based on a geometric progression.
+        Won't return values above max_duration.
         :param min_duration: Minimum value to be returned.
         :param max_duration: Maximum value to be returned.
         :param retry_num: Number iterated by a loop calling the method.
