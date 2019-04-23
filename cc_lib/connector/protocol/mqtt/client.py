@@ -18,7 +18,7 @@ __all__ = ('Client', 'NotConnectedError', 'SubscribeError', 'UnsubscribeError', 
 
 from ....logger.logger import _getLibLogger
 from paho.mqtt.client import Client as PahoClient
-from paho.mqtt.client import error_string, connack_string, MQTTMessage, MQTTMessageInfo, MQTT_ERR_SUCCESS, MQTT_ERR_NO_CONN
+from paho.mqtt.client import error_string, connack_string, MQTTMessage, MQTTMessageInfo, MQTT_ERR_SUCCESS, MQTT_ERR_NO_CONN, MQTT_ERR_NOMEM
 from threading import Event, Thread
 from typing import Any
 from ssl import CertificateError
@@ -87,7 +87,7 @@ class Client:
                         break
             if rc == MQTT_ERR_SUCCESS:
                 rc = self.__mqtt.disconnect()
-            if not rc == MQTT_ERR_SUCCESS:
+            if not rc == MQTT_ERR_SUCCESS and not rc == MQTT_ERR_NOMEM:
                 logger.error(error_string(rc).replace(".", "").lower())
         except CertificateError as ex:
             logger.error("certificate error - {}".format(ex))
