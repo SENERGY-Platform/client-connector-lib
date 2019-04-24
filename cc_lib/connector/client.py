@@ -619,7 +619,7 @@ class Client(metaclass=Singleton):
             )
 
     def __send(self, handler: str, envelope: Envelope):
-        logger.debug("sending {} '{}' to platform ...".format(handler, envelope.correlation_id))
+        logger.info("sending {} '{}' to platform ...".format(handler, envelope.correlation_id))
         if not self.__comm:
             logger.error(
                 "sending {} '{}' to platform failed - communication not initialized".format(
@@ -631,11 +631,11 @@ class Client(metaclass=Singleton):
         try:
             self.__comm.publish(
                 topic="{}/{}/{}".format(handler, __class__.__prefixDeviceID(envelope.device_id), envelope.service_uri),
-                payload=jsonDumps(dict(envelope)),
+                payload=jsonDumps(dict(envelope.message)) if handler is SendHandler.event else jsonDumps(dict(envelope)),
                 qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
                 timeout=cc_conf.connector.timeout
             )
-            logger.debug("sending {} '{}' to platform completed".format(handler, envelope.correlation_id))
+            logger.info("sending {} '{}' to platform completed".format(handler, envelope.correlation_id))
         except mqtt.NotConnectedError:
             logger.error(
                 "sending {} '{}' to platform failed - communication not available".format(
