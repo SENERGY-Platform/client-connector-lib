@@ -182,12 +182,13 @@ class Client:
         try:
             msg_info = self.__mqtt.publish(topic=topic, payload=payload, qos=qos, retain=False)
             if msg_info.rc == MQTT_ERR_SUCCESS:
-                event = Event()
-                self.__events[msg_info.mid] = event
-                if not event.wait(timeout=timeout):
+                if qos > 0:
+                    event = Event()
+                    self.__events[msg_info.mid] = event
+                    if not event.wait(timeout=timeout):
+                        del self.__events[msg_info.mid]
+                        raise PublishError("publish acknowledgment timeout")
                     del self.__events[msg_info.mid]
-                    raise PublishError("publish acknowledgment timeout")
-                del self.__events[msg_info.mid]
                 logger.debug("published '{}' on '{}'".format(payload, topic))
             elif msg_info.rc == MQTT_ERR_NO_CONN:
                 raise NotConnectedError
