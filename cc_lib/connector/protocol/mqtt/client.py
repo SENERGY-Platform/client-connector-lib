@@ -189,7 +189,7 @@ class Client:
                         del self.__events[msg_info.mid]
                         raise PublishError("publish acknowledgment timeout")
                     del self.__events[msg_info.mid]
-                logger.debug("published '{}' on '{}'".format(payload, topic))
+                logger.debug("published '{}' - (q{}, m{})".format(payload, qos, msg_info.mid))
             elif msg_info.rc == MQTT_ERR_NO_CONN:
                 raise NotConnectedError
             else:
