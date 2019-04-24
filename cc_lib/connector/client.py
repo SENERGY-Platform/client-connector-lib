@@ -634,7 +634,7 @@ class Client(metaclass=Singleton):
                 qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
                 timeout=cc_conf.connector.timeout
             )
-            if cc_conf.connector.qos > 0:
+            if mqtt.qos_map.setdefault(cc_conf.connector.qos, 1) > 0:
                 logger.info("sending {} '{}' to platform completed".format(handler, envelope.correlation_id))
         except mqtt.NotConnectedError:
             logger.error(
