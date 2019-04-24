@@ -22,6 +22,9 @@ from typing import Optional, Type
 
 
 class Message:
+
+    __slots__ = ('__metadata', '__data')
+
     def __init__(self, data: str, metadata: Optional[str] = None):
         self.metadata = metadata or str()
         self.data = data
