@@ -24,6 +24,9 @@ from uuid import uuid4 as uuid
 
 
 class Envelope:
+
+    __slots__ = ('__correlation_id', '__device_id', '__service_uri', '__message')
+
     def __init__(self, device_id: str, service_uri: str, message: Message, corr_id: Optional[str] = None):
         __class__.__checkType(device_id, str)
         __class__.__checkType(service_uri, str)
