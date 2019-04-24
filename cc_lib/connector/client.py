@@ -46,6 +46,9 @@ logger = _getLibLogger(__name__.split(".", 1)[-1])
 
 
 class Future:
+
+    __slots__ = ('__worker', )
+
     def __init__(self, worker):
         self.__worker = worker
 
