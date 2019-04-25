@@ -524,6 +524,7 @@ class Client(metaclass=Singleton):
         elif minutes:
             logger.info("retrying to establish communication in {}m ...".format(minutes))
         sleep(duration)
+        logger.info("establishing communication ...")
         self.__comm.connect(
             cc_conf.connector.host,
             cc_conf.connector.port,
