@@ -25,6 +25,7 @@ from .singleton import Singleton
 from .auth import OpenIdClient, NoTokenError
 from .protocol import http, mqtt
 from .message import Envelope, Message
+from .asynchron import Future, ThreadWorker, EventWorker
 from cc_lib import __version__ as VERSION
 from typing import Callable, Union, Any, Tuple, List, Optional
 from getpass import getuser
@@ -43,67 +44,6 @@ from json import JSONDecodeError
 
 
 logger = _getLibLogger(__name__.split(".", 1)[-1])
-
-
-class Future:
-
-    __slots__ = ('__worker', )
-
-    def __init__(self, worker):
-        self.__worker = worker
-
-    def result(self) -> Any:
-        if not self.__worker.done:
-            raise FutureNotDoneError
-        if self.__worker.exception:
-            raise self.__worker.exception
-        return self.__worker.result
-
-    def done(self) -> bool:
-        return self.__worker.done
-
-    def running(self) -> bool:
-        return not self.__worker.done
-
-    def wait(self, timeout: Optional[float] = None) -> None:
-        self.__worker.join(timeout)
-
-    def addDoneCallback(self, func: Callable[[], None]) -> None:
-        self.__worker.callback = func
-
-    @property
-    def name(self) -> str:
-        return self.__worker.name
-
-
-class Worker(Thread):
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, *, daemon=None):
-        super().__init__(group=group, target=target, name=name, args=args, kwargs=kwargs, daemon=daemon)
-        self.result = None
-        self.exception = None
-        self.done = False
-        self.callback = None
-
-    def run(self):
-        try:
-            try:
-                if self._target:
-                    self.result = self._target(*self._args, **self._kwargs)
-            finally:
-                del self._target, self._args, self._kwargs
-        except Exception as ex:
-            self.exception = ex
-        self.done = True
-        if self.callback:
-            try:
-                self.callback()
-            except BaseException:
-                logger.exception("exception calling callback for '{}'".format(self.name))
-
-    def start(self) -> Future:
-        future = Future(self)
-        super().start()
-        return future
 
 
 class SendHandler:
@@ -139,7 +79,7 @@ class Client(metaclass=Singleton):
             cc_conf.auth.id
         )
         self.__device_mgr = DeviceManager()
-        self.__comm = None
+        self.__comm: mqtt.Client = None
         self.__comm_init = False
         self.__cmd_queue = Queue()
         self.__workers = list()
@@ -534,19 +474,31 @@ class Client(metaclass=Singleton):
             cc_conf.connector.keepalive
         )
 
-    def __connectDevice(self, device: Device) -> None:
+    def __connectDevice(self, device: Device, event_worker) -> None:
         __class__.__setMangledAttr(device, "online_flag", True)
         logger.info("connecting device '{}' to platform ...".format(device.id))
         if not self.__comm:
             logger.error("connecting device '{}' to platform failed - communication not initialized".format(device.id))
             raise CommNotInitializedError
         try:
+            def on_done():
+                if event_worker.exception:
+                    try:
+                        try:
+                            raise event_worker.exception
+                        except Exception as ex:
+                            raise DeviceConnectError(ex)
+                    except DeviceConnectError as ex:
+                        event_worker.exception = ex
+                        logger.error("connecting device '{}' to platform failed - {}".format(device.id, ex))
+                else:
+                    logger.info("connecting device '{}' to platform completed".format(device.id))
+            event_worker.usr_method = on_done
             self.__comm.subscribe(
                 topic="command/{}/+".format(__class__.__prefixDeviceID(device.id)),
                 qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
-                timeout=cc_conf.connector.timeout
+                event_worker=event_worker
             )
-            logger.info("connecting device '{}' to platform completed".format(device.id))
         except mqtt.NotConnectedError:
             logger.error("connecting device '{}' to platform failed - communication not available".format(device.id))
             raise DeviceConnectError
@@ -554,7 +506,7 @@ class Client(metaclass=Singleton):
             logger.error("connecting device '{}' to platform failed - {}".format(device.id, ex))
             raise DeviceConnectError
 
-    def __disconnectDevice(self, device: Device) -> None:
+    def __disconnectDevice(self, device: Device, event_worker) -> None:
         __class__.__setMangledAttr(device, "online_flag", False)
         logger.info("disconnecting device '{}' from platform ...".format(device.id))
         if not self.__comm:
@@ -563,11 +515,23 @@ class Client(metaclass=Singleton):
             )
             raise CommNotInitializedError
         try:
+            def on_done():
+                if event_worker.exception:
+                    try:
+                        try:
+                            raise event_worker.exception
+                        except Exception as ex:
+                            raise DeviceDisconnectError(ex)
+                    except DeviceDisconnectError as ex:
+                        event_worker.exception = ex
+                        logger.error("disconnecting device '{}' from platform failed - {}".format(device.id, ex))
+                else:
+                    logger.info("disconnecting device '{}' from platform completed".format(device.id))
+            event_worker.usr_method = on_done
             self.__comm.unsubscribe(
                 topic="command/{}/+".format(__class__.__prefixDeviceID(device.id)),
-                timeout=cc_conf.connector.timeout
+                event_worker=event_worker
             )
-            logger.info("disconnecting device '{}' from platform completed".format(device.id))
         except mqtt.NotConnectedError:
             logger.error(
                 "disconnecting device '{}' from platform failed - communication not available".format(device.id)
@@ -581,7 +545,7 @@ class Client(metaclass=Singleton):
         futures = list()
         for device in self.__device_mgr.devices:
             if __class__.__getMangledAttr(device, "online_flag"):
-                worker = Worker(
+                worker = ThreadWorker(
                     target=self.__connectDevice,
                     args=(device,),
                     name="connect-device-{}".format(device.id),
@@ -621,7 +585,7 @@ class Client(metaclass=Singleton):
                 )
             )
 
-    def __send(self, handler: str, envelope: Envelope):
+    def __send(self, handler: str, envelope: Envelope, event_worker):
         logger.info("sending {} '{}' to platform ...".format(handler, envelope.correlation_id))
         if not self.__comm:
             logger.error(
@@ -632,14 +596,38 @@ class Client(metaclass=Singleton):
             )
             raise CommNotInitializedError
         try:
+            def on_done():
+                if event_worker.exception:
+                    try:
+                        try:
+                            raise event_worker.exception
+                        except Exception as ex:
+                            if handler == SendHandler.event:
+                                raise SendEventError(ex)
+                            elif handler == SendHandler.response:
+                                raise SendResponseError(ex)
+                            else:
+                                raise SendError(ex)
+                    except SendError as ex:
+                        event_worker.exception = ex
+                        logger.error(
+                            "sending {} '{}' to platform failed - ".format(handler, envelope.correlation_id, ex)
+                        )
+                    if handler == SendHandler.event:
+                        event_worker.exception = SendEventError
+                    elif handler == SendHandler.response:
+                        event_worker.exception = SendResponseError
+                    else:
+                        event_worker.exception = SendError
+                elif mqtt.qos_map.setdefault(cc_conf.connector.qos, 1) > 0:
+                    logger.info("sending {} '{}' to platform completed".format(handler, envelope.correlation_id))
+            event_worker.usr_method = on_done
             self.__comm.publish(
                 topic="{}/{}/{}".format(handler, __class__.__prefixDeviceID(envelope.device_id), envelope.service_uri),
                 payload=jsonDumps(dict(envelope.message)) if handler is SendHandler.event else jsonDumps(dict(envelope)),
                 qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
-                timeout=cc_conf.connector.timeout
+                event_worker=event_worker
             )
-            if mqtt.qos_map.setdefault(cc_conf.connector.qos, 1) > 0:
-                logger.info("sending {} '{}' to platform completed".format(handler, envelope.correlation_id))
         except mqtt.NotConnectedError:
             logger.error(
                 "sending {} '{}' to platform failed - communication not available".format(
@@ -689,7 +677,7 @@ class Client(metaclass=Singleton):
         :return: Future or None.
         """
         if asynchronous:
-            worker = Worker(target=self.__initHub, name="init-hub", daemon=True)
+            worker = ThreadWorker(target=self.__initHub, name="init-hub", daemon=True)
             future = worker.start()
             return future
         else:
@@ -703,7 +691,7 @@ class Client(metaclass=Singleton):
         :return: Future or None.
         """
         if asynchronous:
-            worker = Worker(target=self.__syncHub, name="sync-hub", daemon=True)
+            worker = ThreadWorker(target=self.__syncHub, name="sync-hub", daemon=True)
             future = worker.start()
             return future
         else:
@@ -719,7 +707,7 @@ class Client(metaclass=Singleton):
         if not isDevice(device):
             raise TypeError(type(device))
         if asynchronous:
-            worker = Worker(
+            worker = ThreadWorker(
                 target=self.__addDevice,
                 args=(device, True),
                 name="add-device-{}".format(device.id),
@@ -742,7 +730,7 @@ class Client(metaclass=Singleton):
         if not type(device) is str:
             raise TypeError(type(device))
         if asynchronous:
-            worker = Worker(
+            worker = ThreadWorker(
                 target=self.__deleteDevice,
                 args=(device, True),
                 name="delete-device-{}".format(device),
@@ -768,7 +756,7 @@ class Client(metaclass=Singleton):
         if not isDevice(device):
             raise TypeError(type(device))
         if asynchronous:
-            worker = Worker(
+            worker = ThreadWorker(
                 target=self.__updateDevice,
                 args=(device, ),
                 name="update-device-{}".format(device.id),
@@ -867,17 +855,17 @@ class Client(metaclass=Singleton):
                 raise TypeError(type(device))
         except KeyError:
             raise DeviceNotFoundError
+        worker = EventWorker(
+            target=self.__connectDevice,
+            args=(device, ),
+            name="connect-device-{}".format(device.id)
+        )
+        future = worker.start()
         if asynchronous:
-            worker = Worker(
-                target=self.__connectDevice,
-                args=(device, ),
-                name="connect-device-{}".format(device.id),
-                daemon=True
-            )
-            future = worker.start()
             return future
         else:
-            self.__connectDevice(device)
+            future.wait()
+            future.result()
 
     def disconnectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
         """
@@ -893,17 +881,17 @@ class Client(metaclass=Singleton):
                 raise DeviceNotFoundError
         if not isDevice(device):
             raise TypeError(type(device))
+        worker = EventWorker(
+            target=self.__disconnectDevice,
+            args=(device,),
+            name="disconnect-device-{}".format(device.id)
+        )
+        future = worker.start()
         if asynchronous:
-            worker = Worker(
-                target=self.__disconnectDevice,
-                args=(device,),
-                name="disconnect-device-{}".format(device.id),
-                daemon=True
-            )
-            future = worker.start()
             return future
         else:
-            self.__disconnectDevice(device)
+            future.wait()
+            future.result()
 
     def receiveCommand(self, block: bool = True, timeout: Optional[int] = None) -> Envelope:
         """
@@ -926,17 +914,17 @@ class Client(metaclass=Singleton):
         """
         if not type(envelope) is Envelope:
             raise TypeError(type(envelope))
+        worker = EventWorker(
+            target=self.__send,
+            args=(SendHandler.response, envelope),
+            name="send-response-".format(envelope.correlation_id),
+        )
+        future = worker.start()
         if asynchronous:
-            worker = Worker(
-                target=self.__send,
-                args=(SendHandler.response, envelope),
-                name="send-response-".format(envelope.correlation_id),
-                daemon=True
-            )
-            future = worker.start()
             return future
         else:
-            self.__send(handler=SendHandler.response, envelope=envelope)
+            future.wait()
+            future.result()
 
     def emmitEvent(self, envelope: Envelope, asynchronous: bool = False) -> Optional[Future]:
         """
@@ -947,17 +935,17 @@ class Client(metaclass=Singleton):
         """
         if not type(envelope) is Envelope:
             raise TypeError(type(envelope))
+        worker = EventWorker(
+            target=self.__send,
+            args=(SendHandler.event, envelope),
+            name="send-event-".format(envelope.correlation_id)
+        )
+        future = worker.start()
         if asynchronous:
-            worker = Worker(
-                target=self.__send,
-                args=(SendHandler.event, envelope),
-                name="send-event-".format(envelope.correlation_id),
-                daemon=True
-            )
-            future = worker.start()
             return future
         else:
-            self.__send(handler=SendHandler.event, envelope=envelope)
+            future.wait()
+            future.result()
 
 
     # ------------- class / static methods ------------- #
