@@ -19,8 +19,8 @@ __all__ = ('Client', 'NotConnectedError', 'SubscribeError', 'UnsubscribeError', 
 from ....logger.logger import _getLibLogger
 from paho.mqtt.client import Client as PahoClient
 from paho.mqtt.client import error_string, connack_string, MQTTMessage, MQTTMessageInfo, MQTT_ERR_SUCCESS, MQTT_ERR_NO_CONN, MQTT_ERR_NOMEM
-from threading import Event, Thread
-from typing import Any
+from threading import Thread
+from typing import Any, Dict
 from ssl import CertificateError
 
 
@@ -74,6 +74,13 @@ class Client:
         self.__mqtt.on_subscribe = self.__subscribeClbk
         self.__mqtt.on_unsubscribe = self.__unsubscribeClbk
 
+    def __cleanEvents(self):
+        for event in self.__events.values():
+            event.exception = NotConnectedError("aborted due to disconnect")
+            event.usr_method()
+            event.set()
+        self.__events.clear()
+
     def __loop(self, host: str, port: int, keepalive: int):
         rc = None
         try:
@@ -87,6 +94,7 @@ class Client:
                         break
             if rc == MQTT_ERR_SUCCESS:
                 rc = self.__mqtt.disconnect()
+            self.__cleanEvents()
             if not rc == MQTT_ERR_SUCCESS and not rc == MQTT_ERR_NOMEM:
                 logger.error(error_string(rc).replace(".", "").lower())
         except CertificateError as ex:
@@ -103,6 +111,8 @@ class Client:
     def __publishClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
         try:
             event = self.__events[mid]
+            del self.__events[mid]
+            event.usr_method()
             event.set()
         except KeyError:
             pass
@@ -110,8 +120,10 @@ class Client:
     def __subscribeClbk(self, client: PahoClient, userdata: Any, mid: int, granted_qos: int) -> None:
         try:
             event = self.__events[mid]
+            del self.__events[mid]
             if 128 in granted_qos:
-                event.err = True
+                event.exception = SubscribeError("subscribe request not allowed")
+            event.usr_method()
             event.set()
         except KeyError:
             pass
@@ -119,6 +131,8 @@ class Client:
     def __unsubscribeClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
         try:
             event = self.__events[mid]
+            del self.__events[mid]
+            event.usr_method()
             event.set()
         except KeyError:
             pass
@@ -139,20 +153,12 @@ class Client:
             raise NotConnectedError
         self.__usr_disconn = True
 
-    def subscribe(self, topic: str, qos: int, timeout: int) -> None:
+    def subscribe(self, topic: str, qos: int, event_worker) -> None:
         try:
             res = self.__mqtt.subscribe(topic=topic, qos=qos)
-            if res[0] == MQTT_ERR_SUCCESS:
-                event = Event()
-                event.err = False
-                self.__events[res[1]] = event
-                if not event.wait(timeout=timeout):
-                    del self.__events[res[1]]
-                    raise SubscribeError("subscribe acknowledgment timeout")
-                del self.__events[res[1]]
-                if event.err:
-                    raise SubscribeError("subscribe request not allowed")
-                logger.debug("subscribe request for '{}' successful".format(topic))
+            if res[0] is MQTT_ERR_SUCCESS:
+                self.__events[res[1]] = event_worker
+                logger.debug("request subscribe for '{}'".format(topic))
             elif res[0] == MQTT_ERR_NO_CONN:
                 raise NotConnectedError
             else:
@@ -160,17 +166,12 @@ class Client:
         except OSError as ex:
             raise SubscribeError(ex)
 
-    def unsubscribe(self, topic: str, timeout: int) -> None:
+    def unsubscribe(self, topic: str, event_worker) -> None:
         try:
             res = self.__mqtt.unsubscribe(topic=topic)
-            if res[0] == MQTT_ERR_SUCCESS:
-                event = Event()
-                self.__events[res[1]] = event
-                if not event.wait(timeout=timeout):
-                    del self.__events[res[1]]
-                    raise UnsubscribeError("unsubscribe acknowledgment timeout")
-                del self.__events[res[1]]
-                logger.debug("unsubscribe request for '{}' successful".format(topic))
+            if res[0] is MQTT_ERR_SUCCESS:
+                self.__events[res[1]] = event_worker
+                logger.debug("request unsubscribe for '{}'".format(topic))
             elif res[0] == MQTT_ERR_NO_CONN:
                 raise NotConnectedError
             else:
@@ -178,18 +179,13 @@ class Client:
         except OSError as ex:
             raise UnsubscribeError(ex)
 
-    def publish(self, topic: str, payload: str, qos: int, timeout: int) -> None:
+    def publish(self, topic: str, payload: str, qos: int, event_worker) -> None:
         try:
             msg_info = self.__mqtt.publish(topic=topic, payload=payload, qos=qos, retain=False)
             if msg_info.rc == MQTT_ERR_SUCCESS:
                 if qos > 0:
-                    event = Event()
-                    self.__events[msg_info.mid] = event
-                    if not event.wait(timeout=timeout):
-                        del self.__events[msg_info.mid]
-                        raise PublishError("publish acknowledgment timeout")
-                    del self.__events[msg_info.mid]
-                logger.debug("published '{}' - (q{}, m{})".format(payload, qos, msg_info.mid))
+                    self.__events[msg_info.mid] = event_worker
+                logger.debug("publish '{}' - (q{}, m{})".format(payload, qos, msg_info.mid))
             elif msg_info.rc == MQTT_ERR_NO_CONN:
                 raise NotConnectedError
             else:
