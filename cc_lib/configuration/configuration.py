@@ -37,13 +37,13 @@ class ConnectorConf:
         host: str = None
         port: int = None
         tls: bool = True
+        qos: int = "normal"
+        msg_retry: int = 5
         keepalive: int = 20
-        timeout: int = 30
+        loop_time: float = 0.2
         reconn_delay_min = 1
         reconn_delay_max = 240
-        reconn_delay_speed = 1.75
-        msg_retry: int = 5
-        qos: int = "normal"
+        reconn_delay_factor = 1.75
 
     @section
     class auth:
