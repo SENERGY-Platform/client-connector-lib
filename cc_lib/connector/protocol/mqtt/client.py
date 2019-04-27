@@ -20,7 +20,7 @@ from ....logger.logger import _getLibLogger
 from paho.mqtt.client import Client as PahoClient
 from paho.mqtt.client import error_string, connack_string, MQTTMessage, MQTTMessageInfo, MQTT_ERR_SUCCESS, MQTT_ERR_NO_CONN, MQTT_ERR_NOMEM
 from threading import Thread
-from typing import Any, Dict
+from typing import Any
 from ssl import CertificateError
 
 
@@ -55,8 +55,17 @@ class PublishError(MqttClientError):
 
 
 class Client:
-    def __init__(self, client_id: str, msg_retry: int):
+    def __init__(self, client_id: str, msg_retry: int, keepalive: int, loop_time: float, tls: bool):
+        if not loop_time > 0:
+            raise MqttClientError("loop time must be larger than 0")
+        if keepalive <= loop_time:
+            raise MqttClientError("keepalive must be larger than loop time")
+        if msg_retry <= loop_time:
+            raise MqttClientError("msg retry delay must be larger than loop time")
         self.__msg_retry = msg_retry
+        self.__keepalive = keepalive
+        self.__loop_time = loop_time
+        self.__tls = tls
         self.__events = dict()
         self.__loop_thread = None
         self.__usr_disconn = False
@@ -68,6 +77,8 @@ class Client:
 
     def __setup_mqtt(self):
         self.__mqtt.enable_logger(logger)
+        if self.__tls:
+            self.__mqtt.tls_set()
         self.__mqtt.message_retry_set(self.__msg_retry)
         self.__mqtt.on_message = self.__messageClbk
         self.__mqtt.on_publish = self.__publishClbk
@@ -81,14 +92,14 @@ class Client:
             event.set()
         self.__events.clear()
 
-    def __loop(self, host: str, port: int, keepalive: int):
+    def __loop(self, host: str, port: int):
         rc = None
         try:
-            rc = self.__mqtt.connect(host=host, port=port, keepalive=keepalive)
+            rc = self.__mqtt.connect(host=host, port=port, keepalive=self.__keepalive)
             if rc == MQTT_ERR_SUCCESS:
                 self.on_connect()
                 while rc == MQTT_ERR_SUCCESS:
-                    rc = self.__mqtt.loop()
+                    rc = self.__mqtt.loop(timeout=self.__loop_time)
                     if self.__usr_disconn:
                         self.__usr_disconn = False
                         break
@@ -137,11 +148,9 @@ class Client:
         except KeyError:
             pass
 
-    def connect(self, host: str, port: int, usr: str, pw: str, tls: bool, keepalive: int) -> None:
-        if tls:
-            self.__mqtt.tls_set()
+    def connect(self, host: str, port: int, usr: str, pw: str) -> None:
         self.__mqtt.username_pw_set(usr, pw)
-        self.__loop_thread = Thread(target=self.__loop, name="mqtt-loop", args=(host, port, keepalive), daemon=True)
+        self.__loop_thread = Thread(target=self.__loop, name="mqtt-loop", args=(host, port), daemon=True)
         self.__loop_thread.start()
 
     def reset(self, client_id: str):
