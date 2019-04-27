@@ -454,7 +454,7 @@ class Client(metaclass=Singleton):
             min_duration=cc_conf.connector.reconn_delay_min,
             max_duration=cc_conf.connector.reconn_delay_max,
             retry_num=self.__comm_retry,
-            speed=cc_conf.connector.reconn_delay_speed
+            factor=cc_conf.connector.reconn_delay_factor
         )
         minutes, seconds = divmod(duration, 60)
         if minutes and seconds:
@@ -469,9 +469,7 @@ class Client(metaclass=Singleton):
             cc_conf.connector.host,
             cc_conf.connector.port,
             cc_conf.credentials.user,
-            cc_conf.credentials.pw,
-            cc_conf.connector.tls,
-            cc_conf.connector.keepalive
+            cc_conf.credentials.pw
         )
 
     def __connectDevice(self, device: Device, event_worker) -> None:
@@ -806,7 +804,10 @@ class Client(metaclass=Singleton):
                 client_id=cc_conf.hub.id if self.__hub_init else md5(
                     bytes(cc_conf.credentials.user, "UTF-8")
                 ).hexdigest(),
-                msg_retry=cc_conf.connector.msg_retry
+                msg_retry=cc_conf.connector.msg_retry,
+                keepalive=cc_conf.connector.keepalive,
+                loop_time=cc_conf.connector.loop_time,
+                tls=cc_conf.connector.tls
             )
             self.__comm.on_connect = self.__onConnect
             self.__comm.on_disconnect = self.__onDisconnect
@@ -815,12 +816,10 @@ class Client(metaclass=Singleton):
         if not cc_conf.connector.tls:
             logger.warning("initializing communication - TLS encryption disabled")
         self.__comm.connect(
-            cc_conf.connector.host,
-            cc_conf.connector.port,
-            cc_conf.credentials.user,
-            cc_conf.credentials.pw,
-            cc_conf.connector.tls,
-            cc_conf.connector.keepalive
+            host=cc_conf.connector.host,
+            port=cc_conf.connector.port,
+            usr=cc_conf.credentials.user,
+            pw=cc_conf.credentials.pw
         )
         self.__comm_init = True
 
@@ -1011,17 +1010,17 @@ class Client(metaclass=Singleton):
         return a_1 * r ** (n - 1)
 
     @staticmethod
-    def __calcDuration(min_duration: int, max_duration: int, retry_num: int, speed: Union[float, int]) -> int:
+    def __calcDuration(min_duration: int, max_duration: int, retry_num: int, factor: Union[float, int]) -> int:
         """
         Calculate a value to be used as sleep duration based on a geometric progression.
         Won't return values above max_duration.
         :param min_duration: Minimum value to be returned.
         :param max_duration: Maximum value to be returned.
         :param retry_num: Number iterated by a loop calling the method.
-        :param speed: Speed at which the maximum value will be reached.
+        :param factor: Speed at which the maximum value will be reached.
         :return: Integer.
         """
-        base_value = __class__.__calcNthTerm(min_duration, speed, retry_num)
+        base_value = __class__.__calcNthTerm(min_duration, factor, retry_num)
         magnitude = int(log10(ceil(base_value)))+1
         duration = ceil(base_value / 10 ** (magnitude - 1)) * 10 ** (magnitude - 1)
         if duration <= max_duration:
