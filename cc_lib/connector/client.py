@@ -482,12 +482,9 @@ class Client(metaclass=Singleton):
             def on_done():
                 if event_worker.exception:
                     try:
-                        try:
-                            raise event_worker.exception
-                        except Exception as ex:
-                            raise DeviceConnectError(ex)
-                    except DeviceConnectError as ex:
-                        event_worker.exception = ex
+                        raise event_worker.exception
+                    except Exception as ex:
+                        event_worker.exception = DeviceConnectError(ex)
                         logger.error("connecting device '{}' to platform failed - {}".format(device.id, ex))
                 else:
                     logger.info("connecting device '{}' to platform completed".format(device.id))
@@ -516,12 +513,9 @@ class Client(metaclass=Singleton):
             def on_done():
                 if event_worker.exception:
                     try:
-                        try:
-                            raise event_worker.exception
-                        except Exception as ex:
-                            raise DeviceDisconnectError(ex)
-                    except DeviceDisconnectError as ex:
-                        event_worker.exception = ex
+                        raise event_worker.exception
+                    except Exception as ex:
+                        event_worker.exception = DeviceDisconnectError(ex)
                         logger.error("disconnecting device '{}' from platform failed - {}".format(device.id, ex))
                 else:
                     logger.info("disconnecting device '{}' from platform completed".format(device.id))
@@ -597,26 +591,17 @@ class Client(metaclass=Singleton):
             def on_done():
                 if event_worker.exception:
                     try:
-                        try:
-                            raise event_worker.exception
-                        except Exception as ex:
-                            if handler == SendHandler.event:
-                                raise SendEventError(ex)
-                            elif handler == SendHandler.response:
-                                raise SendResponseError(ex)
-                            else:
-                                raise SendError(ex)
-                    except SendError as ex:
-                        event_worker.exception = ex
+                        raise event_worker.exception
+                    except Exception as ex:
+                        if handler == SendHandler.event:
+                            event_worker.exception = SendEventError(ex)
+                        elif handler == SendHandler.response:
+                            event_worker.exception = SendResponseError(ex)
+                        else:
+                            event_worker.exception = SendError(ex)
                         logger.error(
-                            "sending {} '{}' to platform failed - ".format(handler, envelope.correlation_id, ex)
+                            "sending {} '{}' to platform failed - {}".format(handler, envelope.correlation_id, ex)
                         )
-                    if handler == SendHandler.event:
-                        event_worker.exception = SendEventError
-                    elif handler == SendHandler.response:
-                        event_worker.exception = SendResponseError
-                    else:
-                        event_worker.exception = SendError
                 elif mqtt.qos_map.setdefault(cc_conf.connector.qos, 1) > 0:
                     logger.info("sending {} '{}' to platform completed".format(handler, envelope.correlation_id))
             event_worker.usr_method = on_done
