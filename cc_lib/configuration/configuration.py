@@ -40,7 +40,7 @@ class ConnectorConf:
         qos: int = "normal"
         msg_retry: int = 5
         keepalive: int = 20
-        loop_time: float = 0.2
+        loop_time: float = 1
         reconn_delay_min = 1
         reconn_delay_max = 240
         reconn_delay_factor = 1.75
