@@ -194,6 +194,9 @@ class Client:
             if msg_info.rc == MQTT_ERR_SUCCESS:
                 if qos > 0:
                     self.__events[msg_info.mid] = event_worker
+                else:
+                    event_worker.usr_method()
+                    event_worker.set()
                 logger.debug("publish '{}' - (q{}, m{})".format(payload, qos, msg_info.mid))
             elif msg_info.rc == MQTT_ERR_NO_CONN:
                 raise NotConnectedError
