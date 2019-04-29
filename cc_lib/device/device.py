@@ -52,7 +52,6 @@ class Device:
         self.__online_flag_lock = Lock()
         self.__online_flag = False
 
-
     @property
     def id(self) -> str:
         return self.__id
