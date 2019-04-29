@@ -422,12 +422,12 @@ class Client(metaclass=Singleton):
                 cc_conf.connector.port
             )
         )
-        connect_thread = Thread(
+        connect_devices_thread = Thread(
             target=self.__connectOnlineDevices,
             name="connect-online-devices",
             daemon=True
         )
-        connect_thread.start()
+        connect_devices_thread.start()
         if self.__connect_clbk:
             clbk_thread = Thread(target=self.__connect_clbk, name="user-connect-callback", daemon=True)
             clbk_thread.start()
