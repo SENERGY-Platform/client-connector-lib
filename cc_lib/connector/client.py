@@ -537,11 +537,10 @@ class Client(metaclass=Singleton):
         futures = list()
         for device in self.__device_mgr.devices:
             if __class__.__getMangledAttr(device, "online_flag"):
-                worker = ThreadWorker(
+                worker = EventWorker(
                     target=self.__connectDevice,
                     args=(device,),
-                    name="connect-device-{}".format(device.id),
-                    daemon=True
+                    name="connect-device-{}".format(device.id)
                 )
                 futures.append(worker.start())
         for future in futures:
