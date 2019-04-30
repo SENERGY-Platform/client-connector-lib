@@ -78,6 +78,13 @@ class DeviceConnectError(ClientError):
     pass
 
 
+class DeviceConnectNotAllowedError(DeviceConnectError):
+    """
+    Connecting device not allowed.
+    """
+    pass
+
+
 class DeviceDisconnectError(ClientError):
     """
     Error disconnecting a device.
@@ -92,16 +99,30 @@ class DeviceUpdateError(ClientError):
     pass
 
 
-class CommInitializedError(ClientError):
+class CommunicationError(ClientError):
+    """
+    Communication error.
+    """
+    pass
+
+
+class CommInitializedError(CommunicationError):
     """
     Communication has already been initialized.
     """
     pass
 
 
-class CommNotInitializedError(ClientError):
+class CommNotInitializedError(CommunicationError):
     """
     Communication has not been initialized.
+    """
+    pass
+
+
+class CommNotAvailableError(CommunicationError):
+    """
+    Communication is not available.
     """
     pass
 
