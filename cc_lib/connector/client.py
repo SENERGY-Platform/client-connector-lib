@@ -423,7 +423,7 @@ class Client(metaclass=Singleton):
             )
         )
         if self.__connect_clbk:
-            clbk_thread = Thread(target=self.__connect_clbk, name="user-connect-callback", daemon=True)
+            clbk_thread = Thread(target=self.__connect_clbk, args=(self, ), name="user-connect-callback", daemon=True)
             clbk_thread.start()
 
     def __onDisconnect(self, reason: Optional[int] = None) -> None:
@@ -435,7 +435,7 @@ class Client(metaclass=Singleton):
         else:
             logger.warning("communication could not be established")
         if self.__disconnect_clbk:
-            clbk_thread = Thread(target=self.__disconnect_clbk, name="user-disconnect-callback", daemon=True)
+            clbk_thread = Thread(target=self.__disconnect_clbk, args=(self, ), name="user-disconnect-callback", daemon=True)
             clbk_thread.start()
         self.__comm.reset(cc_conf.hub.id)
         if self.__comm_init:
@@ -611,7 +611,7 @@ class Client(metaclass=Singleton):
 
     # ------------- user methods ------------- #
 
-    def setConnectClbk(self, func: Callable[[], None]) -> None:
+    def setConnectClbk(self, func: Callable[['Client'], None]) -> None:
         """
         Set a callback function to be called when the client successfully connects to the platform.
         :param func: User function.
@@ -620,7 +620,7 @@ class Client(metaclass=Singleton):
         with self.__set_clbk_lock:
             self.__connect_clbk = func
 
-    def setDisconnectClbk(self, func: Callable[[], None]) -> None:
+    def setDisconnectClbk(self, func: Callable[['Client'], None]) -> None:
         """
         Set a callback function to be called when the client disconnects from the platform.
         :param func: User function.
