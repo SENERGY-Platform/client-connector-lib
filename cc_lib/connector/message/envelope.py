@@ -32,7 +32,7 @@ class Envelope:
         __class__.__checkType(service_uri, str)
         if corr_id:
             __class__.__checkType(corr_id, str)
-        self.__correlation_id = corr_id or uuid().hex
+        self.__correlation_id = corr_id or str(uuid())
         self.__device_id = device_id
         self.__service_uri = service_uri
         self.message = message
