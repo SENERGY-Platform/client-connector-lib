@@ -483,7 +483,10 @@ class Client(metaclass=Singleton):
                 if event_worker.exception:
                     try:
                         raise event_worker.exception
-                    except Exception as ex:
+                    except mqtt.SubscribeNotAllowedError as ex:
+                        event_worker.exception = DeviceConnectNotAllowedError(ex)
+                        logger.error("connecting device '{}' to platform failed - not allowed".format(device.id))
+                    except mqtt.SubscribeError as ex:
                         event_worker.exception = DeviceConnectError(ex)
                         logger.error("connecting device '{}' to platform failed - {}".format(device.id, ex))
                 else:
