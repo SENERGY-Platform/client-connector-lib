@@ -14,11 +14,19 @@
    limitations under the License.
 """
 
-__all__ = ('Client', 'NotConnectedError', 'SubscribeError', 'UnsubscribeError', 'PublishError', 'qos_map')
+__all__ = (
+    'Client',
+    'NotConnectedError',
+    'SubscribeError',
+    'UnsubscribeError',
+    'PublishError',
+    'SubscribeNotAllowedError',
+    'qos_map'
+)
 
 from ....logger.logger import _getLibLogger
 from paho.mqtt.client import Client as PahoClient
-from paho.mqtt.client import error_string, connack_string, MQTTMessage, MQTTMessageInfo, MQTT_ERR_SUCCESS, MQTT_ERR_NO_CONN, MQTT_ERR_NOMEM
+from paho.mqtt.client import error_string, MQTTMessage, MQTT_ERR_SUCCESS, MQTT_ERR_NO_CONN, MQTT_ERR_NOMEM
 from threading import Thread
 from typing import Any
 from ssl import CertificateError
@@ -43,6 +51,10 @@ class NotConnectedError(MqttClientError):
 
 
 class SubscribeError(MqttClientError):
+    pass
+
+
+class SubscribeNotAllowedError(SubscribeError):
     pass
 
 
@@ -133,7 +145,7 @@ class Client:
             event = self.__events[mid]
             del self.__events[mid]
             if 128 in granted_qos:
-                event.exception = SubscribeError("subscribe request not allowed")
+                event.exception = SubscribeNotAllowedError("subscribe request not allowed")
             event.usr_method()
             event.set()
         except KeyError:
