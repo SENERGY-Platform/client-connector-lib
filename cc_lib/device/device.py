@@ -16,11 +16,9 @@
 
 __all__ = ('Device', )
 
-from .service import Service
 from collections import OrderedDict
-from typing import Union, Tuple, List, Type
+from typing import Type
 from hashlib import sha1
-from threading import Lock
 
 
 class Device:
@@ -28,7 +26,7 @@ class Device:
     Use this class to create devices for use with the client-connector-lib.
     Subclass this class for advanced requirements. Don't forget to call __init__ of this class when subclassing.
     """
-    def __init__(self, id: str, type: str, name: str, services: Union[List[Service], Tuple[Service]]):
+    def __init__(self, id: str, type: str, name: str):
         """
         Create a device object. Checks if parameters meet type requirements.
         :param id: Local device ID.
@@ -40,17 +38,12 @@ class Device:
         __class__.__checkType(id, str)
         __class__.__checkType(type, str)
         __class__.__checkType(name, str)
-        for obj in services:
-            __class__.__checkType(obj, Service)
         self.__id = id
         self.__remote_id = None
         self.__type = type
         self.__name = name
         self.__tags = OrderedDict()
-        self.__services = tuple(services)
         # self.__img_url = None
-        self.__online_flag_lock = Lock()
-        self.__online_flag = False
 
     @property
     def id(self) -> str:
@@ -99,10 +92,6 @@ class Device:
             ).encode()
         ).hexdigest()
 
-    @property
-    def services(self) -> Tuple[Service]:
-        return self.__services
-
     # @property
     # def img_url(self) -> str:
     #     return self.__img_url
@@ -112,17 +101,6 @@ class Device:
     #     if type(arg) is not str:
     #         raise TypeError("image url must be a string but got '{}'".format(type(arg)))
     #     self.__img_url = arg
-
-    @property
-    def __online_flag(self) -> bool:
-        with self.__online_flag_lock:
-            flag = self.___online_flag
-        return flag
-
-    @__online_flag.setter
-    def __online_flag(self, arg: bool):
-        with self.__online_flag_lock:
-            self.___online_flag = arg
 
     def addTag(self, tag_id: str, tag: str) -> None:
         """
@@ -191,8 +169,7 @@ class Device:
             ('tags', self.tags),
             ('hash', self.hash),
             # ('img_url', self.img_url),
-            ('remote_id', self.remote_id),
-            ('services', self.services)
+            ('remote_id', self.remote_id)
         ]
         if kwargs:
             for arg, value in kwargs.items():
