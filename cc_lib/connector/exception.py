@@ -22,30 +22,43 @@ class ClientError(Exception):
     pass
 
 
-class HubInitializationError(ClientError):
+class HubError(ClientError):
+    """
+    Hub error.
+    """
+    pass
+
+class HubInitializationError(HubError):
     """
     Error during hub initialization.
     """
     pass
 
 
-class HubNotInitializedError(ClientError):
+class HubNotInitializedError(HubError):
     """
     Hub has not been initialized.
     """
     pass
 
 
-class HubNotFoundError(ClientError):
+class HubNotFoundError(HubError):
     """
     Hub ID not on platform.
     """
     pass
 
 
-class HubSynchronizationError(ClientError):
+class HubSyncError(HubError):
     """
     Error during hub synchronization.
+    """
+    pass
+
+
+class HubSyncDeviceError(HubSyncError):
+    """
+    Error synchronizing devices.
     """
     pass
 
