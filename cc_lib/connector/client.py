@@ -499,7 +499,7 @@ class Client(metaclass=Singleton):
             )
         except mqtt.NotConnectedError:
             logger.error("connecting device '{}' to platform failed - communication not available".format(device.id))
-            raise DeviceConnectError
+            raise CommNotAvailableError
         except mqtt.SubscribeError as ex:
             logger.error("connecting device '{}' to platform failed - {}".format(device.id, ex))
             raise DeviceConnectError
@@ -531,7 +531,7 @@ class Client(metaclass=Singleton):
             logger.error(
                 "disconnecting device '{}' from platform failed - communication not available".format(device.id)
             )
-            raise DeviceDisconnectError
+            raise CommNotAvailableError
         except mqtt.UnsubscribeError as ex:
             logger.error("disconnecting device '{}' from platform failed - {}".format(device.id, ex))
             raise DeviceDisconnectError
@@ -620,12 +620,7 @@ class Client(metaclass=Singleton):
                     envelope.correlation_id
                 )
             )
-            if handler == SendHandler.event:
-                raise SendEventError
-            elif handler == SendHandler.response:
-                raise SendResponseError
-            else:
-                raise SendError
+            raise CommNotAvailableError
         except mqtt.PublishError as ex:
             logger.error("sending {} '{}' to platform failed - {}".format(handler, envelope.correlation_id, ex))
             if handler == SendHandler.event:
