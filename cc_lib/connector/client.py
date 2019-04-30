@@ -234,31 +234,41 @@ class Client(metaclass=Singleton):
                             logger.debug("synchronizing hub - waiting 4s for eventual consistency")
                             sleep(4)
                         resp = req.send()
-                        if not resp.status == 200:
+                        if resp.status == 200:
+                            logger.info("synchronizing hub completed")
+                        elif resp.status == 400:
                             logger.error(
-                                "synchronizing hub failed - {} could not update devices".format(resp.status, resp.body)
+                                "synchronizing hub failed - could not update devices"
                             )
-                            raise HubSynchronizationError
-                    logger.info("synchronizing hub completed")
+                            raise HubSyncDeviceError
+                        elif resp.status == 404:
+                            logger.error("synchronizing hub failed - hub not found on platform")
+                            cc_conf.hub.id = None
+                            raise HubNotFoundError
+                        else:
+                            logger.error(
+                                "synchronizing hub failed - {} {}".format(resp.status, resp.body)
+                            )
+                            raise HubSyncError
                 elif resp.status == 404:
                     logger.error("synchronizing hub failed - hub not found on platform")
                     cc_conf.hub.id = None
                     raise HubNotFoundError
                 else:
                     logger.error("synchronizing hub failed - {} {}".format(resp.status, resp.body))
-                    raise HubSynchronizationError
+                    raise HubSyncError
             except NoTokenError:
                 logger.error("synchronizing hub failed - could not retrieve access token")
-                raise HubSynchronizationError
+                raise HubSyncError
             except (http.SocketTimeout, http.URLError) as ex:
                 logger.error("synchronizing hub failed - {}".format(ex))
-                raise HubSynchronizationError
+                raise HubSyncError
             except JSONDecodeError as ex:
                 logger.error("synchronizing hub failed - could not decode response - {}".format(ex))
-                raise HubSynchronizationError
+                raise HubSyncError
             except KeyError as ex:
                 logger.error("synchronizing hub failed - malformed response - missing key {}".format(ex))
-                raise HubSynchronizationError
+                raise HubSyncError
         except Exception as ex:
             self.__hub_sync_event.set()
             self.__hub_sync_lock.release()
