@@ -68,7 +68,7 @@ class PublishError(MqttClientError):
 
 class Client:
     def __init__(self, client_id: str, msg_retry: int, keepalive: int, loop_time: float, tls: bool):
-        if not loop_time > 0:
+        if not loop_time > 0.0:
             raise MqttClientError("loop time must be larger than 0")
         if keepalive <= loop_time:
             raise MqttClientError("keepalive must be larger than loop time")
