@@ -21,6 +21,7 @@ __all__ = (
     'UnsubscribeError',
     'PublishError',
     'SubscribeNotAllowedError',
+    'ConnectError',
     'qos_map'
 )
 
@@ -43,6 +44,10 @@ qos_map = {
 
 
 class MqttClientError(Exception):
+    pass
+
+
+class ConnectError(MqttClientError):
     pass
 
 
