@@ -80,7 +80,9 @@ class Client(metaclass=Singleton):
         )
         self.__device_mgr = DeviceManager()
         self.__comm: mqtt.Client = None
-        self.__comm_init = False
+        self.__connected_flag = False
+        self.__connect_lock = Lock()
+        self.__reconnect_flag = False
         self.__cmd_queue = Queue()
         self.__workers = list()
         self.__hub_sync_event = Event()
@@ -90,7 +92,6 @@ class Client(metaclass=Singleton):
         self.__connect_clbk = None
         self.__disconnect_clbk = None
         self.__set_clbk_lock = RLock()
-        self.__comm_retry = 0
 
     # ------------- internal methods ------------- #
 
