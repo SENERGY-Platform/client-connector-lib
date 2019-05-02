@@ -167,7 +167,7 @@ class Client:
             self.__setEvent("connect_event")
             self.on_connect()
 
-    def __messageClbk(self, client: PahoClient, userdata: Any, message: MQTTMessage) -> None:
+    def __messageClbk(self, client: PahoClient, userdata: Any, message) -> None:
         self.on_message(message.payload, message.topic)
 
     def __publishClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
