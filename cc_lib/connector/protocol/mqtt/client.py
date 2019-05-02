@@ -102,6 +102,7 @@ class Client:
         self.__mqtt.on_publish = self.__publishClbk
         self.__mqtt.on_subscribe = self.__subscribeClbk
         self.__mqtt.on_unsubscribe = self.__unsubscribeClbk
+        self.__mqtt.on_connect = self.__connectClbk
 
     def __cleanEvents(self):
         for event in self.__events.values():
@@ -145,6 +146,12 @@ class Client:
         except OSError as ex:
             logger.error("socket error - {}".format(ex))
         self.on_disconnect(rc)
+    def __connectClbk(self, client: PahoClient, userdata: Any, flags: dict, rc: int) -> None:
+        if rc > 0:
+            self.__setEvent("connect_event", ConnectError(connack_string(rc).replace(".", "").lower()))
+        else:
+            self.__setEvent("connect_event")
+            self.on_connect()
 
     def __messageClbk(self, client: PahoClient, userdata: Any, message: MQTTMessage) -> None:
         self.on_message(message.payload, message.topic)
