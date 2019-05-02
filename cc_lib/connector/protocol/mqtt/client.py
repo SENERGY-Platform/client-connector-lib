@@ -110,6 +110,18 @@ class Client:
             event.set()
         self.__events.clear()
 
+    def __setEvent(self, e_id: Union[int, str], ex: Exception = None) -> bool:
+        try:
+            event = self.__events[e_id]
+            del self.__events[e_id]
+            if ex:
+                event.exception = ex
+            event.usr_method()
+            event.set()
+            return True
+        except KeyError:
+            return False
+
     def __loop(self, host: str, port: int):
         rc = None
         try:
