@@ -128,7 +128,7 @@ class Client(metaclass=Singleton):
                     cc_conf.hub.name = hub_name
                 self.__hub_init = True
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
-                logger.info("initializing hub completed")
+                logger.info("initializing hub successful")
             else:
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 req = http.Request(
@@ -144,7 +144,7 @@ class Client(metaclass=Singleton):
                 resp = req.send()
                 if resp.status == 200:
                     self.__hub_init = True
-                    logger.info("initializing hub completed")
+                    logger.info("initializing hub successful")
                 elif resp.status == 404:
                     logger.error("initializing hub failed - hub not found on platform")
                     cc_conf.hub.id = None
@@ -236,7 +236,7 @@ class Client(metaclass=Singleton):
                             sleep(4)
                         resp = req.send()
                         if resp.status == 200:
-                            logger.info("synchronizing hub completed")
+                            logger.info("synchronizing hub successful")
                         elif resp.status == 400:
                             logger.error(
                                 "synchronizing hub failed - could not update devices"
@@ -318,7 +318,7 @@ class Client(metaclass=Singleton):
                         "adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body)
                     )
                     raise DeviceAddError
-                logger.info("adding device '{}' to platform completed".format(device.id))
+                logger.info("adding device '{}' to platform successful".format(device.id))
                 device_atr = jsonLoads(resp.body)
                 __class__.__setMangledAttr(device, "remote_id", device_atr["id"])
                 self.__device_mgr.add(device)
@@ -366,7 +366,7 @@ class Client(metaclass=Singleton):
             )
             resp = req.send()
             if resp.status == 200:
-                logger.info("deleting device '{}' from platform completed".format(device_id))
+                logger.info("deleting device '{}' from platform successful".format(device_id))
             elif resp.status == 404:
                 logger.warning("deleting device '{}' from platform - device not found".format(device_id))
             else:
@@ -409,7 +409,7 @@ class Client(metaclass=Singleton):
             )
             resp = req.send()
             if resp.status == 200:
-                logger.info("updating device '{}' on platform completed".format(device.id))
+                logger.info("updating device '{}' on platform successful".format(device.id))
             elif resp.status == 404:
                 logger.error("updating device '{}' on platform failed - device not found".format(device.id))
                 raise DeviceNotFoundError
@@ -428,7 +428,7 @@ class Client(metaclass=Singleton):
     def __onConnect(self) -> None:
         self.__comm_retry = 0
         logger.info(
-            "communication established - connected to '{}' on '{}'".format(
+            "connecting to '{}' on '{}' successful".format(
                 cc_conf.connector.host,
                 cc_conf.connector.port
             )
@@ -494,7 +494,7 @@ class Client(metaclass=Singleton):
                         event_worker.exception = DeviceConnectError(ex)
                         logger.error("connecting device '{}' to platform failed - {}".format(device.id, ex))
                 else:
-                    logger.info("connecting device '{}' to platform completed".format(device.id))
+                    logger.info("connecting device '{}' to platform successful".format(device.id))
             event_worker.usr_method = on_done
             self.__comm.subscribe(
                 topic="command/{}/+".format(__class__.__prefixDeviceID(device.id)),
