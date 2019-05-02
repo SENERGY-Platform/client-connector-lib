@@ -16,6 +16,7 @@
 
 __all__ = (
     'Client',
+    'MqttClientError',
     'NotConnectedError',
     'SubscribeError',
     'UnsubscribeError',
