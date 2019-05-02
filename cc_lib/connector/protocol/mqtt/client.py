@@ -171,33 +171,16 @@ class Client:
         self.on_message(message.payload, message.topic)
 
     def __publishClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
-        try:
-            event = self.__events[mid]
-            del self.__events[mid]
-            event.usr_method()
-            event.set()
-        except KeyError:
-            pass
+        self.__setEvent(mid)
 
     def __subscribeClbk(self, client: PahoClient, userdata: Any, mid: int, granted_qos: int) -> None:
-        try:
-            event = self.__events[mid]
-            del self.__events[mid]
-            if 128 in granted_qos:
-                event.exception = SubscribeNotAllowedError("subscribe request not allowed")
-            event.usr_method()
-            event.set()
-        except KeyError:
-            pass
+        if 128 in granted_qos:
+            self.__setEvent(mid, SubscribeNotAllowedError("subscribe request not allowed"))
+        else:
+            self.__setEvent(mid)
 
     def __unsubscribeClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
-        try:
-            event = self.__events[mid]
-            del self.__events[mid]
-            event.usr_method()
-            event.set()
-        except KeyError:
-            pass
+        self.__setEvent(mid)
 
     def connect(self, host: str, port: int, usr: str, pw: str, event_worker) -> None:
         self.__mqtt.username_pw_set(usr, pw)
