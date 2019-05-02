@@ -63,28 +63,35 @@ class HubSyncDeviceError(HubSyncError):
     pass
 
 
-class DeviceAddError(ClientError):
+class DeviceError(ClientError):
+    """
+    Device related error.
+    """
+    pass
+
+
+class DeviceAddError(DeviceError):
     """
     Error while adding a device.
     """
     pass
 
 
-class DeviceNotFoundError(ClientError):
+class DeviceNotFoundError(DeviceError):
     """
     Device is missing.
     """
     pass
 
 
-class DeviceDeleteError(ClientError):
+class DeviceDeleteError(DeviceError):
     """
     Error while deleting a device.
     """
     pass
 
 
-class DeviceConnectError(ClientError):
+class DeviceConnectError(DeviceError):
     """
     Error connecting a device.
     """
@@ -98,42 +105,35 @@ class DeviceConnectNotAllowedError(DeviceConnectError):
     pass
 
 
-class DeviceDisconnectError(ClientError):
+class DeviceDisconnectError(DeviceError):
     """
     Error disconnecting a device.
     """
     pass
 
 
-class DeviceUpdateError(ClientError):
+class DeviceUpdateError(DeviceError):
     """
     Error while updating a device.
     """
     pass
 
 
-class CommunicationError(ClientError):
+class ConnectionError(ClientError):
     """
     Communication error.
     """
     pass
 
 
-class CommInitializedError(CommunicationError):
+class ConnectError(ConnectionError):
     """
-    Communication has already been initialized.
-    """
-    pass
-
-
-class CommNotInitializedError(CommunicationError):
-    """
-    Communication has not been initialized.
+    Can't connect.
     """
     pass
 
 
-class CommNotAvailableError(CommunicationError):
+class NotConnectedError(ConnectionError):
     """
     Communication is not available.
     """
