@@ -124,28 +124,42 @@ class Client:
             return False
 
     def __loop(self, host: str, port: int):
-        rc = None
         try:
             rc = self.__mqtt.connect(host=host, port=port, keepalive=self.__keepalive)
             if rc == MQTT_ERR_SUCCESS:
-                self.on_connect()
-                while rc == MQTT_ERR_SUCCESS:
-                    rc = self.__mqtt.loop(timeout=self.__loop_time)
-                    if self.__usr_disconn:
-                        self.__usr_disconn = False
-                        break
-            if rc == MQTT_ERR_SUCCESS:
-                rc = self.__mqtt.disconnect()
-            self.__cleanEvents()
-            if not rc == MQTT_ERR_SUCCESS and not rc == MQTT_ERR_NOMEM:
-                logger.error(error_string(rc).replace(".", "").lower())
+                logger.debug("starting loop")
+                try:
+                    while rc == MQTT_ERR_SUCCESS:
+                        rc = self.__mqtt.loop(timeout=self.__loop_time)
+                        if self.__usr_disconn:
+                            self.__usr_disconn = False
+                            self.__mqtt.disconnect()
+                            break
+                except OSError as ex:
+                    logger.error("socket error - {}".format(ex))
+                logger.debug("loop stopped")
+                if not rc == MQTT_ERR_SUCCESS:
+                    connect_attempt = self.__setEvent("connect_event", ConnectError(error_string(rc).replace(".", "").lower()))
+                    if not connect_attempt:
+                        logger.error(error_string(rc).replace(".", "").lower())
+                else:
+                    connect_attempt = self.__setEvent("connect_event")
+                if not connect_attempt:
+                    self.__cleanEvents()
+                    self.on_disconnect(rc)
+            else:
+                # logger.error(error_string(rc).replace(".", "").lower())
+                self.__setEvent("connect_event", ConnectError(error_string(rc).replace(".", "").lower()))
         except CertificateError as ex:
-            logger.error("certificate error - {}".format(ex))
+            # logger.error("certificate error - {}".format(ex))
+            self.__setEvent("connect_event", ConnectError(ex))
         except (ValueError, TypeError) as ex:
-            logger.error("host or port error - {}".format(ex))
+            # logger.error("host or port error - {}".format(ex))
+            self.__setEvent("connect_event", ConnectError(ex))
         except OSError as ex:
-            logger.error("socket error - {}".format(ex))
-        self.on_disconnect(rc)
+            # logger.error("socket error - {}".format(ex))
+            self.__setEvent("connect_event", ConnectError(ex))
+
     def __connectClbk(self, client: PahoClient, userdata: Any, flags: dict, rc: int) -> None:
         if rc > 0:
             self.__setEvent("connect_event", ConnectError(connack_string(rc).replace(".", "").lower()))
