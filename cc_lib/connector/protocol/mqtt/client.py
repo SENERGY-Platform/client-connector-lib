@@ -28,9 +28,9 @@ __all__ = (
 
 from ....logger.logger import _getLibLogger
 from paho.mqtt.client import Client as PahoClient
-from paho.mqtt.client import error_string, MQTTMessage, MQTT_ERR_SUCCESS, MQTT_ERR_NO_CONN, MQTT_ERR_NOMEM
+from paho.mqtt.client import MQTT_ERR_SUCCESS, MQTT_ERR_NO_CONN, connack_string, error_string
 from threading import Thread
-from typing import Any
+from typing import Any, Union
 from ssl import CertificateError
 
 
