@@ -139,7 +139,13 @@ class Client:
                     logger.error("socket error - {}".format(ex))
                 logger.debug("loop stopped")
                 if not rc == MQTT_ERR_SUCCESS:
-                    connect_attempt = self.__setEvent("connect_event", ConnectError(error_string(rc).replace(".", "").lower()))
+                    try:
+                        event = self.__events["connect_event"]
+                        if not event.exception:
+                            event.exception = ConnectError(error_string(rc).replace(".", "").lower())
+                    except KeyError:
+                        pass
+                    connect_attempt = self.__setEvent("connect_event")
                     if not connect_attempt:
                         logger.error(error_string(rc).replace(".", "").lower())
                 else:
@@ -162,7 +168,12 @@ class Client:
 
     def __connectClbk(self, client: PahoClient, userdata: Any, flags: dict, rc: int) -> None:
         if rc > 0:
-            self.__setEvent("connect_event", ConnectError(connack_string(rc).replace(".", "").lower()))
+            # self.__setEvent("connect_event", ConnectError(connack_string(rc).replace(".", "").lower()))
+            try:
+                event = self.__events["connect_event"]
+                event.exception = ConnectError(connack_string(rc).replace(".", "").lower())
+            except KeyError:
+                pass
         else:
             self.__setEvent("connect_event")
             self.on_connect()
