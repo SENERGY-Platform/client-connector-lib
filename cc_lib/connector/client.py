@@ -426,7 +426,7 @@ class Client(metaclass=Singleton):
             raise DeviceUpdateError
 
     def __onConnect(self) -> None:
-        self.__comm_retry = 0
+        self.__connected_flag = True
         logger.info(
             "connecting to '{}' on '{}' successful".format(
                 cc_conf.connector.host,
@@ -437,51 +437,103 @@ class Client(metaclass=Singleton):
             clbk_thread = Thread(target=self.__connect_clbk, args=(self, ), name="user-connect-callback", daemon=True)
             clbk_thread.start()
 
-    def __onDisconnect(self, reason: Optional[int] = None) -> None:
-        if reason is not None:
-            if reason > 0:
-                logger.warning("communication stopped unexpectedly")
-            else:
-                logger.info("stopping communication completed")
+    def __onDisconnect(self, reason: int) -> None:
+        self.__connected_flag = False
+        if reason > 0:
+            logger.warning("unexpected disconnect")
         else:
-            logger.warning("communication could not be established")
+            logger.info("disconnected by user")
         if self.__disconnect_clbk:
             clbk_thread = Thread(target=self.__disconnect_clbk, args=(self, ), name="user-disconnect-callback", daemon=True)
             clbk_thread.start()
-        self.__comm.reset(cc_conf.hub.id)
-        if self.__comm_init:
-            comm_restart_thread = Thread(target=self.__restartComm, name="restart-communication", daemon=True)
-            comm_restart_thread.start()
+        if self.__reconnect_flag:
+            reconnect_thread = Thread(target=self.__reconnect, name="reconnect", daemon=True)
+            reconnect_thread.start()
 
-    def __restartComm(self):
-        self.__comm_retry += 1
-        duration = __class__.__calcDuration(
-            min_duration=cc_conf.connector.reconn_delay_min,
-            max_duration=cc_conf.connector.reconn_delay_max,
-            retry_num=self.__comm_retry,
-            factor=cc_conf.connector.reconn_delay_factor
-        )
-        minutes, seconds = divmod(duration, 60)
-        if minutes and seconds:
-            logger.info("retrying to establish communication in {}m and {}s ...".format(minutes, seconds))
-        elif seconds:
-            logger.info("retrying to establish communication in {}s ...".format(seconds))
-        elif minutes:
-            logger.info("retrying to establish communication in {}m ...".format(minutes))
-        sleep(duration)
-        logger.info("establishing communication ...")
+    def __connect(self, event_worker) -> None:
+        self.__connect_lock.acquire()
+        if self.__connected_flag:
+            self.__connect_lock.release()
+            logger.error(
+                "connecting to '{}' on '{}' failed - already connected".format(
+                    cc_conf.connector.host,
+                    cc_conf.connector.port
+                )
+            )
+            raise RuntimeError("already connected")
+        logger.info("connecting to '{}' on '{}' ... ".format(cc_conf.connector.host, cc_conf.connector.port))
+        if self.__comm:
+            self.__comm.reset(cc_conf.hub.id)
+        else:
+            if not cc_conf.connector.tls:
+                logger.warning("TLS encryption disabled")
+            self.__comm = mqtt.Client(
+                client_id=cc_conf.hub.id if self.__hub_init else md5(
+                    bytes(cc_conf.credentials.user, "UTF-8")
+                ).hexdigest(),
+                msg_retry=cc_conf.connector.msg_retry,
+                keepalive=cc_conf.connector.keepalive,
+                loop_time=cc_conf.connector.loop_time,
+                tls=cc_conf.connector.tls
+            )
+            self.__comm.on_connect = self.__onConnect
+            self.__comm.on_disconnect = self.__onDisconnect
+            self.__comm.on_message = self.__handleCommand
+        def on_done():
+            if event_worker.exception:
+                try:
+                    raise event_worker.exception
+                except mqtt.ConnectError as ex:
+                    event_worker.exception = ConnectError(ex)
+                    logger.error(
+                        "connecting to '{}' on '{}' failed - {}".format(
+                            cc_conf.connector.host,
+                            cc_conf.connector.port,
+                            ex
+                        )
+                    )
+            self.__connect_lock.release()
+        event_worker.usr_method = on_done
         self.__comm.connect(
-            cc_conf.connector.host,
-            cc_conf.connector.port,
-            cc_conf.credentials.user,
-            cc_conf.credentials.pw
+            host=cc_conf.connector.host,
+            port=cc_conf.connector.port,
+            usr=cc_conf.credentials.user,
+            pw=cc_conf.credentials.pw,
+            event_worker=event_worker
         )
+
+    def __reconnect(self):
+        retry = 0
+        while not self.__connected_flag:
+            if not self.__reconnect_flag:
+                break
+            retry += 1
+            duration = __class__.__calcDuration(
+                min_duration=cc_conf.connector.reconn_delay_min,
+                max_duration=cc_conf.connector.reconn_delay_max,
+                retry_num=retry,
+                factor=cc_conf.connector.reconn_delay_factor
+            )
+            minutes, seconds = divmod(duration, 60)
+            if minutes and seconds:
+                logger.info("reconnect in {}m and {}s ...".format(minutes, seconds))
+            elif seconds:
+                logger.info("reconnect in {}s ...".format(seconds))
+            elif minutes:
+                logger.info("reconnect in {}m ...".format(minutes))
+            sleep(duration)
+            worker = EventWorker(
+                target=self.__connect,
+                name="connect"
+            )
+            future = worker.start()
+            future.wait()
 
     def __connectDevice(self, device: Device, event_worker) -> None:
         logger.info("connecting device '{}' to platform ...".format(device.id))
-        if not self.__comm:
-            logger.error("connecting device '{}' to platform failed - communication not initialized".format(device.id))
-            raise CommNotInitializedError
+        if not self.__connected_flag:
+            logger.error("connecting device '{}' to platform failed - not connected".format(device.id))
+            raise NotConnectedError
         try:
             def on_done():
                 if event_worker.exception:
@@ -493,6 +545,9 @@ class Client(metaclass=Singleton):
                     except mqtt.SubscribeError as ex:
                         event_worker.exception = DeviceConnectError(ex)
                         logger.error("connecting device '{}' to platform failed - {}".format(device.id, ex))
+                    except mqtt.NotConnectedError:
+                        event_worker.exception = NotConnectedError
+                        logger.error("connecting device '{}' to platform failed - not connected".format(device.id))
                 else:
                     logger.info("connecting device '{}' to platform successful".format(device.id))
             event_worker.usr_method = on_done
@@ -502,19 +557,17 @@ class Client(metaclass=Singleton):
                 event_worker=event_worker
             )
         except mqtt.NotConnectedError:
-            logger.error("connecting device '{}' to platform failed - communication not available".format(device.id))
-            raise CommNotAvailableError
+            logger.error("connecting device '{}' to platform failed - not connected".format(device.id))
+            raise NotConnectedError
         except mqtt.SubscribeError as ex:
             logger.error("connecting device '{}' to platform failed - {}".format(device.id, ex))
             raise DeviceConnectError
 
     def __disconnectDevice(self, device: Device, event_worker) -> None:
         logger.info("disconnecting device '{}' from platform ...".format(device.id))
-        if not self.__comm:
-            logger.error(
-                "disconnecting device '{}' from platform failed - communication not initialized".format(device.id)
-            )
-            raise CommNotInitializedError
+        if not self.__connected_flag:
+            logger.error("disconnecting device '{}' from platform failed - not connected".format(device.id))
+            raise NotConnectedError
         try:
             def on_done():
                 if event_worker.exception:
@@ -524,17 +577,15 @@ class Client(metaclass=Singleton):
                         event_worker.exception = DeviceDisconnectError(ex)
                         logger.error("disconnecting device '{}' from platform failed - {}".format(device.id, ex))
                 else:
-                    logger.info("disconnecting device '{}' from platform completed".format(device.id))
+                    logger.info("disconnecting device '{}' from platform successful".format(device.id))
             event_worker.usr_method = on_done
             self.__comm.unsubscribe(
                 topic="command/{}/+".format(__class__.__prefixDeviceID(device.id)),
                 event_worker=event_worker
             )
         except mqtt.NotConnectedError:
-            logger.error(
-                "disconnecting device '{}' from platform failed - communication not available".format(device.id)
-            )
-            raise CommNotAvailableError
+            logger.error("disconnecting device '{}' from platform failed - not connected".format(device.id))
+            raise NotConnectedError
         except mqtt.UnsubscribeError as ex:
             logger.error("disconnecting device '{}' from platform failed - {}".format(device.id, ex))
             raise DeviceDisconnectError
@@ -571,14 +622,9 @@ class Client(metaclass=Singleton):
 
     def __send(self, handler: str, envelope: Envelope, event_worker):
         logger.info("sending {} '{}' to platform ...".format(handler, envelope.correlation_id))
-        if not self.__comm:
-            logger.error(
-                "sending {} '{}' to platform failed - communication not initialized".format(
-                    handler,
-                    envelope.correlation_id
-                )
-            )
-            raise CommNotInitializedError
+        if not self.__connected_flag:
+            logger.error("sending {} '{}' to platform failed - not connected".format(handler, envelope.correlation_id))
+            raise NotConnectedError
         try:
             def on_done():
                 if event_worker.exception:
@@ -595,7 +641,7 @@ class Client(metaclass=Singleton):
                             "sending {} '{}' to platform failed - {}".format(handler, envelope.correlation_id, ex)
                         )
                 elif mqtt.qos_map.setdefault(cc_conf.connector.qos, 1) > 0:
-                    logger.info("sending {} '{}' to platform completed".format(handler, envelope.correlation_id))
+                    logger.info("sending {} '{}' to platform successful".format(handler, envelope.correlation_id))
             event_worker.usr_method = on_done
             self.__comm.publish(
                 topic="{}/{}/{}".format(handler, __class__.__prefixDeviceID(envelope.device_id), envelope.service_uri),
@@ -604,13 +650,8 @@ class Client(metaclass=Singleton):
                 event_worker=event_worker
             )
         except mqtt.NotConnectedError:
-            logger.error(
-                "sending {} '{}' to platform failed - communication not available".format(
-                    handler,
-                    envelope.correlation_id
-                )
-            )
-            raise CommNotAvailableError
+            logger.error("sending {} '{}' to platform failed - not connected".format(handler, envelope.correlation_id))
+            raise NotConnectedError
         except mqtt.PublishError as ex:
             logger.error("sending {} '{}' to platform failed - {}".format(handler, envelope.correlation_id, ex))
             if handler == SendHandler.event:
@@ -762,53 +803,35 @@ class Client(metaclass=Singleton):
         """
         return tuple(device.id for device in self.__device_mgr.devices)
 
-    def initComm(self) -> None:
+    def connect(self, reconnect: bool = False, asynchronous: bool = False) -> Optional[Future]:
         """
-        Initiate communication with platform. Raise exceptions if hub isn't initialized or if communication
-        already initialized.
-        :return: None.
+        Connect to platform message broker.
+        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :return: Future or None.
         """
-        if self.__comm_init:
-            logger.error("communication already initialized")
-            raise CommInitializedError
-        if not self.__comm:
-            self.__comm = mqtt.Client(
-                client_id=cc_conf.hub.id if self.__hub_init else md5(
-                    bytes(cc_conf.credentials.user, "UTF-8")
-                ).hexdigest(),
-                msg_retry=cc_conf.connector.msg_retry,
-                keepalive=cc_conf.connector.keepalive,
-                loop_time=cc_conf.connector.loop_time,
-                tls=cc_conf.connector.tls
-            )
-            self.__comm.on_connect = self.__onConnect
-            self.__comm.on_disconnect = self.__onDisconnect
-            self.__comm.on_message = self.__handleCommand
-        logger.info("initializing communication ...")
-        if not cc_conf.connector.tls:
-            logger.warning("initializing communication - TLS encryption disabled")
-        self.__comm.connect(
-            host=cc_conf.connector.host,
-            port=cc_conf.connector.port,
-            usr=cc_conf.credentials.user,
-            pw=cc_conf.credentials.pw
+        self.__reconnect_flag = reconnect
+        worker = EventWorker(
+            target=self.__connect,
+            name="connect"
         )
-        self.__comm_init = True
+        future = worker.start()
+        if asynchronous:
+            return future
+        else:
+            future.wait()
+            future.result()
 
-    def stopComm(self) -> None:
+    def disconnect(self) -> None:
         """
-        Stop communication with platform. Call initComm to reinitialize  communication.
+        Disconnect from platform message broker.
         :return: None.
         """
-        if not self.__comm:
-            logger.error("communication not initialized")
-            raise CommNotInitializedError
+        self.__reconnect_flag = False
         try:
             self.__comm.disconnect()
-            logger.info("stopping communication ...")
+            logger.info("disconnecting ...")
         except mqtt.NotConnectedError:
-            pass
-        self.__comm_init = False
+            raise NotConnectedError
 
     def connectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
         """
