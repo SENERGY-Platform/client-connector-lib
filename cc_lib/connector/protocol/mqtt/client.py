@@ -199,8 +199,9 @@ class Client:
         except KeyError:
             pass
 
-    def connect(self, host: str, port: int, usr: str, pw: str) -> None:
+    def connect(self, host: str, port: int, usr: str, pw: str, event_worker) -> None:
         self.__mqtt.username_pw_set(usr, pw)
+        self.__events["connect_event"] = event_worker
         self.__loop_thread = Thread(target=self.__loop, name="mqtt-loop", args=(host, port), daemon=True)
         self.__loop_thread.start()
 
