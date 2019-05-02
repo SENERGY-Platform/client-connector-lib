@@ -463,7 +463,9 @@ class Client(metaclass=Singleton):
             raise RuntimeError("already connected")
         logger.info("connecting to '{}' on '{}' ... ".format(cc_conf.connector.host, cc_conf.connector.port))
         if self.__comm:
-            self.__comm.reset(cc_conf.hub.id)
+            self.__comm.reset(
+                cc_conf.hub.id if self.__hub_init else md5(bytes(cc_conf.credentials.user, "UTF-8")).hexdigest()
+            )
         else:
             if not cc_conf.connector.tls:
                 logger.warning("TLS encryption disabled")
