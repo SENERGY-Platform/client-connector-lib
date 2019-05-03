@@ -437,10 +437,14 @@ class Client(metaclass=Singleton):
             clbk_thread = Thread(target=self.__connect_clbk, args=(self, ), name="user-connect-callback", daemon=True)
             clbk_thread.start()
 
-    def __onDisconnect(self, reason: int) -> None:
+    def __onDisconnect(self, code: int, reason: str) -> None:
         self.__connected_flag = False
-        if reason > 0:
-            logger.warning("unexpected disconnect")
+        if code > 0:
+            log_msg = "unexpected disconnect - {}".format(reason)
+            if self.__reconnect_flag:
+                logger.warning(log_msg)
+            else:
+                logger.error(log_msg)
         else:
             logger.info("disconnected by user")
         if self.__disconnect_clbk:
@@ -487,13 +491,15 @@ class Client(metaclass=Singleton):
                     raise event_worker.exception
                 except mqtt.ConnectError as ex:
                     event_worker.exception = ConnectError(ex)
-                    logger.error(
-                        "connecting to '{}' on '{}' failed - {}".format(
-                            cc_conf.connector.host,
-                            cc_conf.connector.port,
-                            ex
-                        )
+                    log_msg = "connecting to '{}' on '{}' failed - {}".format(
+                        cc_conf.connector.host,
+                        cc_conf.connector.port,
+                        ex
                     )
+                    if self.__reconnect_flag:
+                        logger.warning(log_msg)
+                    else:
+                        logger.error(log_msg)
             self.__connect_lock.release()
         event_worker.usr_method = on_done
         self.__comm.connect(
