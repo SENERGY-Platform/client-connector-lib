@@ -168,7 +168,6 @@ class Client:
 
     def __connectClbk(self, client: PahoClient, userdata: Any, flags: dict, rc: int) -> None:
         if rc > 0:
-            # self.__setEvent("connect_event", ConnectError(connack_string(rc).replace(".", "").lower()))
             try:
                 event = self.__events["connect_event"]
                 event.exception = ConnectError(connack_string(rc).replace(".", "").lower())
