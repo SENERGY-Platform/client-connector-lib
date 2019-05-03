@@ -128,6 +128,7 @@ class Client:
             rc = self.__mqtt.connect(host=host, port=port, keepalive=self.__keepalive)
             if rc == MQTT_ERR_SUCCESS:
                 logger.debug("starting loop")
+                loop_ex = None
                 try:
                     while rc == MQTT_ERR_SUCCESS:
                         rc = self.__mqtt.loop(timeout=self.__loop_time)
@@ -135,24 +136,24 @@ class Client:
                             self.__usr_disconn = False
                             self.__mqtt.disconnect()
                             break
-                except OSError as ex:
-                    logger.error("socket error - {}".format(ex))
+                except OSError as loop_ex:
+                    logger.error("socket error - {}".format(loop_ex))
                 logger.debug("loop stopped")
-                if not rc == MQTT_ERR_SUCCESS:
-                    try:
-                        event = self.__events["connect_event"]
-                        if not event.exception:
+                try:
+                    event = self.__events["connect_event"]
+                    if not event.exception:
+                        if loop_ex:
+                            event.exception = loop_ex
+                        elif not rc == MQTT_ERR_SUCCESS:
                             event.exception = ConnectError(error_string(rc).replace(".", "").lower())
-                    except KeyError:
-                        pass
-                    connect_attempt = self.__setEvent("connect_event")
-                    if not connect_attempt:
-                        logger.error(error_string(rc).replace(".", "").lower())
-                else:
-                    connect_attempt = self.__setEvent("connect_event")
-                if not connect_attempt:
+                except KeyError:
+                    pass
+                if not self.__setEvent("connect_event"):
                     self.__cleanEvents()
-                    self.on_disconnect(rc)
+                    if loop_ex:
+                        self.on_disconnect(99, loop_ex)
+                    else:
+                        self.on_disconnect(rc, error_string(rc).replace(".", "").lower())
             else:
                 # logger.error(error_string(rc).replace(".", "").lower())
                 self.__setEvent("connect_event", ConnectError(error_string(rc).replace(".", "").lower()))
