@@ -510,26 +510,26 @@ class Client(metaclass=Singleton):
             event_worker=event_worker
         )
 
-    def __reconnect(self):
-        retry = 0
+    def __reconnect(self, retry: int = 0):
         while not self.__connected_flag:
             if not self.__reconnect_flag:
                 break
             retry += 1
-            duration = __class__.__calcDuration(
-                min_duration=cc_conf.connector.reconn_delay_min,
-                max_duration=cc_conf.connector.reconn_delay_max,
-                retry_num=retry,
-                factor=cc_conf.connector.reconn_delay_factor
-            )
-            minutes, seconds = divmod(duration, 60)
-            if minutes and seconds:
-                logger.info("reconnect in {}m and {}s ...".format(minutes, seconds))
-            elif seconds:
-                logger.info("reconnect in {}s ...".format(seconds))
-            elif minutes:
-                logger.info("reconnect in {}m ...".format(minutes))
-            sleep(duration)
+            if retry > 0:
+                duration = __class__.__calcDuration(
+                    min_duration=cc_conf.connector.reconn_delay_min,
+                    max_duration=cc_conf.connector.reconn_delay_max,
+                    retry_num=retry,
+                    factor=cc_conf.connector.reconn_delay_factor
+                )
+                minutes, seconds = divmod(duration, 60)
+                if minutes and seconds:
+                    logger.info("reconnect in {}m and {}s ...".format(minutes, seconds))
+                elif seconds:
+                    logger.info("reconnect in {}s ...".format(seconds))
+                elif minutes:
+                    logger.info("reconnect in {}m ...".format(minutes))
+                sleep(duration)
             worker = EventWorker(
                 target=self.__connect,
                 name="connect"
@@ -818,11 +818,20 @@ class Client(metaclass=Singleton):
         :return: Future or None.
         """
         self.__reconnect_flag = reconnect
-        worker = EventWorker(
-            target=self.__connect,
-            name="connect"
-        )
-        future = worker.start()
+        if self.__reconnect_flag:
+            worker = ThreadWorker(
+                target=self.__reconnect,
+                args=(-1,),
+                name="connect",
+                daemon=True
+            )
+            future = worker.start()
+        else:
+            worker = EventWorker(
+                target=self.__connect,
+                name="connect"
+            )
+            future = worker.start()
         if asynchronous:
             return future
         else:
