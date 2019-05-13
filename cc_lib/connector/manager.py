@@ -34,7 +34,7 @@ def isDevice(obj: object) -> bool:
     return False
 
 
-class DeviceManager:
+class Manager:
 
     def __init__(self):
         self.__device_pool = dict()
