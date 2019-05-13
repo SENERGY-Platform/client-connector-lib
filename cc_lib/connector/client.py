@@ -45,7 +45,7 @@ from json import JSONDecodeError
 logger = _getLibLogger(__name__.split(".", 1)[-1])
 
 
-class SendHandler:
+class _SendHandler:
     event = "event"
     response = "response"
 
@@ -633,9 +633,9 @@ class Client(metaclass=Singleton):
                     try:
                         raise event_worker.exception
                     except Exception as ex:
-                        if handler == SendHandler.event:
+                        if handler == _SendHandler.event:
                             event_worker.exception = SendEventError(ex)
-                        elif handler == SendHandler.response:
+                        elif handler == _SendHandler.response:
                             event_worker.exception = SendResponseError(ex)
                         else:
                             event_worker.exception = SendError(ex)
@@ -647,7 +647,7 @@ class Client(metaclass=Singleton):
             event_worker.usr_method = on_done
             self.__comm.publish(
                 topic="{}/{}/{}".format(handler, __class__.__prefixDeviceID(envelope.device_id), envelope.service_uri),
-                payload=jsonDumps(dict(envelope.message)) if handler is SendHandler.event else jsonDumps(dict(envelope)),
+                payload=jsonDumps(dict(envelope.message)) if handler is _SendHandler.event else jsonDumps(dict(envelope)),
                 qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
                 event_worker=event_worker
             )
@@ -656,9 +656,9 @@ class Client(metaclass=Singleton):
             raise NotConnectedError
         except mqtt.PublishError as ex:
             logger.error("sending {} '{}' to platform failed - {}".format(handler, envelope.correlation_id, ex))
-            if handler == SendHandler.event:
+            if handler == _SendHandler.event:
                 raise SendEventError
-            elif handler == SendHandler.response:
+            elif handler == _SendHandler.response:
                 raise SendResponseError
             else:
                 raise SendError
@@ -912,7 +912,7 @@ class Client(metaclass=Singleton):
             raise TypeError(type(asynchronous))
         worker = EventWorker(
             target=self.__send,
-            args=(SendHandler.response, envelope),
+            args=(_SendHandler.response, envelope),
             name="send-response-".format(envelope.correlation_id),
         )
         future = worker.start()
@@ -935,7 +935,7 @@ class Client(metaclass=Singleton):
             raise TypeError(type(asynchronous))
         worker = EventWorker(
             target=self.__send,
-            args=(SendHandler.event, envelope),
+            args=(_SendHandler.event, envelope),
             name="send-event-".format(envelope.correlation_id)
         )
         future = worker.start()
