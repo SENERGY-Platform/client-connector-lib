@@ -16,7 +16,7 @@
 
 __all__ = ('DeviceManager', 'isDevice')
 
-from typing import Tuple
+from typing import List
 from threading import Lock
 import cc_lib
 
@@ -80,8 +80,8 @@ class DeviceManager:
         self.__lock.release()
 
     @property
-    def devices(self) -> Tuple[cc_lib.device.Device]:
+    def devices(self) -> List[cc_lib.device.Device]:
         self.__lock.acquire()
-        devices = tuple(self.__device_pool.values())
+        devices = list(self.__device_pool.values())
         self.__lock.release()
         return devices
