@@ -14,6 +14,8 @@
    limitations under the License.
 """
 
+__all__ = ('Manager', 'isDevice')
+
 from ..logger.logger import _getLibLogger
 from ..device.device import Device
 from typing import Tuple
