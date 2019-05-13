@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('Manager', 'isDevice')
+__all__ = ('DeviceManager', 'isDevice')
 
 from typing import Tuple
 from threading import Lock
@@ -35,7 +35,7 @@ def isDevice(obj: object) -> bool:
     return False
 
 
-class Manager:
+class DeviceManager:
 
     def __init__(self):
         self.__device_pool = dict()
