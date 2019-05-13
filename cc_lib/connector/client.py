@@ -677,6 +677,8 @@ class Client(metaclass=Singleton):
         :param func: User function.
         :return: None.
         """
+        if not callable(func):
+            raise TypeError(type(func))
         with self.__set_clbk_lock:
             self.__connect_clbk = func
 
@@ -686,6 +688,8 @@ class Client(metaclass=Singleton):
         :param func: User function.
         :return: None.
         """
+        if not callable(func):
+            raise TypeError(type(func))
         with self.__set_clbk_lock:
             self.__disconnect_clbk = func
 
@@ -695,6 +699,8 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
+        if not type(asynchronous) is bool:
+            raise TypeError(type(asynchronous))
         if asynchronous:
             worker = ThreadWorker(target=self.__initHub, name="init-hub", daemon=True)
             future = worker.start()
@@ -709,6 +715,8 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
+        if not type(asynchronous) is bool:
+            raise TypeError(type(asynchronous))
         if asynchronous:
             worker = ThreadWorker(target=self.__syncHub, name="sync-hub", daemon=True)
             future = worker.start()
@@ -725,6 +733,8 @@ class Client(metaclass=Singleton):
         """
         if not isDevice(device):
             raise TypeError(type(device))
+        if not type(asynchronous) is bool:
+            raise TypeError(type(asynchronous))
         if asynchronous:
             worker = ThreadWorker(
                 target=self.__addDevice,
@@ -748,6 +758,8 @@ class Client(metaclass=Singleton):
             device = device.id
         if not type(device) is str:
             raise TypeError(type(device))
+        if not type(asynchronous) is bool:
+            raise TypeError(type(asynchronous))
         if asynchronous:
             worker = ThreadWorker(
                 target=self.__deleteDevice,
@@ -774,6 +786,8 @@ class Client(metaclass=Singleton):
                 raise DeviceNotFoundError
         if not isDevice(device):
             raise TypeError(type(device))
+        if not type(asynchronous) is bool:
+            raise TypeError(type(asynchronous))
         if asynchronous:
             worker = ThreadWorker(
                 target=self.__updateDevice,
@@ -792,6 +806,8 @@ class Client(metaclass=Singleton):
         :param device_id: ID of a device.
         :return: Device object.
         """
+        if not type(device_id) is str:
+            raise TypeError(type(device_id))
         try:
             return self.__device_mgr.get(device_id)
         except KeyError:
@@ -817,6 +833,10 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
+        if not type(reconnect) is bool:
+            raise TypeError(type(reconnect))
+        if not type(asynchronous) is bool:
+            raise TypeError(type(asynchronous))
         self.__reconnect_flag = reconnect
         if self.__reconnect_flag:
             worker = ThreadWorker(
@@ -866,6 +886,8 @@ class Client(metaclass=Singleton):
                 raise TypeError(type(device))
         except KeyError:
             raise DeviceNotFoundError
+        if not type(asynchronous) is bool:
+            raise TypeError(type(asynchronous))
         worker = EventWorker(
             target=self.__connectDevice,
             args=(device, ),
@@ -892,6 +914,8 @@ class Client(metaclass=Singleton):
                 raise DeviceNotFoundError
         if not isDevice(device):
             raise TypeError(type(device))
+        if not type(asynchronous) is bool:
+            raise TypeError(type(asynchronous))
         worker = EventWorker(
             target=self.__disconnectDevice,
             args=(device,),
@@ -911,6 +935,10 @@ class Client(metaclass=Singleton):
         :param timeout: Return after set amount of time if no command is available.
         :return: Envelope object.
         """
+        if not type(block) is bool:
+            raise TypeError(type(block))
+        if not type(timeout) in (int, type(None)):
+            raise TypeError(type(timeout))
         try:
             return self.__cmd_queue.get(block=block, timeout=timeout)
         except QueueEmpty:
@@ -925,6 +953,8 @@ class Client(metaclass=Singleton):
         """
         if not type(envelope) is Envelope:
             raise TypeError(type(envelope))
+        if not type(asynchronous) is bool:
+            raise TypeError(type(asynchronous))
         worker = EventWorker(
             target=self.__send,
             args=(SendHandler.response, envelope),
@@ -946,6 +976,8 @@ class Client(metaclass=Singleton):
         """
         if not type(envelope) is Envelope:
             raise TypeError(type(envelope))
+        if not type(asynchronous) is bool:
+            raise TypeError(type(asynchronous))
         worker = EventWorker(
             target=self.__send,
             args=(SendHandler.event, envelope),
