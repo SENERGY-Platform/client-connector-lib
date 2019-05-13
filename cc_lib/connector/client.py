@@ -1070,3 +1070,14 @@ class Client(metaclass=Singleton):
         if duration <= max_duration:
             return duration
         return max_duration
+
+    @staticmethod
+    def __isDevice(obj: object) -> bool:
+        """
+        Check if a object is a Device or a Device subclass
+        :param obj: object to check
+        :return: Boolean
+        """
+        if type(obj) is Device or issubclass(type(obj), Device):
+            return True
+        return False
