@@ -20,7 +20,6 @@ from ..configuration.configuration import cc_conf, initConnectorConf
 from ..logger.logger import _getLibLogger, initLogging
 from ..device import Device
 from .exception import *
-from .device_manager import DeviceManager, isDevice
 from .singleton import Singleton
 from .auth import OpenIdClient, NoTokenError
 from .protocol import http, mqtt
@@ -78,7 +77,6 @@ class Client(metaclass=Singleton):
             cc_conf.credentials.pw,
             cc_conf.auth.id
         )
-        self.__device_mgr = DeviceManager()
         self.__comm: mqtt.Client = None
         self.__connected_flag = False
         self.__connect_lock = Lock()
@@ -165,7 +163,7 @@ class Client(metaclass=Singleton):
             logger.error("initializing hub failed - malformed response - missing key {}".format(ex))
             raise HubInitializationError
 
-    def __syncHub(self) -> None:
+    def __syncHub(self, devices: Union[List[Device], Tuple[Device]]) -> None:
         self.__hub_sync_lock.acquire()
         if not self.__hub_init:
             self.__hub_sync_lock.release()
@@ -181,7 +179,6 @@ class Client(metaclass=Singleton):
                         worker.join()
                         logger.debug("synchronizing hub - task '{}' finished".format(worker.name))
                     self.__workers.clear()
-                devices = self.__device_mgr.devices
                 device_ids = tuple(__class__.__prefixDeviceID(device.id) for device in devices)
                 devices_hash = __class__.__hashDevices(devices)
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
@@ -321,10 +318,8 @@ class Client(metaclass=Singleton):
                 logger.info("adding device '{}' to platform successful".format(device.id))
                 device_atr = jsonLoads(resp.body)
                 __class__.__setMangledAttr(device, "remote_id", device_atr["id"])
-                self.__device_mgr.add(device)
             elif resp.status == 200:
                 logger.warning("adding device '{}' to platform - device exists - updating device ...".format(device.id))
-                self.__device_mgr.add(device)
                 device_atr = jsonLoads(resp.body)
                 __class__.__setMangledAttr(device, "remote_id", device_atr["id"])
                 # if not device.img_url == device_atr["img"]:
@@ -349,7 +344,6 @@ class Client(metaclass=Singleton):
             self.__hub_sync_event.wait()
         if worker:
             self.__workers.append(current_thread())
-        self.__device_mgr.delete(device_id)
         try:
             logger.info("deleting device '{}' from platform ...".format(device_id))
             access_token = self.__auth.getAccessToken()
@@ -708,21 +702,26 @@ class Client(metaclass=Singleton):
         else:
             self.__initHub()
 
-    def syncHub(self, asynchronous: bool = False) -> Optional[Future]:
+    def syncHub(self, devices: Union[List[Device], Tuple[Device]], asynchronous: bool = False) -> Optional[Future]:
         """
         Synchronize a hub. Associate devices managed by the client with the hub and update hub name.
         Devices must be added via addDevice.
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
+        if not type(devices) in (list, tuple):
+            raise TypeError(type(devices))
+        for device in devices:
+            if not __class__.__isDevice(device):
+                raise TypeError(type(device))
         if not type(asynchronous) is bool:
             raise TypeError(type(asynchronous))
         if asynchronous:
-            worker = ThreadWorker(target=self.__syncHub, name="sync-hub", daemon=True)
+            worker = ThreadWorker(target=self.__syncHub, args=(devices, ), name="sync-hub", daemon=True)
             future = worker.start()
             return future
         else:
-            self.__syncHub()
+            self.__syncHub(devices)
 
     def addDevice(self, device: Device, asynchronous: bool = False) -> Optional[Future]:
         """
@@ -731,7 +730,7 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if not isDevice(device):
+        if not __class__.__isDevice(device):
             raise TypeError(type(device))
         if not type(asynchronous) is bool:
             raise TypeError(type(asynchronous))
@@ -754,7 +753,7 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if isDevice(device):
+        if __class__.__isDevice(device):
             device = device.id
         if not type(device) is str:
             raise TypeError(type(device))
@@ -772,19 +771,14 @@ class Client(metaclass=Singleton):
         else:
             self.__deleteDevice(device)
 
-    def updateDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
+    def updateDevice(self, device: Device, asynchronous: bool = False) -> Optional[Future]:
         """
         Update a device on the platform.
         :param device: Device object or device ID.
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if type(device) is str:
-            try:
-                device = self.__device_mgr.get(device)
-            except KeyError:
-                raise DeviceNotFoundError
-        if not isDevice(device):
+        if not __class__.__isDevice(device):
             raise TypeError(type(device))
         if not type(asynchronous) is bool:
             raise TypeError(type(asynchronous))
@@ -799,33 +793,6 @@ class Client(metaclass=Singleton):
             return future
         else:
             self.__updateDevice(device)
-
-    def getDevice(self, device_id: str) -> Device:
-        """
-        Get a Device object from the client. Raises an exception if device not found.
-        :param device_id: ID of a device.
-        :return: Device object.
-        """
-        if not type(device_id) is str:
-            raise TypeError(type(device_id))
-        try:
-            return self.__device_mgr.get(device_id)
-        except KeyError:
-            raise DeviceNotFoundError
-
-    def listDevices(self) -> Tuple[Device]:
-        """
-        List all devices managed by the client.
-        :return: Tuple of Device objects.
-        """
-        return self.__device_mgr.devices
-
-    def listDeviceIDs(self) -> Tuple[str]:
-        """
-        List IDs of all devices managed by the client.
-        :return: Tuple of device IDs
-        """
-        return tuple(device.id for device in self.__device_mgr.devices)
 
     def connect(self, reconnect: bool = False, asynchronous: bool = False) -> Optional[Future]:
         """
@@ -870,22 +837,15 @@ class Client(metaclass=Singleton):
         except mqtt.NotConnectedError:
             raise NotConnectedError
 
-    def connectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
+    def connectDevice(self, device: Device, asynchronous: bool = False) -> Optional[Future]:
         """
         Connect a device to the platform.
         :param device: Device object or device ID.
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        try:
-            if isDevice(device):
-                self.__device_mgr.get(device.id)
-            elif type(device) is str:
-                device = self.__device_mgr.get(device)
-            else:
-                raise TypeError(type(device))
-        except KeyError:
-            raise DeviceNotFoundError
+        if not __class__.__isDevice(device):
+            raise TypeError(type(device))
         if not type(asynchronous) is bool:
             raise TypeError(type(asynchronous))
         worker = EventWorker(
@@ -900,19 +860,14 @@ class Client(metaclass=Singleton):
             future.wait()
             future.result()
 
-    def disconnectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
+    def disconnectDevice(self, device: Device, asynchronous: bool = False) -> Optional[Future]:
         """
         Disconnect a device from the platform.
         :param device: Device object or device ID.
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if type(device) is str:
-            try:
-                device = self.__device_mgr.get(device)
-            except KeyError:
-                raise DeviceNotFoundError
-        if not isDevice(device):
+        if not __class__.__isDevice(device):
             raise TypeError(type(device))
         if not type(asynchronous) is bool:
             raise TypeError(type(asynchronous))
