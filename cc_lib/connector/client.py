@@ -163,7 +163,7 @@ class Client(metaclass=Singleton):
             logger.error("initializing hub failed - malformed response - missing key {}".format(ex))
             raise HubInitializationError
 
-    def __syncHub(self, devices: Union[List[Device], Tuple[Device]]) -> None:
+    def __syncHub(self, devices: List[Device]) -> None:
         self.__hub_sync_lock.acquire()
         if not self.__hub_init:
             self.__hub_sync_lock.release()
@@ -702,14 +702,14 @@ class Client(metaclass=Singleton):
         else:
             self.__initHub()
 
-    def syncHub(self, devices: Union[List[Device], Tuple[Device]], asynchronous: bool = False) -> Optional[Future]:
+    def syncHub(self, devices: List[Device], asynchronous: bool = False) -> Optional[Future]:
         """
         Synchronize a hub. Associate devices managed by the client with the hub and update hub name.
         Devices must be added via addDevice.
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if not type(devices) in (list, tuple):
+        if not type(devices) is list:
             raise TypeError(type(devices))
         for device in devices:
             if not __class__.__isDevice(device):
