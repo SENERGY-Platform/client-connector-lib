@@ -43,6 +43,10 @@ color_code = {
 }
 
 
+class LoggerError(Exception):
+    pass
+
+
 class ColorFormatter(logging.Formatter):
     def format(self, record):
         s = super().format(record)
@@ -68,6 +72,9 @@ usr_logger.addHandler(stream_handler)
 
 
 def initLogging() -> None:
+    if not cc_conf.logger.level in logging_levels.keys():
+        err = "unknown log level '{}'".format(cc_conf.logger.level)
+        raise LoggerError(err)
     lib_logger.setLevel(logging_levels[cc_conf.logger.level])
     if cc_conf.logger.rotating_log:
         lock.acquire()
@@ -75,7 +82,10 @@ def initLogging() -> None:
         usr_logger.removeHandler(stream_handler)
         logs_path = '{}/logs'.format(user_dir)
         if not path_exists(logs_path):
-            makedirs(logs_path)
+            try:
+                makedirs(logs_path)
+            except OSError as ex:
+                raise LoggerError(ex)
         file_path = '{}/connector.log'.format(logs_path)
         log_handler = TimedRotatingFileHandler(
             file_path,
