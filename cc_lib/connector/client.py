@@ -446,7 +446,12 @@ class Client(metaclass=Singleton):
         else:
             logger.info("disconnected by user")
         if self.__disconnect_clbk:
-            clbk_thread = Thread(target=self.__disconnect_clbk, args=(self, ), name="user-disconnect-callback", daemon=True)
+            clbk_thread = Thread(
+                target=self.__disconnect_clbk,
+                args=(self, ),
+                name="user-disconnect-callback",
+                daemon=True
+            )
             clbk_thread.start()
         if self.__reconnect_flag:
             reconnect_thread = Thread(target=self.__reconnect, name="reconnect", daemon=True)
