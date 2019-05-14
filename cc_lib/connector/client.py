@@ -114,7 +114,7 @@ class Client(metaclass=Singleton):
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
-                    timeout=cc_conf.api.req_timeout
+                    timeout=cc_conf.api.request_timeout
                 )
                 resp = req.send()
                 if not resp.status == 200:
@@ -137,7 +137,7 @@ class Client(metaclass=Singleton):
                     ),
                     method=http.Method.HEAD,
                     headers={"Authorization": "Bearer {}".format(access_token)},
-                    timeout=cc_conf.api.req_timeout
+                    timeout=cc_conf.api.request_timeout
                 )
                 resp = req.send()
                 if resp.status == 200:
@@ -194,7 +194,7 @@ class Client(metaclass=Singleton):
                     method=http.Method.GET,
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
-                    timeout=cc_conf.api.req_timeout
+                    timeout=cc_conf.api.request_timeout
                 )
                 resp = req.send()
                 if resp.status == 200:
@@ -226,7 +226,7 @@ class Client(metaclass=Singleton):
                             },
                             content_type=http.ContentType.json,
                             headers={"Authorization": "Bearer {}".format(access_token)},
-                            timeout=cc_conf.api.req_timeout
+                            timeout=cc_conf.api.request_timeout
                         )
                         if devices:
                             logger.debug("synchronizing hub - waiting 4s for eventual consistency")
@@ -291,7 +291,7 @@ class Client(metaclass=Singleton):
                 ),
                 method=http.Method.GET,
                 headers={"Authorization": "Bearer {}".format(access_token)},
-                timeout=cc_conf.api.req_timeout
+                timeout=cc_conf.api.request_timeout
             )
             resp = req.send()
             if resp.status == 404:
@@ -307,7 +307,7 @@ class Client(metaclass=Singleton):
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
-                    timeout=cc_conf.api.req_timeout
+                    timeout=cc_conf.api.request_timeout
                 )
                 resp = req.send()
                 if not resp.status == 200:
@@ -356,7 +356,7 @@ class Client(metaclass=Singleton):
                 ),
                 method=http.Method.DELETE,
                 headers={"Authorization": "Bearer {}".format(access_token)},
-                timeout=cc_conf.api.req_timeout
+                timeout=cc_conf.api.request_timeout
             )
             resp = req.send()
             if resp.status == 200:
@@ -399,7 +399,7 @@ class Client(metaclass=Singleton):
                 },
                 content_type=http.ContentType.json,
                 headers={"Authorization": "Bearer {}".format(access_token)},
-                timeout=cc_conf.api.req_timeout
+                timeout=cc_conf.api.request_timeout
             )
             resp = req.send()
             if resp.status == 200:
