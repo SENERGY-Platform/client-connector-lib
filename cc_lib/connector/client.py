@@ -228,9 +228,6 @@ class Client(metaclass=Singleton):
                             headers={"Authorization": "Bearer {}".format(access_token)},
                             timeout=cc_conf.api.request_timeout
                         )
-                        if devices:
-                            logger.debug("synchronizing hub - waiting 4s for eventual consistency")
-                            sleep(4)
                         resp = req.send()
                         if resp.status == 200:
                             logger.info("synchronizing hub successful")
