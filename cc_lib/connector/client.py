@@ -887,7 +887,7 @@ class Client(metaclass=Singleton):
             future.wait()
             future.result()
 
-    def receiveCommand(self, block: bool = True, timeout: Optional[int] = None) -> Envelope:
+    def receiveCommand(self, block: bool = True, timeout: Optional[Union[int, float]] = None) -> Envelope:
         """
         Receive a command.
         :param block: If 'True' blocks until a command is available.
@@ -896,7 +896,7 @@ class Client(metaclass=Singleton):
         """
         if not type(block) is bool:
             raise TypeError(type(block))
-        if not type(timeout) in (int, type(None)):
+        if not type(timeout) in (int, float, type(None)):
             raise TypeError(type(timeout))
         try:
             return self.__cmd_queue.get(block=block, timeout=timeout)
