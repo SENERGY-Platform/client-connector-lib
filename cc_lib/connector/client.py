@@ -315,6 +315,13 @@ class Client(metaclass=Singleton):
                         "adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body)
                     )
                     raise DeviceAddError
+                logger.debug(
+                    "adding device '{}' to platform - waiting {}s for eventual consistency".format(
+                        device.id,
+                        cc_conf.api.eventual_consistency_delay
+                    )
+                )
+                sleep(cc_conf.api.eventual_consistency_delay)
                 logger.info("adding device '{}' to platform successful".format(device.id))
                 device_atr = jsonLoads(resp.body)
                 __class__.__setMangledAttr(device, "remote_id", device_atr["id"])
