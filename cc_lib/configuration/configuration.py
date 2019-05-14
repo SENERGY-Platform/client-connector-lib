@@ -17,6 +17,7 @@
 from simple_conf import configuration, section, initConfig
 from os import getcwd, makedirs
 from os.path import exists as path_exists
+from typing import Union
 import logging
 
 formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s: [%(name)s] %(message)s', datefmt='%m.%d.%Y %I:%M:%S %p')
@@ -40,10 +41,10 @@ class ConnectorConf:
         qos: int = "normal"
         msg_retry: int = 5
         keepalive: int = 20
-        loop_time: float = 1
-        reconn_delay_min = 1
-        reconn_delay_max = 240
-        reconn_delay_factor = 1.75
+        loop_time: Union[int, float] = 1
+        reconn_delay_min: int = 1
+        reconn_delay_max: int = 240
+        reconn_delay_factor: Union[int, float] = 1.75
 
     @section
     class auth:
@@ -72,7 +73,8 @@ class ConnectorConf:
         host: str = None
         hub_endpt: str = None
         device_endpt: str = None
-        req_timeout: int = 30
+        request_timeout: Union[int, float] = 30
+        eventual_consistency_delay: Union[int, float] = 2
 
     @section
     class device:
