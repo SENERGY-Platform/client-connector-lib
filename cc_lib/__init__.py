@@ -25,3 +25,4 @@ __copyright__ = 'Copyright 2019 InfAI (CC SES)'
 import cc_lib.device
 import cc_lib.logger
 import cc_lib.client
+import cc_lib.message
