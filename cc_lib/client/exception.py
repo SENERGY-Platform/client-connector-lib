@@ -15,6 +15,32 @@
 """
 
 
+__all__ = (
+    'ClientError',
+    'HubError',
+    'HubInitializationError',
+    'HubNotInitializedError',
+    'HubNotFoundError',
+    'HubSyncError',
+    'HubSyncDeviceError',
+    'DeviceError',
+    'DeviceAddError',
+    'DeviceNotFoundError',
+    'DeviceDeleteError',
+    'DeviceConnectError',
+    'DeviceConnectNotAllowedError',
+    'DeviceDisconnectError',
+    'DeviceUpdateError',
+    'ConnectionError',
+    'ConnectError',
+    'NotConnectedError',
+    'CommandQueueEmptyError',
+    'SendError',
+    'SendResponseError',
+    'SendEventError'
+)
+
+
 class ClientError(Exception):
     """
     Base error.
