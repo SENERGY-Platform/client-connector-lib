@@ -19,7 +19,7 @@ __all__ = ("Client", )
 from ..configuration.configuration import cc_conf, initConnectorConf
 from ..logger.logger import getLogger, initLogging
 from ..device import Device
-from ..message import Envelope, Message
+from .message import Envelope, Message
 from .exception import *
 from .singleton import Singleton
 from .auth import OpenIdClient, NoTokenError
