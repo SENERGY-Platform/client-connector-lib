@@ -26,7 +26,7 @@ __all__ = (
     'qos_map'
 )
 
-from ....logger.logger import _getLibLogger
+from ....logger import getLogger
 from paho.mqtt.client import Client as PahoClient
 from paho.mqtt.client import MQTT_ERR_SUCCESS, MQTT_ERR_NO_CONN, connack_string, error_string
 from threading import Thread
@@ -34,7 +34,7 @@ from typing import Any, Union
 from ssl import CertificateError
 
 
-logger = _getLibLogger(__name__.split('.', 1)[-1])
+logger = getLogger(__name__.split('.', 1)[-1])
 
 
 qos_map = {

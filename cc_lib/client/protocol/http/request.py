@@ -17,7 +17,7 @@
 __all__ = ('urlEncode', 'Method', 'ContentType', 'Request', 'URLError', 'SocketTimeout')
 
 
-from ....logger.logger import _getLibLogger
+from ....logger import getLogger
 from .response import Response
 from typing import Union, Iterable, SupportsAbs, Optional
 from socket import timeout as SocketTimeout
@@ -27,7 +27,7 @@ import urllib.parse
 import json
 
 
-logger = _getLibLogger(__name__.split('.', 1)[-1])
+logger = getLogger(__name__.split('.', 1)[-1])
 
 
 ca_file = None

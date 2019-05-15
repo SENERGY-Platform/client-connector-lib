@@ -17,7 +17,7 @@
 __all__ = ("Client", )
 
 from ..configuration.configuration import cc_conf, initConnectorConf
-from ..logger.logger import _getLibLogger, initLogging
+from ..logger.logger import getLogger, initLogging
 from ..device import Device
 from ..message import Envelope, Message
 from .exception import *
@@ -42,7 +42,7 @@ from json import dumps as jsonDumps
 from json import JSONDecodeError
 
 
-logger = _getLibLogger(__name__.rsplit(".", 1)[-1])
+logger = getLogger(__name__.rsplit(".", 1)[-1])
 
 
 class _SendHandler:
