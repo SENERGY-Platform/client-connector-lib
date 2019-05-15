@@ -34,7 +34,7 @@ tests = scenario[6]
 
 device_manager = cc_lib.device.manager.DevicePool
 
-client_connector = cc_lib.connector.Client(device_manager)
+client_connector = cc_lib.client.Client(device_manager)
 
 
 logger.info('###### initiation phase ######')
