@@ -15,9 +15,9 @@
 """
 
 from .client import *
-import cc_lib.client.message
-import cc_lib.client.exception
+from .exception import *
 
 __all__ = (
-    client.__all__
+    client.__all__,
+    exception.__all__
 )
