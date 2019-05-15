@@ -62,24 +62,18 @@ color_formatter = ColorFormatter(fmt=msg_fmt, datefmt=date_fmt)
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(color_formatter)
 
-lib_logger = logging.getLogger('cc_lib')
-lib_logger.propagate = False
-lib_logger.addHandler(stream_handler)
-
-usr_logger = logging.getLogger('user')
-usr_logger.propagate = False
-usr_logger.addHandler(stream_handler)
+logger = logging.getLogger('connector')
+logger.propagate = False
+logger.addHandler(stream_handler)
 
 
 def initLogging() -> None:
     if not cc_conf.logger.level in logging_levels.keys():
         err = "unknown log level '{}'".format(cc_conf.logger.level)
         raise LoggerError(err)
-    lib_logger.setLevel(logging_levels[cc_conf.logger.level])
+    logger.setLevel(logging_levels[cc_conf.logger.level])
     if cc_conf.logger.rotating_log:
-        lock.acquire()
-        lib_logger.removeHandler(stream_handler)
-        usr_logger.removeHandler(stream_handler)
+        logger.removeHandler(stream_handler)
         logs_path = '{}/logs'.format(user_dir)
         if not path_exists(logs_path):
             try:
@@ -94,21 +88,8 @@ def initLogging() -> None:
         )
         formatter = logging.Formatter(fmt=msg_fmt, datefmt=date_fmt)
         log_handler.setFormatter(formatter)
-        lib_logger.addHandler(log_handler)
-        usr_logger.addHandler(log_handler)
-        lock.release()
-
-
-def _getLibHandler() -> logging.Handler:
-    lock.acquire()
-    log_handler = lib_logger.handlers[0]
-    lock.release()
-    return log_handler
-
-
-def _getLibLogger(name: str) -> logging.Logger:
-    return lib_logger.getChild(name)
+        logger.addHandler(log_handler)
 
 
 def getLogger(name: str) -> logging.Logger:
-    return usr_logger.getChild(name)
+    return logger.getChild(name)
