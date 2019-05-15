@@ -19,11 +19,11 @@ __all__ = ("Client", )
 from ..configuration.configuration import cc_conf, initConnectorConf
 from ..logger.logger import _getLibLogger, initLogging
 from ..device import Device
+from ..message import Envelope, Message
 from .exception import *
 from .singleton import Singleton
 from .auth import OpenIdClient, NoTokenError
 from .protocol import http, mqtt
-from .message import Envelope, Message
 from .asynchron import Future, ThreadWorker, EventWorker
 from cc_lib import __version__ as VERSION
 from typing import Callable, Union, Any, Tuple, List, Optional
