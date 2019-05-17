@@ -19,7 +19,8 @@ __all__ = ("Envelope", )
 
 
 from .message import Message
-from typing import Optional, Type
+from ...device import Device
+from typing import Optional, Type, Union
 from uuid import uuid4 as uuid
 
 
@@ -27,14 +28,18 @@ class Envelope:
 
     __slots__ = ('__correlation_id', '__device_id', '__service_uri', '__message')
 
-    def __init__(self, device_id: str, service_uri: str, message: Message, corr_id: Optional[str] = None):
-        __class__.__checkType(device_id, str)
-        __class__.__checkType(service_uri, str)
+    def __init__(self, device: Union[Device, str], service: str, message: Message, corr_id: Optional[str] = None):
+        if type(device) is str:
+            self.__device_id = device
+        elif type(device) is Device or issubclass(type(device), Device):
+            self.__device_id = device.id
+        else:
+            raise TypeError(type(device))
+        __class__.__checkType(service, str)
         if corr_id:
             __class__.__checkType(corr_id, str)
         self.__correlation_id = corr_id or str(uuid())
-        self.__device_id = device_id
-        self.__service_uri = service_uri
+        self.__service_uri = service
         self.message = message
 
     @property
