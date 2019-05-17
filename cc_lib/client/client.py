@@ -608,8 +608,8 @@ class Client(metaclass=Singleton):
             envelope = jsonLoads(envelope)
             self.__cmd_queue.put_nowait(
                 Envelope(
-                    device_id=__class__.__parseDeviceID(uri[1]),
-                    service_uri=uri[2],
+                    device=__class__.__parseDeviceID(uri[1]),
+                    service=uri[2],
                     message=Message(
                         data=envelope["payload"].setdefault("data", str()),
                         metadata=envelope["payload"].setdefault("metadata", str())
