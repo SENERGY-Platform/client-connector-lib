@@ -581,10 +581,10 @@ class Client(metaclass=Singleton):
             logger.error("connecting device '{}' to platform failed - {}".format(device_id, ex))
             raise DeviceConnectError
 
-    def __disconnectDevice(self, device: Device, event_worker) -> None:
-        logger.info("disconnecting device '{}' from platform ...".format(device.id))
+    def __disconnectDevice(self, device_id: str, event_worker) -> None:
+        logger.info("disconnecting device '{}' from platform ...".format(device_id))
         if not self.__connected_flag:
-            logger.error("disconnecting device '{}' from platform failed - not connected".format(device.id))
+            logger.error("disconnecting device '{}' from platform failed - not connected".format(device_id))
             raise NotConnectedError
         try:
             def on_done():
@@ -593,19 +593,19 @@ class Client(metaclass=Singleton):
                         raise event_worker.exception
                     except Exception as ex:
                         event_worker.exception = DeviceDisconnectError(ex)
-                        logger.error("disconnecting device '{}' from platform failed - {}".format(device.id, ex))
+                        logger.error("disconnecting device '{}' from platform failed - {}".format(device_id, ex))
                 else:
-                    logger.info("disconnecting device '{}' from platform successful".format(device.id))
+                    logger.info("disconnecting device '{}' from platform successful".format(device_id))
             event_worker.usr_method = on_done
             self.__comm.unsubscribe(
-                topic="command/{}/+".format(__class__.__prefixDeviceID(device.id)),
+                topic="command/{}/+".format(__class__.__prefixDeviceID(device_id)),
                 event_worker=event_worker
             )
         except mqtt.NotConnectedError:
-            logger.error("disconnecting device '{}' from platform failed - not connected".format(device.id))
+            logger.error("disconnecting device '{}' from platform failed - not connected".format(device_id))
             raise NotConnectedError
         except mqtt.UnsubscribeError as ex:
-            logger.error("disconnecting device '{}' from platform failed - {}".format(device.id, ex))
+            logger.error("disconnecting device '{}' from platform failed - {}".format(device_id, ex))
             raise DeviceDisconnectError
 
     def __handleCommand(self, envelope: Union[str, bytes], uri: Union[str, bytes]) -> None:
