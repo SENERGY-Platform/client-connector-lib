@@ -63,14 +63,7 @@ class Client(metaclass=Singleton):
         initConnectorConf()
         initLogging()
         logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
-        if not cc_conf.device.id_prefix:
-            usr_time_str = '{}{}'.format(
-                md5(bytes(cc_conf.credentials.user, 'UTF-8')).hexdigest(),
-                time()
-            )
-            cc_conf.device.id_prefix = urlsafe_b64encode(
-                md5(usr_time_str.encode()).digest()
-            ).decode().rstrip('=')
+        self.__genDeviceIdPrefix()
         self.__auth = OpenIdClient(
             "https://{}/{}".format(cc_conf.auth.host, cc_conf.auth.path),
             cc_conf.credentials.user,
@@ -92,6 +85,20 @@ class Client(metaclass=Singleton):
         self.__set_clbk_lock = RLock()
 
     # ------------- internal methods ------------- #
+
+    def __genDeviceIdPrefix(self):
+        if not cc_conf.device.id_prefix:
+            try:
+                usr_time_str = '{}{}'.format(
+                    md5(bytes(cc_conf.credentials.user, 'UTF-8')).hexdigest(),
+                    time()
+                )
+            except TypeError:
+                logger.critical("generating device ID prefix failed")
+                raise DeviceIdPrefixError
+            cc_conf.device.id_prefix = urlsafe_b64encode(
+                md5(usr_time_str.encode()).digest()
+            ).decode().rstrip('=')
 
     def __initHub(self) -> None:
         try:
