@@ -868,7 +868,7 @@ class Client(metaclass=Singleton):
         worker = EventWorker(
             target=self.__connectDevice,
             args=(device, ),
-            name="connect-device-{}".format(device.id)
+            name="connect-device-{}".format(device)
         )
         future = worker.start()
         if asynchronous:
@@ -893,7 +893,7 @@ class Client(metaclass=Singleton):
         worker = EventWorker(
             target=self.__disconnectDevice,
             args=(device,),
-            name="disconnect-device-{}".format(device.id)
+            name="disconnect-device-{}".format(device)
         )
         future = worker.start()
         if asynchronous:
