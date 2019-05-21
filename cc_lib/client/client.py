@@ -853,14 +853,16 @@ class Client(metaclass=Singleton):
         except mqtt.NotConnectedError:
             raise NotConnectedError
 
-    def connectDevice(self, device: Device, asynchronous: bool = False) -> Optional[Future]:
+    def connectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
         """
         Connect a device to the platform.
         :param device: Device object or device ID.
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if not __class__.__isDevice(device):
+        if __class__.__isDevice(device):
+            device = device.id
+        if not type(device) is str:
             raise TypeError(type(device))
         if not type(asynchronous) is bool:
             raise TypeError(type(asynchronous))
