@@ -878,14 +878,16 @@ class Client(metaclass=Singleton):
             future.wait()
             future.result()
 
-    def disconnectDevice(self, device: Device, asynchronous: bool = False) -> Optional[Future]:
+    def disconnectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
         """
         Disconnect a device from the platform.
         :param device: Device object or device ID.
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if not __class__.__isDevice(device):
+        if __class__.__isDevice(device):
+            device = device.id
+        if not type(device) is str:
             raise TypeError(type(device))
         if not type(asynchronous) is bool:
             raise TypeError(type(asynchronous))
