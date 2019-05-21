@@ -236,9 +236,7 @@ class Client(metaclass=Singleton):
                             timeout=cc_conf.api.request_timeout
                         )
                         resp = req.send()
-                        if resp.status == 200:
-                            logger.info("synchronizing hub successful")
-                        elif resp.status == 400:
+                        if resp.status == 400:
                             logger.error(
                                 "synchronizing hub failed - could not update devices"
                             )
@@ -247,11 +245,12 @@ class Client(metaclass=Singleton):
                             logger.error("synchronizing hub failed - hub not found on platform")
                             cc_conf.hub.id = None
                             raise HubNotFoundError
-                        else:
+                        elif not resp.status == 200:
                             logger.error(
                                 "synchronizing hub failed - {} {}".format(resp.status, resp.body)
                             )
                             raise HubSyncError
+                    logger.info("synchronizing hub successful")
                 elif resp.status == 404:
                     logger.error("synchronizing hub failed - hub not found on platform")
                     cc_conf.hub.id = None
