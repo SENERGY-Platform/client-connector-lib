@@ -23,6 +23,7 @@ __all__ = (
     'HubNotFoundError',
     'HubSyncError',
     'HubSyncDeviceError',
+    'DeviceIdPrefixError',
     'DeviceError',
     'DeviceAddError',
     'DeviceNotFoundError',
@@ -85,6 +86,13 @@ class HubSyncError(HubError):
 class HubSyncDeviceError(HubSyncError):
     """
     Error synchronizing devices.
+    """
+    pass
+
+
+class DeviceIdPrefixError(ClientError):
+    """
+    Error generating device ID prefix.
     """
     pass
 
