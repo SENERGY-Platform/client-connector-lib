@@ -547,10 +547,10 @@ class Client(metaclass=Singleton):
             future = worker.start()
             future.wait()
 
-    def __connectDevice(self, device: Device, event_worker) -> None:
-        logger.info("connecting device '{}' to platform ...".format(device.id))
+    def __connectDevice(self, device_id: str, event_worker) -> None:
+        logger.info("connecting device '{}' to platform ...".format(device_id))
         if not self.__connected_flag:
-            logger.error("connecting device '{}' to platform failed - not connected".format(device.id))
+            logger.error("connecting device '{}' to platform failed - not connected".format(device_id))
             raise NotConnectedError
         try:
             def on_done():
@@ -559,26 +559,26 @@ class Client(metaclass=Singleton):
                         raise event_worker.exception
                     except mqtt.SubscribeNotAllowedError as ex:
                         event_worker.exception = DeviceConnectNotAllowedError(ex)
-                        logger.error("connecting device '{}' to platform failed - not allowed".format(device.id))
+                        logger.error("connecting device '{}' to platform failed - not allowed".format(device_id))
                     except mqtt.SubscribeError as ex:
                         event_worker.exception = DeviceConnectError(ex)
-                        logger.error("connecting device '{}' to platform failed - {}".format(device.id, ex))
+                        logger.error("connecting device '{}' to platform failed - {}".format(device_id, ex))
                     except mqtt.NotConnectedError:
                         event_worker.exception = NotConnectedError
-                        logger.error("connecting device '{}' to platform failed - not connected".format(device.id))
+                        logger.error("connecting device '{}' to platform failed - not connected".format(device_id))
                 else:
-                    logger.info("connecting device '{}' to platform successful".format(device.id))
+                    logger.info("connecting device '{}' to platform successful".format(device_id))
             event_worker.usr_method = on_done
             self.__comm.subscribe(
-                topic="command/{}/+".format(__class__.__prefixDeviceID(device.id)),
+                topic="command/{}/+".format(__class__.__prefixDeviceID(device_id)),
                 qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
                 event_worker=event_worker
             )
         except mqtt.NotConnectedError:
-            logger.error("connecting device '{}' to platform failed - not connected".format(device.id))
+            logger.error("connecting device '{}' to platform failed - not connected".format(device_id))
             raise NotConnectedError
         except mqtt.SubscribeError as ex:
-            logger.error("connecting device '{}' to platform failed - {}".format(device.id, ex))
+            logger.error("connecting device '{}' to platform failed - {}".format(device_id, ex))
             raise DeviceConnectError
 
     def __disconnectDevice(self, device: Device, event_worker) -> None:
