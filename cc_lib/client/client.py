@@ -77,7 +77,7 @@ class Client(metaclass=Singleton):
             cc_conf.credentials.pw,
             cc_conf.auth.id
         )
-        self.__comm: mqtt.Client = None
+        self.__comm = None
         self.__connected_flag = False
         self.__connect_lock = Lock()
         self.__reconnect_flag = False
