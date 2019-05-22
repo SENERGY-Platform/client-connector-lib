@@ -638,7 +638,7 @@ class Client(metaclass=Singleton):
             )
 
     def __send(self, handler: str, envelope: Envelope, event_worker):
-        logger.info("sending {} '{}' to platform ...".format(handler, envelope.correlation_id))
+        logger.debug("sending {} '{}' to platform ...".format(handler, envelope.correlation_id))
         if not self.__connected_flag:
             logger.error("sending {} '{}' to platform failed - not connected".format(handler, envelope.correlation_id))
             raise NotConnectedError
@@ -658,7 +658,7 @@ class Client(metaclass=Singleton):
                             "sending {} '{}' to platform failed - {}".format(handler, envelope.correlation_id, ex)
                         )
                 elif mqtt.qos_map.setdefault(cc_conf.connector.qos, 1) > 0:
-                    logger.info("sending {} '{}' to platform successful".format(handler, envelope.correlation_id))
+                    logger.debug("sending {} '{}' to platform successful".format(handler, envelope.correlation_id))
             event_worker.usr_method = on_done
             self.__comm.publish(
                 topic="{}/{}/{}".format(handler, __class__.__prefixDeviceID(envelope.device_id), envelope.service_uri),
