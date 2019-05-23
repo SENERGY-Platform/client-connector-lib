@@ -28,11 +28,19 @@ def service(input=None, output=None):
                 return func(*args, **kwargs)
             setattr(wrap_call, "__service__", True)
             if input:
-                setattr(wrap_call, "__input__", {key: value for key, value in input.__dict__.items() if not key.startswith('_')})
+                setattr(
+                    wrap_call,
+                    "__input__",
+                    {key: value for key, value in input.__dict__.items() if not key.startswith('_')}
+                )
             else:
                 setattr(wrap_call, "__input__", None)
             if output:
-                setattr(wrap_call, "__output__", {key: value for key, value in output.__dict__.items() if not key.startswith('_')})
+                setattr(
+                    wrap_call,
+                    "__output__",
+                    {key: value for key, value in output.__dict__.items() if not key.startswith('_')}
+                )
             else:
                 setattr(wrap_call, "__output__", None)
             return wrap_call
