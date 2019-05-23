@@ -21,21 +21,6 @@ from typing import Type, Callable, Any
 from hashlib import sha1
 
 
-# def service(obj):
-#     if not type(obj) is type:
-#         def wrap(*args, **kwargs):
-#             return obj(*args, **kwargs)
-#         setattr(wrap, "__service__", True)
-#     else:
-#         def wrap(func: Callable[[Any], Any]):
-#             def wrap_call(*args, **kwargs):
-#                 return func(*args, **kwargs)
-#             setattr(wrap_call, "__structure__", {key: value for key, value in obj.__dict__.items() if not key.startswith('_')})
-#             setattr(wrap_call, "__service__", True)
-#             return wrap_call
-#     return wrap
-
-
 def service(input=None, output=None):
     if any((type(input) is type, type(output) is type)):
         def wrap(func: Callable[[Any], Any]):
