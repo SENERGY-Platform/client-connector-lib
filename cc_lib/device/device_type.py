@@ -55,8 +55,7 @@ def service(input=None, output=None):
 
 class DeviceType:
     """
-    Use this class to create devices for use with the client-connector-lib.
-    Subclass this class for advanced requirements. Don't forget to call __init__ of this class when subclassing.
+    Subclass this class to create devices for use with the client-connector-lib.
     """
     def __new__(cls, *args, **kwargs):
         instance = super(DeviceType, cls).__new__(cls)
