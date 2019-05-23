@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('Device', )
+__all__ = ('Device', 'service')
 
 from collections import OrderedDict
 from typing import Type, Callable, Any
