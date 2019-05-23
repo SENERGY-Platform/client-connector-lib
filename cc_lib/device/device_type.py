@@ -17,7 +17,7 @@
 __all__ = ('DeviceType', )
 
 from collections import OrderedDict
-from typing import Type, Callable, Optional, Any
+from typing import Type, Callable, Any
 from hashlib import sha1
 
 
