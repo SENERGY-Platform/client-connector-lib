@@ -17,45 +17,82 @@
 __all__ = ('Device', )
 
 from collections import OrderedDict
-from typing import Type
+from typing import Type, Callable, Any
 from hashlib import sha1
+
+
+def service(input=None, output=None):
+    if any((type(input) is type, type(output) is type)):
+        def wrap(func: Callable[[Any], Any]):
+            def wrap_call(*args, **kwargs):
+                return func(*args, **kwargs)
+            setattr(wrap_call, "__service__", True)
+            if input:
+                setattr(
+                    wrap_call,
+                    "__input__",
+                    {key: value for key, value in input.__dict__.items() if not key.startswith('_')}
+                )
+            else:
+                setattr(wrap_call, "__input__", None)
+            if output:
+                setattr(
+                    wrap_call,
+                    "__output__",
+                    {key: value for key, value in output.__dict__.items() if not key.startswith('_')}
+                )
+            else:
+                setattr(wrap_call, "__output__", None)
+            return wrap_call
+    else:
+        def wrap(*args, **kwargs):
+            return input(*args, **kwargs)
+        setattr(wrap, "__service__", True)
+        setattr(wrap, "__input__", None)
+        setattr(wrap, "__output__", None)
+    return wrap
 
 
 class Device:
     """
-    Use this class to create devices for use with the client-connector-lib.
-    Subclass this class for advanced requirements. Don't forget to call __init__ of this class when subclassing.
+    Subclass this class to create devices for use with the client-connector-lib.
     """
-    def __init__(self, id: str, type: str, name: str):
-        """
-        Create a device object. Checks if parameters meet type requirements.
-        :param id: Local device ID.
-        :param type: Device type (create device types via platform gui).
-        :param name: Device name.
-        :param services: List or tuple of Service objects.
-        :return: Device object.
-        """
-        __class__.__checkType(id, str)
-        __class__.__checkType(type, str)
-        __class__.__checkType(name, str)
-        self.__id = id
-        self.__remote_id = None
-        self.__type = type
-        self.__name = name
-        self.__tags = OrderedDict()
-        # self.__img_url = None
+    def __new__(cls, *args, **kwargs):
+        instance = super(Device, cls).__new__(cls)
+        instance.__id = str()
+        instance.__remote_id = str()
+        instance.__type_id = str()
+        instance.__name = str()
+        instance.__tags = OrderedDict()
+        return instance
 
     @property
     def id(self) -> str:
         return self.__id
+
+    @id.setter
+    def id(self, arg: str):
+        if not type(arg) is str:
+            raise TypeError(type(arg))
+        if self.__id:
+            raise AttributeError
+        self.__id = arg
 
     @property
     def remote_id(self) -> str:
         return self.__remote_id
 
     @property
-    def type(self) -> str:
-        return self.__type
+    def type_id(self) -> str:
+        return self.__type_id
+
+    @type_id.setter
+    def type_id(self, arg):
+        if not type(arg) is str:
+            raise TypeError(type(arg))
+        if self.__type_id:
+            raise AttributeError
+        self.__type_id = arg
 
     @property
     def name(self) -> str:
@@ -63,7 +100,7 @@ class Device:
 
     @name.setter
     def name(self, arg: str) -> None:
-        if type(arg) is not str:
+        if not type(arg) is str:
             raise TypeError(type(arg))
         self.__name = arg
 
@@ -84,23 +121,12 @@ class Device:
         return sha1(
             ''.join(
                 (
-                    self.__id,
-                    self.__type,
-                    self.__name,
-                    ''.join(['{}{}'.format(key, value) for key, value in self.__tags.items()])
+                    self.id,
+                    self.type_id,
+                    self.name
                 )
             ).encode()
         ).hexdigest()
-
-    # @property
-    # def img_url(self) -> str:
-    #     return self.__img_url
-    #
-    # @img_url.setter
-    # def img_url(self, arg):
-    #     if type(arg) is not str:
-    #         raise TypeError("image url must be a string but got '{}'".format(type(arg)))
-    #     self.__img_url = arg
 
     def addTag(self, tag_id: str, tag: str) -> None:
         """
@@ -164,15 +190,14 @@ class Device:
         """
         attributes = [
             ('id', self.id),
-            ('type', self.type),
+            ('remote_id', self.remote_id),
+            ('type_id', self.type_id),
             ('name', self.name),
             ('tags', self.tags),
             ('hash', self.hash),
-            # ('img_url', self.img_url),
-            ('remote_id', self.remote_id)
+            ('services', [item for item in dir(self) if getattr(getattr(self, item), "__service__", None)])
         ]
         if kwargs:
             for arg, value in kwargs.items():
                 attributes.append((arg, value))
         return "{}({})".format(type(self).__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
-
