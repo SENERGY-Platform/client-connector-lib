@@ -14,12 +14,12 @@
    limitations under the License.
 """
 
-__all__ = ('service', )
+__all__ = ('Service',)
 
 from typing import Callable, Any
 
 
-def service(input=None, output=None):
+def Service(input=None, output=None):
     if any((type(input) is type, type(output) is type)):
         def wrap(func: Callable[[Any], Any]):
             def wrap_call(*args, **kwargs):

@@ -19,7 +19,7 @@ __all__ = ("Envelope", )
 
 
 from .message import Message
-from ...device import Device
+from ...types import Device
 from typing import Optional, Type, Union
 from uuid import uuid4 as uuid
 

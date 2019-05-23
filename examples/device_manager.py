@@ -30,7 +30,7 @@ def isDevice(obj: object) -> bool:
     :param obj: object to check
     :return: Boolean
     """
-    if type(obj) is cc_lib.device.Device or issubclass(type(obj), cc_lib.device.Device):
+    if type(obj) is cc_lib.types.Device or issubclass(type(obj), cc_lib.types.Device):
         return True
     return False
 
@@ -41,7 +41,7 @@ class DeviceManager:
         self.__device_pool = dict()
         self.__lock = Lock()
 
-    def add(self, device: cc_lib.device.Device) -> None:
+    def add(self, device: cc_lib.types.Device) -> None:
         if not isDevice(device):
             raise TypeError
         self.__lock.acquire()
@@ -61,7 +61,7 @@ class DeviceManager:
             logger.warning("device '{}' does not exist in device pool".format(device_id))
         self.__lock.release()
 
-    def get(self, device_id: str) -> cc_lib.device.Device:
+    def get(self, device_id: str) -> cc_lib.types.Device:
         if type(device_id) is not str:
             raise TypeError
         self.__lock.acquire()
@@ -80,7 +80,7 @@ class DeviceManager:
         self.__lock.release()
 
     @property
-    def devices(self) -> List[cc_lib.device.Device]:
+    def devices(self) -> List[cc_lib.types.Device]:
         self.__lock.acquire()
         devices = list(self.__device_pool.values())
         self.__lock.release()

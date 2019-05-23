@@ -15,7 +15,9 @@
 """
 
 from .device import *
+from .service import *
 
 __all__ = (
-    device.__all__
+    device.__all__,
+    service.__all__
 )

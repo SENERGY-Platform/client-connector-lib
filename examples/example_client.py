@@ -32,7 +32,7 @@ scenario = {
 tests = scenario[6]
 
 
-device_manager = cc_lib.device.manager.DevicePool
+device_manager = cc_lib.types.manager.DevicePool
 
 client_connector = cc_lib.client.Client(device_manager)
 
@@ -47,11 +47,11 @@ id_4 = '3h6j6i8i7rer5'
 
 if 0 in tests:
     logger.info('------ populate device manager ------')
-    device_manager.add(cc_lib.device.Device(id_1, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 1'))
-    device_2 = cc_lib.device.Device(id_2, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 2')
+    device_manager.add(cc_lib.types.Device(id_1, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 1'))
+    device_2 = cc_lib.types.Device(id_2, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 2')
     device_2.addTag('type', 'Dummy')
     device_manager.add(device_2)
-    device_manager.add(cc_lib.device.Device(id_3, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 3'))
+    device_manager.add(cc_lib.types.Device(id_3, 'iot#d66ec9bc-e37f-4f35-a788-027301aad6c2', 'Dummy Device 3'))
 
 
 if __name__ == '__main__':
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     if 7 in tests:
         time.sleep(0.5)
         logger.info('------ add new device ------')
-        new_device = cc_lib.device.Device(id_4, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 4')
+        new_device = cc_lib.types.Device(id_4, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 4')
         client_connector.add(new_device)
 
     if 8 in tests:
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     if 10 in tests:
         time.sleep(0.5)
         logger.info('------ add existing device ------')
-        new_device = cc_lib.device.Device(id_1, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 1')
+        new_device = cc_lib.types.Device(id_1, 'iot#1740e97f-1ae1-4547-a757-a62018083d3f', 'Dummy Device 1')
         client_connector.add(new_device)
 
     if 11 in tests:
