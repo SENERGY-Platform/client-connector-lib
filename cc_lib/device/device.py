@@ -172,6 +172,11 @@ class Device:
         except KeyError:
             raise KeyError("tag id '{}' does not exist".format(tag_id))
 
+    def getService(self, service: str):
+        if not type(service) is str:
+            raise TypeError(type(service))
+        return getattr(self, service)
+
     def __repr__(self, **kwargs):
         """
         Provide a string representation.
