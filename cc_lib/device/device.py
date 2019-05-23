@@ -172,16 +172,6 @@ class Device:
         except KeyError:
             raise KeyError("tag id '{}' does not exist".format(tag_id))
 
-    @staticmethod
-    def __checkType(arg: object, typ: Type) -> None:
-        """
-        Check if arg is the correct type. Raise exception if not.
-        :param: arg: object to check
-        :param: typ: type
-        """
-        if not type(arg) is typ:
-            raise TypeError(type(arg))
-
     def __repr__(self, **kwargs):
         """
         Provide a string representation.
