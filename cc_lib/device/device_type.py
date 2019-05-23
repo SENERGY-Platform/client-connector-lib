@@ -83,14 +83,6 @@ class DeviceType:
     def remote_id(self) -> str:
         return self.__remote_id
 
-    # @remote_id.setter
-    # def remote_id(self, arg):
-    #     if not type(arg) is str:
-    #         raise TypeError(type(arg))
-    #     if self.__remote_id:
-    #         raise AttributeError
-    #     self.__remote_id = arg
-
     @property
     def type_uri(self) -> str:
         return self.__type_uri
