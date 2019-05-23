@@ -62,7 +62,7 @@ class DeviceType:
         instance = super(DeviceType, cls).__new__(cls)
         instance.__id = str()
         instance.__remote_id = str()
-        instance.__type_uri = str()
+        instance.__type_id = str()
         instance.__name = str()
         instance.__tags = OrderedDict()
         return instance
@@ -84,16 +84,16 @@ class DeviceType:
         return self.__remote_id
 
     @property
-    def type_uri(self) -> str:
-        return self.__type_uri
+    def type_id(self) -> str:
+        return self.__type_id
 
-    @type_uri.setter
-    def type_uri(self, arg):
+    @type_id.setter
+    def type_id(self, arg):
         if not type(arg) is str:
             raise TypeError(type(arg))
-        if self.__type_uri:
+        if self.__type_id:
             raise AttributeError
-        self.__type_uri = arg
+        self.__type_id = arg
 
     @property
     def name(self) -> str:
@@ -123,7 +123,7 @@ class DeviceType:
             ''.join(
                 (
                     self.id,
-                    self.type_uri,
+                    self.type_id,
                     self.name
                 )
             ).encode()
@@ -192,7 +192,7 @@ class DeviceType:
         attributes = [
             ('id', self.id),
             ('remote_id', self.remote_id),
-            ('type_uri', self.type_uri),
+            ('type_id', self.type_id),
             ('name', self.name),
             ('tags', self.tags),
             ('hash', self.hash),
