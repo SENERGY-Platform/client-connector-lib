@@ -306,7 +306,6 @@ class Client(metaclass=Singleton):
                         "device_type": device.type,
                         "uri": "{}-{}".format(cc_conf.device.id_prefix, device.id),
                         "tags": device.tags
-                        # "img": device.img_url
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
@@ -332,8 +331,6 @@ class Client(metaclass=Singleton):
                 logger.warning("adding device '{}' to platform - device exists - updating device ...".format(device.id))
                 device_atr = jsonLoads(resp.body)
                 __class__.__setMangledAttr(device, "remote_id", device_atr["id"])
-                # if not device.img_url == device_atr["img"]:
-                #     device.img_url = device_atr["img"]
                 self.__updateDevice(device)
             else:
                 logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
@@ -405,7 +402,6 @@ class Client(metaclass=Singleton):
                     "device_type": device.type,
                     "uri": "{}-{}".format(cc_conf.device.id_prefix, device.id),
                     "tags": device.tags
-                    # "img": device.img_url
                 },
                 content_type=http.ContentType.json,
                 headers={"Authorization": "Bearer {}".format(access_token)},
