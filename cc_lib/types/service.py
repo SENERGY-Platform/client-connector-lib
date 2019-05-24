@@ -16,7 +16,7 @@
 
 __all__ = ('Service', )
 
-from ..client.singleton import Singleton
+from ..util import Singleton
 from typing import Callable, Any
 
 
