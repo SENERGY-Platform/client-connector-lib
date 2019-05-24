@@ -16,6 +16,7 @@
 
 __all__ = ('Device', )
 
+from .service import Service
 from collections import OrderedDict
 from hashlib import sha1
 
@@ -31,6 +32,7 @@ class Device:
         instance.__type_id = str()
         instance.__name = str()
         instance.__tags = OrderedDict()
+        instance.__services = dict()
         return instance
 
     @property
@@ -139,10 +141,19 @@ class Device:
         except KeyError:
             raise KeyError("tag id '{}' does not exist".format(tag_id))
 
-    def getService(self, service: str):
-        if not type(service) is str:
-            raise TypeError(type(service))
-        return getattr(self, service)
+    def addService(self, service: Service):
+        if not type(service) is Service or not issubclass(service, Service):
+            raise TypeError(service)
+        if not all((service.uri, service.name, service.type)):
+            raise ValueError
+        if service.uri in self.__services:
+            raise KeyError
+        self.__services[service.uri] = service
+
+    def getService(self, service_uri: str):
+        if not type(service_uri) is str:
+            raise TypeError(type(service_uri))
+        return self.__services[service_uri]
 
     def __repr__(self, **kwargs):
         """
