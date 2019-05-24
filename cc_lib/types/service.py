@@ -14,38 +14,93 @@
    limitations under the License.
 """
 
-__all__ = ('Service',)
+__all__ = ('Service', )
 
+from ..client.singleton import Singleton
 from typing import Callable, Any
 
 
-def Service(input=None, output=None):
-    if any((type(input) is type, type(output) is type)):
-        def wrap(func: Callable[[Any], Any]):
-            def wrap_call(*args, **kwargs):
-                return func(*args, **kwargs)
-            setattr(wrap_call, "__service__", True)
-            if input:
-                setattr(
-                    wrap_call,
-                    "__input__",
-                    {key: value for key, value in input.__dict__.items() if not key.startswith('_')}
-                )
-            else:
-                setattr(wrap_call, "__input__", None)
-            if output:
-                setattr(
-                    wrap_call,
-                    "__output__",
-                    {key: value for key, value in output.__dict__.items() if not key.startswith('_')}
-                )
-            else:
-                setattr(wrap_call, "__output__", None)
-            return wrap_call
-    else:
+class Service(metaclass=Singleton):
+    def __new__(cls, *args, **kwargs):
+        instance = super(Service, cls).__new__(cls)
+        instance.__input = None
+        instance.__output = None
+        instance.__uri = str()
+        instance.__type = str()
+        instance.__name = str()
+        instance.__description = str()
+        return instance
+
+    @property
+    def input(self) -> dict:
+        return self.__input
+
+    @input.setter
+    def input(self, arg):
+        if not type(arg) is dict:
+            raise TypeError(type(arg))
+        if self.__input:
+            raise AttributeError
+        self.__input = arg
+
+    @property
+    def output(self) -> dict:
+        return self.__output
+
+    @output.setter
+    def output(self, arg):
+        if not type(arg) is dict:
+            raise TypeError(type(arg))
+        if self.__output:
+            raise AttributeError
+        self.__output = arg
+
+    @property
+    def uri(self) -> str:
+        return self.__uri
+
+    @uri.setter
+    def uri(self, arg: str):
+        if not type(arg) is str:
+            raise TypeError(type(arg))
+        if self.__uri:
+            raise AttributeError
+        self.__uri = arg
+
+    @property
+    def type(self) -> str:
+        return self.__type
+
+    @type.setter
+    def type(self, arg: str):
+        if not type(arg) is str:
+            raise TypeError(type(arg))
+        if self.__type:
+            raise AttributeError
+        self.__type = arg
+
+    @property
+    def name(self) -> str:
+        return self.__name
+
+    @name.setter
+    def name(self, arg: str) -> None:
+        if not type(arg) is str:
+            raise TypeError(type(arg))
+        self.__name = arg
+
+    @property
+    def description(self) -> str:
+        return self.__description
+
+    @description.setter
+    def description(self, arg: str) -> None:
+        if not type(arg) is str:
+            raise TypeError(type(arg))
+        self.__description = arg
+
+    def task(self, func: Callable[[Any], Any]):
         def wrap(*args, **kwargs):
-            return input(*args, **kwargs)
-        setattr(wrap, "__service__", True)
-        setattr(wrap, "__input__", None)
-        setattr(wrap, "__output__", None)
-    return wrap
+            return func(*args, **kwargs)
+        setattr(wrap, "__service_task__", self)
+        return wrap
