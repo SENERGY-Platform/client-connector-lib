@@ -17,11 +17,11 @@
 __all__ = ("Client", )
 
 from ..configuration.configuration import cc_conf, initConnectorConf
+from ..util import Singleton
 from ..logger.logger import getLogger, initLogging
 from ..types import Device
 from .message import Envelope, Message
 from .exception import *
-from .singleton import Singleton
 from .auth import OpenIdClient, NoTokenError
 from .protocol import http, mqtt
 from .asynchron import Future, ThreadWorker, EventWorker
