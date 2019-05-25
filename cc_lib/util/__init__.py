@@ -15,7 +15,7 @@
 """
 
 
-__all__ = ('Singleton', 'checkType', 'checkSubclass')
+__all__ = ('Singleton', 'validateInstance', 'validateSubclass')
 
 
 from typing import Any, Union, Tuple
@@ -32,14 +32,16 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-def checkType(obj: object, cls: Union[type, Tuple[type, ...]]) -> None:
+def validateInstance(obj: object, cls: Union[type, Tuple[type, ...]]) -> None:
     if not isinstance(obj, cls):
-        raise TypeError(type(obj))
+        err = "{} not instance of {}".format(obj, cls)
+        raise TypeError(err)
 
 
-def checkSubclass(cls: type, parent_cls: Union[type, Tuple[type, ...]]) -> None:
+def validateSubclass(cls: type, parent_cls: Union[type, Tuple[type, ...]]) -> None:
     if not issubclass(cls, parent_cls):
-        raise TypeError(cls.__mro__)
+        err = "{} not subclass of {}".format(cls, parent_cls)
+        raise TypeError(err)
 
 
 def getMangledAttr(obj: object, attr: str) -> Any:
