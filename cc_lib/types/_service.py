@@ -21,6 +21,9 @@ from .._util import Singleton
 
 class Service(metaclass=Singleton):
     def __new__(cls, *args, **kwargs):
+        if cls is __class__:
+            err = "direct instantiation of class '{}' not allowed".format(__class__.__name__)
+            raise TypeError(err)
         instance = super(Service, cls).__new__(cls)
         instance.__input = None
         instance.__output = None
