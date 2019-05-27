@@ -17,7 +17,7 @@
 __all__ = ("Client", )
 
 from ..configuration.configuration import cc_conf, initConnectorConf
-from ..util import Singleton
+from ..util import Singleton, validateInstance, setMangledAttr, calcDuration
 from ..logger.logger import getLogger, initLogging
 from ..types import Device
 from .message import Envelope, Message
@@ -28,7 +28,6 @@ from .asynchron import Future, ThreadWorker, EventWorker
 from cc_lib import __version__ as VERSION
 from typing import Callable, Union, Any, Tuple, List, Optional
 from getpass import getuser
-from math import ceil, log10
 from datetime import datetime
 from hashlib import md5, sha1
 from base64 import urlsafe_b64encode
@@ -326,11 +325,11 @@ class Client(metaclass=Singleton):
                 sleep(cc_conf.api.eventual_consistency_delay)
                 logger.info("adding device '{}' to platform successful".format(device.id))
                 device_atr = jsonLoads(resp.body)
-                __class__.__setMangledAttr(device, "remote_id", device_atr["id"])
+                setMangledAttr(device, "remote_id", device_atr["id"])
             elif resp.status == 200:
                 logger.warning("adding device '{}' to platform - device exists - updating device ...".format(device.id))
                 device_atr = jsonLoads(resp.body)
-                __class__.__setMangledAttr(device, "remote_id", device_atr["id"])
+                setMangledAttr(device, "remote_id", device_atr["id"])
                 self.__updateDevice(device)
             else:
                 logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
@@ -521,7 +520,7 @@ class Client(metaclass=Singleton):
                 break
             retry += 1
             if retry > 0:
-                duration = __class__.__calcDuration(
+                duration = calcDuration(
                     min_duration=cc_conf.connector.reconn_delay_min,
                     max_duration=cc_conf.connector.reconn_delay_max,
                     retry_num=retry,
@@ -991,63 +990,3 @@ class Client(metaclass=Singleton):
         :return: Device ID.
         """
         return device_id.replace("{}-".format(cc_conf.device.id_prefix), "")
-
-    @staticmethod
-    def __getMangledAttr(obj: object, attr: str) -> None:
-        """
-        Read mangled attribute.
-        :param obj: Object with mangled attributes.
-        :param attr: Name of mangled attribute.
-        :return: value of mangled attribute.
-        """
-        return getattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr))
-
-    @staticmethod
-    def __setMangledAttr(obj: object, attr: str, arg: Any) -> None:
-        """
-        Write to mangled attribute.
-        :param obj: Object with mangled attributes.
-        :param attr: Name of mangled attribute.
-        :param arg: value to be written.
-        """
-        setattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr), arg)
-
-    @staticmethod
-    def __calcNthTerm(a_1: Union[float, int], r: Union[float, int], n: Union[float, int]) -> Union[float, int]:
-        """
-        Calculates the nth term of a geometric progression (an = a1 * r^(n-1)).
-        :param a_1: First term.
-        :param r: Common ratio.
-        :param n: Number of desired term.
-        :return: Float or integer.
-        """
-        return a_1 * r ** (n - 1)
-
-    @staticmethod
-    def __calcDuration(min_duration: int, max_duration: int, retry_num: int, factor: Union[float, int]) -> int:
-        """
-        Calculate a value to be used as sleep duration based on a geometric progression.
-        Won't return values above max_duration.
-        :param min_duration: Minimum value to be returned.
-        :param max_duration: Maximum value to be returned.
-        :param retry_num: Number iterated by a loop calling the method.
-        :param factor: Speed at which the maximum value will be reached.
-        :return: Integer.
-        """
-        base_value = __class__.__calcNthTerm(min_duration, factor, retry_num)
-        magnitude = int(log10(ceil(base_value)))+1
-        duration = ceil(base_value / 10 ** (magnitude - 1)) * 10 ** (magnitude - 1)
-        if duration <= max_duration:
-            return duration
-        return max_duration
-
-    @staticmethod
-    def __isDevice(obj: object) -> bool:
-        """
-        Check if a object is a Device or a Device subclass
-        :param obj: object to check
-        :return: Boolean
-        """
-        if type(obj) is Device or issubclass(type(obj), Device):
-            return True
-        return False
