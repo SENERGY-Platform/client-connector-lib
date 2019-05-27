@@ -17,7 +17,6 @@
 __all__ = ('Service', )
 
 from .._util import Singleton
-from typing import Callable, Any
 
 
 class Service(metaclass=Singleton):
@@ -98,9 +97,3 @@ class Service(metaclass=Singleton):
         if not type(arg) is str:
             raise TypeError(type(arg))
         self.__description = arg
-
-    def task(self, func: Callable[[Any], Any]):
-        def wrap(*args, **kwargs):
-            return func(*args, **kwargs)
-        setattr(wrap, "__service_task__", self)
-        return wrap
