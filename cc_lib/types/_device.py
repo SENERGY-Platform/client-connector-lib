@@ -26,6 +26,9 @@ class Device:
     Subclass this class to create devices for use with the client-connector-lib.
     """
     def __new__(cls, *args, **kwargs):
+        if cls is __class__:
+            err = "direct instantiation of class '{}' not allowed".format(__class__.__name__)
+            raise TypeError(err)
         instance = super(Device, cls).__new__(cls)
         instance.__id = str()
         instance.__remote_id = str()
