@@ -31,6 +31,9 @@ class Service(metaclass=Singleton):
         instance.__type = str()
         instance.__name = str()
         instance.__description = str()
+        if not hasattr(instance, "task") or not callable(getattr(instance, "task")):
+            err = "can't instantiate class '{}' with required method 'task'".format(cls.__name__)
+            raise TypeError(err)
         return instance
 
     @property
