@@ -16,7 +16,7 @@
 
 __all__ = ('Device', )
 
-from .service import Service
+from ._service import Service
 from collections import OrderedDict
 from hashlib import sha1
 

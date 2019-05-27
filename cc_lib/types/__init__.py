@@ -14,10 +14,10 @@
    limitations under the License.
 """
 
-from .device import *
-from .service import *
+from ._device import *
+from ._service import *
 
 __all__ = (
-    device.__all__,
-    service.__all__
+    _device.__all__,
+    _service.__all__
 )
