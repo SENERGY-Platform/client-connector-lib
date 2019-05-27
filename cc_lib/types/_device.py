@@ -16,6 +16,7 @@
 
 __all__ = ('Device', )
 
+from .._util import validateInstance
 from ._service import Service
 from collections import OrderedDict
 from hashlib import sha1
@@ -44,8 +45,7 @@ class Device:
 
     @id.setter
     def id(self, arg: str):
-        if not type(arg) is str:
-            raise TypeError(type(arg))
+        validateInstance(arg, str)
         if self.__id:
             raise AttributeError
         self.__id = arg
@@ -60,8 +60,7 @@ class Device:
 
     @type_id.setter
     def type_id(self, arg):
-        if not type(arg) is str:
-            raise TypeError(type(arg))
+        validateInstance(arg, str)
         if self.__type_id:
             raise AttributeError
         self.__type_id = arg
@@ -72,8 +71,7 @@ class Device:
 
     @name.setter
     def name(self, arg: str) -> None:
-        if not type(arg) is str:
-            raise TypeError(type(arg))
+        validateInstance(arg, str)
         self.__name = arg
 
     @property
@@ -107,10 +105,8 @@ class Device:
         :param: tag: Word or combination of Words.
         :return: None.
         """
-        if not type(tag_id) is str:
-            raise TypeError(type(tag_id))
-        if not type(tag) is str:
-            raise TypeError(type(tag))
+        validateInstance(tag_id, str)
+        validateInstance(tag, str)
         if tag_id in self.__tags.keys():
             raise KeyError("tag id '{}' already in use".format(tag_id))
         if ':' in tag_id or ';' in tag_id:
@@ -126,6 +122,8 @@ class Device:
         :param: tag: Word or combination of Words.
         :return: None.
         """
+        validateInstance(tag_id, str)
+        validateInstance(tag, str)
         if ':' in tag or ';' in tag:
             raise ValueError("tag may not contain ':' or ';'")
         if tag_id in self.__tags:
@@ -139,14 +137,14 @@ class Device:
         :param: tag_id: ID identifying the tag.
         :return: Boolean
         """
+        validateInstance(tag_id, str)
         try:
             del self.__tags[tag_id]
         except KeyError:
             raise KeyError("tag id '{}' does not exist".format(tag_id))
 
     def addService(self, service: Service):
-        if not type(service) is Service or not issubclass(service, Service):
-            raise TypeError(service)
+        validateInstance(service, Service)
         if not all((service.uri, service.name, service.type)):
             raise ValueError
         if service.uri in self.__services:
