@@ -16,8 +16,8 @@
 
 __all__ = ("Client", )
 
-from ..configuration.configuration import cc_conf, initConnectorConf
-from ..util import Singleton, validateInstance, setMangledAttr, calcDuration
+from .._configuration.configuration import cc_conf, initConnectorConf
+from .._util import Singleton, validateInstance, setMangledAttr, calcDuration
 from ..logger._logger import getLogger, initLogging
 from ..types import Device
 from .message import Envelope, Message

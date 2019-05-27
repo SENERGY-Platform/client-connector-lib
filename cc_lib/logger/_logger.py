@@ -16,7 +16,7 @@
 
 __all__ = ('getLogger', )
 
-from ..configuration.configuration import user_dir, cc_conf
+from .._configuration.configuration import user_dir, cc_conf
 from logging.handlers import TimedRotatingFileHandler
 from threading import RLock
 from os import makedirs
