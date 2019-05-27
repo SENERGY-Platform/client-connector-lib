@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('Service', 'service')
+__all__ = ('Service', )
 
 from .._util import Singleton
 from typing import Callable, Any
@@ -104,8 +104,3 @@ class Service(metaclass=Singleton):
             return func(*args, **kwargs)
         setattr(wrap, "__service_task__", self)
         return wrap
-
-
-def service(cls):
-    sub_cls = type(cls.__name__, (Service,), cls.__dict__.copy())
-    return sub_cls
