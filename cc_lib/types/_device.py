@@ -17,7 +17,7 @@
 __all__ = ('Device', )
 
 from .._util import validateInstance
-from ._service import Service
+from .service import Service
 from collections import OrderedDict
 from hashlib import sha1
 
