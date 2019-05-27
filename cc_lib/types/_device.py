@@ -28,16 +28,16 @@ class Device:
     """
     def __new__(cls, *args, **kwargs):
         if cls is __class__:
-            err = "direct instantiation of class '{}' not allowed".format(__class__.__name__)
-            raise TypeError(err)
-        instance = super(Device, cls).__new__(cls)
-        instance.__id = str()
-        instance.__remote_id = str()
-        instance.__type_id = str()
-        instance.__name = str()
-        instance.__tags = OrderedDict()
-        instance.__services = dict()
-        return instance
+            __err = "direct instantiation of class '{}' not allowed".format(__class__.__name__)
+            raise TypeError(__err)
+        __instance = super(Device, cls).__new__(cls)
+        __instance.__id = str()
+        __instance.__remote_id = str()
+        __instance.__type_id = str()
+        __instance.__name = str()
+        __instance.__tags = OrderedDict()
+        __instance.__services = dict()
+        return __instance
 
     @property
     def id(self) -> str:
