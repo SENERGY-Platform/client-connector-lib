@@ -82,22 +82,6 @@ class Device:
         """
         return ['{}:{}'.format(key, value) for key, value in self.__tags.items()]
 
-    @property
-    def hash(self) -> str:
-        """
-        Uses device attributes to calculate a sha1 hash.
-        :return: String.
-        """
-        return sha1(
-            ''.join(
-                (
-                    self.id,
-                    self.type_id,
-                    self.name
-                )
-            ).encode()
-        ).hexdigest()
-
     def addTag(self, tag_id: str, tag: str) -> None:
         """
         Add a tag to a device.
