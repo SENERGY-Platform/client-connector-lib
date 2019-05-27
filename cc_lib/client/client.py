@@ -703,8 +703,7 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if not type(asynchronous) is bool:
-            raise TypeError(type(asynchronous))
+        validateInstance(asynchronous, bool)
         if asynchronous:
             worker = ThreadWorker(target=self.__initHub, name="init-hub", daemon=True)
             future = worker.start()
@@ -719,13 +718,10 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if not type(devices) is list:
-            raise TypeError(type(devices))
+        validateInstance(devices, list)
+        validateInstance(asynchronous, bool)
         for device in devices:
-            if not __class__.__isDevice(device):
-                raise TypeError(type(device))
-        if not type(asynchronous) is bool:
-            raise TypeError(type(asynchronous))
+            validateInstance(device, Device)
         if asynchronous:
             worker = ThreadWorker(target=self.__syncHub, args=(devices, ), name="sync-hub", daemon=True)
             future = worker.start()
@@ -740,10 +736,8 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if not __class__.__isDevice(device):
-            raise TypeError(type(device))
-        if not type(asynchronous) is bool:
-            raise TypeError(type(asynchronous))
+        validateInstance(device, Device)
+        validateInstance(asynchronous, bool)
         if asynchronous:
             worker = ThreadWorker(
                 target=self.__addDevice,
@@ -763,12 +757,11 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if __class__.__isDevice(device):
+        validateInstance(device, (Device, str))
+        validateInstance(asynchronous, bool)
+        if isinstance(device, Device):
             device = device.id
-        if not type(device) is str:
-            raise TypeError(type(device))
-        if not type(asynchronous) is bool:
-            raise TypeError(type(asynchronous))
+            validateInstance(device, str)
         if asynchronous:
             worker = ThreadWorker(
                 target=self.__deleteDevice,
@@ -788,10 +781,8 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if not __class__.__isDevice(device):
-            raise TypeError(type(device))
-        if not type(asynchronous) is bool:
-            raise TypeError(type(asynchronous))
+        validateInstance(device, Device)
+        validateInstance(asynchronous, bool)
         if asynchronous:
             worker = ThreadWorker(
                 target=self.__updateDevice,
@@ -810,10 +801,8 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if not type(reconnect) is bool:
-            raise TypeError(type(reconnect))
-        if not type(asynchronous) is bool:
-            raise TypeError(type(asynchronous))
+        validateInstance(reconnect, bool)
+        validateInstance(asynchronous, bool)
         self.__reconnect_flag = reconnect
         if self.__reconnect_flag:
             worker = ThreadWorker(
@@ -854,12 +843,11 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if __class__.__isDevice(device):
+        validateInstance(device, (Device, str))
+        validateInstance(asynchronous, bool)
+        if isinstance(device, Device):
             device = device.id
-        if not type(device) is str:
-            raise TypeError(type(device))
-        if not type(asynchronous) is bool:
-            raise TypeError(type(asynchronous))
+            validateInstance(device, str)
         worker = EventWorker(
             target=self.__connectDevice,
             args=(device, ),
@@ -879,12 +867,11 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if __class__.__isDevice(device):
+        validateInstance(device, (Device, str))
+        validateInstance(asynchronous, bool)
+        if isinstance(device, Device):
             device = device.id
-        if not type(device) is str:
-            raise TypeError(type(device))
-        if not type(asynchronous) is bool:
-            raise TypeError(type(asynchronous))
+            validateInstance(device, str)
         worker = EventWorker(
             target=self.__disconnectDevice,
             args=(device,),
@@ -904,10 +891,8 @@ class Client(metaclass=Singleton):
         :param timeout: Return after set amount of time if no command is available.
         :return: Envelope object.
         """
-        if not type(block) is bool:
-            raise TypeError(type(block))
-        if not type(timeout) in (int, float, type(None)):
-            raise TypeError(type(timeout))
+        validateInstance(block, bool)
+        validateInstance(timeout, (int, float, type(None)))
         try:
             return self.__cmd_queue.get(block=block, timeout=timeout)
         except QueueEmpty:
@@ -920,10 +905,8 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if not type(envelope) is Envelope:
-            raise TypeError(type(envelope))
-        if not type(asynchronous) is bool:
-            raise TypeError(type(asynchronous))
+        validateInstance(envelope, Envelope)
+        validateInstance(asynchronous, bool)
         worker = EventWorker(
             target=self.__send,
             args=(_SendHandler.response, envelope),
@@ -943,10 +926,8 @@ class Client(metaclass=Singleton):
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        if not type(envelope) is Envelope:
-            raise TypeError(type(envelope))
-        if not type(asynchronous) is bool:
-            raise TypeError(type(asynchronous))
+        validateInstance(envelope, Envelope)
+        validateInstance(asynchronous, bool)
         worker = EventWorker(
             target=self.__send,
             args=(_SendHandler.event, envelope),
