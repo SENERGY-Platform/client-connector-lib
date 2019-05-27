@@ -15,11 +15,11 @@
 """
 
 
-from .message import *
-from .envelope import *
+from ._message import *
+from ._envelope import *
 
 
 __all__ = (
-    message.__all__,
-    envelope.__all__
+    _message.__all__,
+    _envelope.__all__
 )

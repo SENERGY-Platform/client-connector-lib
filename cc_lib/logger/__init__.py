@@ -14,8 +14,8 @@
    limitations under the License.
 """
 
-from .logger import *
+from ._logger import *
 
 __all__ = (
-    logger.__all__
+    _logger.__all__
 )

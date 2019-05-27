@@ -14,4 +14,4 @@
    limitations under the License.
 """
 
-import cc_lib.client.protocol.http, cc_lib.client.protocol.mqtt
+import cc_lib.client._protocol.http, cc_lib.client._protocol.mqtt

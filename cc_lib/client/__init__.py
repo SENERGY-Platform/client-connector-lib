@@ -14,11 +14,11 @@
    limitations under the License.
 """
 
-from .client import *
-from .exception import *
+from ._client import *
+from ._exception import *
 import cc_lib.client.message
 
 __all__ = (
-    client.__all__,
-    exception.__all__
+    _client.__all__,
+    _exception.__all__
 )

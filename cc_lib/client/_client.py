@@ -18,13 +18,13 @@ __all__ = ("Client", )
 
 from ..configuration.configuration import cc_conf, initConnectorConf
 from ..util import Singleton, validateInstance, setMangledAttr, calcDuration
-from ..logger.logger import getLogger, initLogging
+from ..logger._logger import getLogger, initLogging
 from ..types import Device
 from .message import Envelope, Message
-from .exception import *
-from .auth import OpenIdClient, NoTokenError
-from .protocol import http, mqtt
-from .asynchron import Future, ThreadWorker, EventWorker
+from ._exception import *
+from ._auth import OpenIdClient, NoTokenError
+from ._protocol import http, mqtt
+from ._asynchron import Future, ThreadWorker, EventWorker
 from cc_lib import __version__ as VERSION
 from typing import Callable, Union, Any, Tuple, List, Optional
 from getpass import getuser
