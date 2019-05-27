@@ -22,19 +22,19 @@ from .._util import Singleton
 class Service(metaclass=Singleton):
     def __new__(cls, *args, **kwargs):
         if cls is __class__:
-            err = "direct instantiation of class '{}' not allowed".format(__class__.__name__)
-            raise TypeError(err)
-        instance = super(Service, cls).__new__(cls)
-        instance.__input = None
-        instance.__output = None
-        instance.__uri = str()
-        instance.__type = str()
-        instance.__name = str()
-        instance.__description = str()
-        if not hasattr(instance, "task") or not callable(getattr(instance, "task")):
-            err = "can't instantiate class '{}' with required method 'task'".format(cls.__name__)
-            raise TypeError(err)
-        return instance
+            __err = "direct instantiation of class '{}' not allowed".format(__class__.__name__)
+            raise TypeError(__err)
+        __instance = super(Service, cls).__new__(cls)
+        __instance.__input = None
+        __instance.__output = None
+        __instance.__uri = str()
+        __instance.__type = str()
+        __instance.__name = str()
+        __instance.__description = str()
+        if not hasattr(__instance, "task") or not callable(getattr(__instance, "task")):
+            __err = "can't instantiate class '{}' with required method 'task'".format(cls.__name__)
+            raise TypeError(__err)
+        return __instance
 
     @property
     def input(self) -> dict:
