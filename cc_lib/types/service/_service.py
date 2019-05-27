@@ -16,7 +16,7 @@
 
 __all__ = ('Service', 'actuator', 'sensor')
 
-from ..._util import Singleton
+from ..._util import Singleton, validateInstance
 
 
 actuator = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Actuator"
@@ -46,8 +46,6 @@ class Service(metaclass=Singleton):
 
     @input.setter
     def input(self, arg):
-        if not type(arg) is dict:
-            raise TypeError(type(arg))
         if self.__input:
             raise AttributeError
         self.__input = arg
@@ -58,8 +56,6 @@ class Service(metaclass=Singleton):
 
     @output.setter
     def output(self, arg):
-        if not type(arg) is dict:
-            raise TypeError(type(arg))
         if self.__output:
             raise AttributeError
         self.__output = arg
@@ -70,8 +66,7 @@ class Service(metaclass=Singleton):
 
     @uri.setter
     def uri(self, arg: str):
-        if not type(arg) is str:
-            raise TypeError(type(arg))
+        validateInstance(arg, str)
         if self.__uri:
             raise AttributeError
         self.__uri = arg
@@ -82,8 +77,7 @@ class Service(metaclass=Singleton):
 
     @type.setter
     def type(self, arg: str):
-        if not type(arg) is str:
-            raise TypeError(type(arg))
+        validateInstance(arg, str)
         if self.__type:
             raise AttributeError
         self.__type = arg
@@ -94,8 +88,7 @@ class Service(metaclass=Singleton):
 
     @name.setter
     def name(self, arg: str) -> None:
-        if not type(arg) is str:
-            raise TypeError(type(arg))
+        validateInstance(arg, str)
         self.__name = arg
 
     @property
@@ -104,8 +97,7 @@ class Service(metaclass=Singleton):
 
     @description.setter
     def description(self, arg: str) -> None:
-        if not type(arg) is str:
-            raise TypeError(type(arg))
+        validateInstance(arg, str)
         self.__description = arg
 
 
