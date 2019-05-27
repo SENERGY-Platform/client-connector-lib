@@ -14,9 +14,13 @@
    limitations under the License.
 """
 
-__all__ = ('Service', )
+__all__ = ('Service', 'actuator', 'sensor')
 
-from .._util import Singleton
+from ..._util import Singleton
+
+
+actuator = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Actuator"
+sensor = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Sensor"
 
 
 class Service(metaclass=Singleton):
@@ -103,3 +107,25 @@ class Service(metaclass=Singleton):
         if not type(arg) is str:
             raise TypeError(type(arg))
         self.__description = arg
+
+
+# class Actuator(_Service):
+#     def __new__(cls, *args, **kwargs):
+#         __instance = super().__new__(cls, *args, **kwargs)
+#         setattr(
+#             __instance,
+#             "{}__type".format(_Service.__name__),
+#             "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Actuator"
+#         )
+#         return __instance
+#
+#
+# class Sensor(_Service):
+#     def __new__(cls, *args, **kwargs):
+#         __instance = super().__new__(cls, *args, **kwargs)
+#         setattr(
+#             __instance,
+#             "{}__type".format(_Service.__name__),
+#             "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Sensor"
+#         )
+#         return __instance
