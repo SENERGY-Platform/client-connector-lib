@@ -16,7 +16,7 @@
 
 __all__ = ('Service', )
 
-from ..._util import validateInstance
+from .._util import validateInstance
 from inspect import stack, getmodule
 
 
