@@ -59,7 +59,7 @@ def sensor_service(obj) -> type:
 
 
 def __getSubclass(obj, parent):
-    __validate(obj)
+    validateInstance(obj, (type, dict))
     if isinstance(obj, dict):
         sub_cls = type("{}_{}".format(parent.__name__, uuid4().hex), (parent,), obj)
         try:
