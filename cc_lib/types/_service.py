@@ -51,14 +51,14 @@ class SensorService(Service):
 
 
 def actuator_service(obj) -> type:
-    return __getSubclass(obj, ActuatorService)
+    return _getSubclass(obj, ActuatorService)
 
 
 def sensor_service(obj) -> type:
-    return __getSubclass(obj, SensorService)
+    return _getSubclass(obj, SensorService)
 
 
-def __getSubclass(obj, parent):
+def _getSubclass(obj, parent):
     validateInstance(obj, (type, dict))
     if isinstance(obj, dict):
         sub_cls = type("{}_{}".format(parent.__name__, uuid4().hex), (parent,), obj)
@@ -76,7 +76,6 @@ def __getSubclass(obj, parent):
         return type(obj.__name__, (parent,), attr_dict)
 
 
-
-def __getAttributes():
+def _getAttributes():
     return tuple((name, type(obj)) for name, obj in Service.__dict__.items() if
                  not name.startswith("_") and not isinstance(obj, staticmethod) and name is not "type")
