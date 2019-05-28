@@ -14,21 +14,20 @@
    limitations under the License.
 """
 
-__all__ = ('Device', )
+__all__ = ('Device', 'device')
 
-from .._util import validateInstance
-from .service import Service
+from .._util import validateInstance, getSubclass
+from ._service import Service
 from collections import OrderedDict
-from hashlib import sha1
 
 
 class Device:
-    """
-    Subclass this class to create devices for use with the client-connector-lib.
-    """
+    uri = str()
+    description = str()
+
     def __new__(cls, *args, **kwargs):
         if cls is __class__:
-            __err = "direct instantiation of class '{}' not allowed".format(__class__.__name__)
+            __err = "instantiation of class '{}' not allowed".format(__class__.__name__)
             raise TypeError(__err)
         __instance = super(__class__, cls).__new__(cls)
         __instance.__id = str()
@@ -123,12 +122,26 @@ class Device:
         attributes = [
             ('id', self.id),
             ('remote_id', self.remote_id),
-            ('type_id', self.type_id),
             ('name', self.name),
-            ('tags', self.tags),
-            ('hash', self.hash),
+            ('tags', self.tags)
         ]
         if kwargs:
             for arg, value in kwargs.items():
                 attributes.append((arg, value))
         return "{}({})".format(type(self).__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
+
+    @classmethod
+    def _validate(cls) -> None:
+        for a_name, a_type in _getAttributes():
+            attr = getattr(cls, a_name)
+            validateInstance(attr, a_type)
+
+
+def device(obj) -> type:
+    validateInstance(obj, (type, dict))
+    return getSubclass(obj, Device)
+
+
+def _getAttributes() -> tuple:
+    return tuple((name, type(obj)) for name, obj in Device.__dict__.items() if
+                 not name.startswith("_") and not isinstance(obj, staticmethod))
