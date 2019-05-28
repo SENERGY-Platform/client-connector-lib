@@ -35,6 +35,12 @@ class Service:
             raise TypeError(__err)
         return super(__class__, cls).__new__(cls)
 
+    @classmethod
+    def _validate(cls):
+        for a_name, a_type in _getAttributes():
+            attr = getattr(cls, a_name)
+            validateInstance(attr, a_type)
+
 
 class ActuatorService(Service):
     type = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Actuator"
@@ -69,15 +75,6 @@ def __getSubclass(obj, parent):
         del attr_dict['__weakref__']
         return type(obj.__name__, (parent,), attr_dict)
 
-
-def __validate(obj):
-    validateInstance(obj, (type, dict))
-    for a_name, a_type in __getAttributes():
-        if isinstance(obj, dict):
-            attr = obj[a_name]
-        else:
-            attr = getattr(obj, a_name)
-        validateInstance(attr, a_type)
 
 
 def __getAttributes():
