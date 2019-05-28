@@ -14,10 +14,11 @@
    limitations under the License.
 """
 
-__all__ = ('ActuatorService', 'SensorService', 'service')
+__all__ = ('ActuatorService', 'SensorService', 'actuator_service', 'sensor_service')
 
 from .._util import validateInstance
 from inspect import stack, getmodule
+from uuid import uuid4
 
 
 class Type:
