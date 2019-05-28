@@ -30,7 +30,7 @@ class Device:
         if cls is __class__:
             __err = "direct instantiation of class '{}' not allowed".format(__class__.__name__)
             raise TypeError(__err)
-        __instance = super(Device, cls).__new__(cls)
+        __instance = super(__class__, cls).__new__(cls)
         __instance.__id = str()
         __instance.__remote_id = str()
         __instance.__name = str()
