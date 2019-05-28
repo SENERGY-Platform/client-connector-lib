@@ -40,25 +40,20 @@ class Service:
     # output =
     description = str()
 
+    def __new__(cls, *args, **kwargs):
+        if cls in (Service, ActuatorService, SensorService):
+            __err = "instantiation of class '{}' not allowed".format(cls.__name__)
+            raise TypeError(__err)
+        return super(__class__, cls).__new__(cls)
+
 
 class ActuatorService(Service):
     type = Actuator
-
-    def __new__(cls, *args, **kwargs):
-        if cls is __class__:
-            __err = "instantiation of class '{}' not allowed".format(__class__.__name__)
-            raise TypeError(__err)
-        return super(ActuatorService, cls).__new__(cls)
 
 
 class SensorService(Service):
     type = Sensor
 
-    def __new__(cls, *args, **kwargs):
-        if cls is __class__:
-            __err = "instantiation of class '{}' not allowed".format(__class__.__name__)
-            raise TypeError(__err)
-        return super(SensorService, cls).__new__(cls)
 
 
 class service:
