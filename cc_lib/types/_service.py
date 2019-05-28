@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('Service', )
+__all__ = ('Service', 'service')
 
 from .._util import validateInstance
 from inspect import stack, getmodule
@@ -32,28 +32,27 @@ class Sensor(Type):
     uri = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Sensor"
 
 
-class BaseService:
-    pass
-
-
-class _Service(BaseService):
-    pass
-
-
-class Service(BaseService):
+class Service:
     uri = str()
     name = str()
     type = str()
     # input =
     # output =
     description = str()
-    __count = 0
 
     def __new__(cls, *args, **kwargs):
         if cls is __class__:
             __err = "instantiation of class '{}' not allowed".format(__class__.__name__)
             raise TypeError(__err)
         return super(Service, cls).__new__(cls)
+
+
+class service:
+    __count = 0
+
+    def __new__(cls, *args, **kwargs):
+        __err = "instantiation of class '{}' not allowed".format(__class__.__name__)
+        raise TypeError(__err)
 
     @staticmethod
     def actuator(obj) -> type:
