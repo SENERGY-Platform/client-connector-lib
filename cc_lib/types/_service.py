@@ -28,7 +28,6 @@ class Service:
         # ("output", ),
         ("description", str)
     )
-    #__methods = ("task", )
     __actuator = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Actuator"
     __sensor = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Sensor"
     __count = 0
@@ -79,11 +78,3 @@ class Service:
             else:
                 attr = getattr(obj, a_name)
             validateInstance(attr, a_type)
-        # for m_name in __class__.__methods:
-        #     if isinstance(obj, dict):
-        #         func = obj[m_name]
-        #     else:
-        #         func = getattr(obj, m_name)
-        #     if not callable(func):
-        #         err = "'{}' object not callable".format(m_name)
-        #         raise TypeError(err)
