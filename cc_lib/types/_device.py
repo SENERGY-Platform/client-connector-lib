@@ -33,7 +33,6 @@ class Device:
         __instance = super(Device, cls).__new__(cls)
         __instance.__id = str()
         __instance.__remote_id = str()
-        __instance.__type_id = str()
         __instance.__name = str()
         __instance.__tags = OrderedDict()
         return __instance
@@ -52,17 +51,6 @@ class Device:
     @property
     def remote_id(self) -> str:
         return self.__remote_id
-
-    @property
-    def type_id(self) -> str:
-        return self.__type_id
-
-    @type_id.setter
-    def type_id(self, arg):
-        validateInstance(arg, str)
-        if self.__type_id:
-            raise AttributeError
-        self.__type_id = arg
 
     @property
     def name(self) -> str:
