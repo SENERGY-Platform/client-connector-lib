@@ -34,7 +34,7 @@ class Service:
         return super(__class__, cls).__new__(cls)
 
     @classmethod
-    def _validate(cls):
+    def _validate(cls) -> None:
         for a_name, a_type in _getAttributes():
             attr = getattr(cls, a_name)
             validateInstance(attr, a_type)
@@ -56,6 +56,6 @@ def sensor_service(obj) -> type:
     return getSubclass(obj, SensorService)
 
 
-def _getAttributes():
+def _getAttributes() -> tuple:
     return tuple((name, type(obj)) for name, obj in Service.__dict__.items() if
                  not name.startswith("_") and not isinstance(obj, staticmethod) and name is not "type")
