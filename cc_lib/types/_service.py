@@ -16,9 +16,7 @@
 
 __all__ = ('ActuatorService', 'SensorService', 'actuator_service', 'sensor_service')
 
-from .._util import validateInstance
-from inspect import stack, getmodule
-from uuid import uuid4
+from .._util import validateInstance, getSubclass
 
 
 class Service:
@@ -51,29 +49,11 @@ class SensorService(Service):
 
 
 def actuator_service(obj) -> type:
-    return _getSubclass(obj, ActuatorService)
+    return getSubclass(obj, ActuatorService)
 
 
 def sensor_service(obj) -> type:
-    return _getSubclass(obj, SensorService)
-
-
-def _getSubclass(obj, parent):
-    validateInstance(obj, (type, dict))
-    if isinstance(obj, dict):
-        sub_cls = type("{}_{}".format(parent.__name__, uuid4().hex), (parent,), obj)
-        try:
-            frm = stack()[-1]
-            mod = getmodule(frm[0])
-            setattr(sub_cls, "__module__", mod.__name__)
-        except (IndexError, AttributeError):
-            pass
-        return sub_cls
-    else:
-        attr_dict = obj.__dict__.copy()
-        del attr_dict['__dict__']
-        del attr_dict['__weakref__']
-        return type(obj.__name__, (parent,), attr_dict)
+    return getSubclass(obj, SensorService)
 
 
 def _getAttributes():
