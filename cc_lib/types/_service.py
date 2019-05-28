@@ -21,18 +21,6 @@ from inspect import stack, getmodule
 from uuid import uuid4
 
 
-class Type:
-    pass
-
-
-class Actuator(Type):
-    uri = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Actuator"
-
-
-class Sensor(Type):
-    uri = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Sensor"
-
-
 class Service:
     uri = str()
     name = str()
@@ -49,11 +37,11 @@ class Service:
 
 
 class ActuatorService(Service):
-    type = Actuator
+    type = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Actuator"
 
 
 class SensorService(Service):
-    type = Sensor
+    type = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Sensor"
 
 
 def actuator_service(obj) -> type:
