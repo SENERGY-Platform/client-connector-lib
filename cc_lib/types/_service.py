@@ -20,16 +20,33 @@ from .._util import validateInstance
 from inspect import stack, getmodule
 
 
-class Service:
-    __attributes = (
-        ("uri", str),
-        ("name", str),
-        # ("input", ),
-        # ("output", ),
-        ("description", str)
-    )
-    __actuator = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Actuator"
-    __sensor = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Sensor"
+class Type:
+    pass
+
+
+class Actuator(Type):
+    uri = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Actuator"
+
+
+class Sensor(Type):
+    uri = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Sensor"
+
+
+class BaseService:
+    pass
+
+
+class _Service(BaseService):
+    pass
+
+
+class Service(BaseService):
+    uri = str()
+    name = str()
+    type = str()
+    # input =
+    # output =
+    description = str()
     __count = 0
 
     def __new__(cls, *args, **kwargs):
@@ -41,13 +58,13 @@ class Service:
     @staticmethod
     def actuator(obj) -> type:
         sub_cls = __class__.__getSubclass(obj)
-        setattr(sub_cls, "type", __class__.__actuator)
+        setattr(sub_cls, "type", Actuator)
         return sub_cls
 
     @staticmethod
     def sensor(obj) -> type:
         sub_cls = __class__.__getSubclass(obj)
-        setattr(sub_cls, "type", __class__.__sensor)
+        setattr(sub_cls, "type", Sensor)
         return sub_cls
 
     @staticmethod
