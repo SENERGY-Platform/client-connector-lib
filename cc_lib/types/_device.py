@@ -114,8 +114,7 @@ class Device:
         except KeyError:
             raise KeyError("tag id '{}' does not exist".format(tag_id))
 
-
-    def __repr__(self, **kwargs):
+    def __str__(self, **kwargs):
         """
         Provide a string representation.
         :param kwargs: User attributes provided from subclass.
