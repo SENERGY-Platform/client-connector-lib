@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('Service', 'service')
+__all__ = ('ActuatorService', 'SensorService', 'service')
 
 from .._util import validateInstance
 from inspect import stack, getmodule
@@ -40,11 +40,25 @@ class Service:
     # output =
     description = str()
 
+
+class ActuatorService(Service):
+    type = Actuator
+
     def __new__(cls, *args, **kwargs):
         if cls is __class__:
             __err = "instantiation of class '{}' not allowed".format(__class__.__name__)
             raise TypeError(__err)
-        return super(Service, cls).__new__(cls)
+        return super(ActuatorService, cls).__new__(cls)
+
+
+class SensorService(Service):
+    type = Sensor
+
+    def __new__(cls, *args, **kwargs):
+        if cls is __class__:
+            __err = "instantiation of class '{}' not allowed".format(__class__.__name__)
+            raise TypeError(__err)
+        return super(SensorService, cls).__new__(cls)
 
 
 class service:
