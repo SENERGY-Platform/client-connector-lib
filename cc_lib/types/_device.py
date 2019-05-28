@@ -36,7 +36,6 @@ class Device:
         __instance.__type_id = str()
         __instance.__name = str()
         __instance.__tags = OrderedDict()
-        __instance.__services = dict()
         return __instance
 
     @property
@@ -127,18 +126,6 @@ class Device:
         except KeyError:
             raise KeyError("tag id '{}' does not exist".format(tag_id))
 
-    def addService(self, service: Service):
-        validateInstance(service, Service)
-        if not all((service.uri, service.name, service.type)):
-            raise ValueError
-        if service.uri in self.__services:
-            raise KeyError
-        self.__services[service.uri] = service
-
-    def getService(self, service_uri: str):
-        if not type(service_uri) is str:
-            raise TypeError(type(service_uri))
-        return self.__services[service_uri]
 
     def __repr__(self, **kwargs):
         """
@@ -153,7 +140,6 @@ class Device:
             ('name', self.name),
             ('tags', self.tags),
             ('hash', self.hash),
-            ('services', [item for item in dir(self) if getattr(getattr(self, item), "__service__", None)])
         ]
         if kwargs:
             for arg, value in kwargs.items():
