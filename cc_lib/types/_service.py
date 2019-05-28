@@ -89,9 +89,14 @@ class Service(BaseService):
     @staticmethod
     def __validate(obj):
         validateInstance(obj, (type, dict))
-        for a_name, a_type in __class__.__attributes:
+        for a_name, a_type in __class__.__getAttributes():
             if isinstance(obj, dict):
                 attr = obj[a_name]
             else:
                 attr = getattr(obj, a_name)
             validateInstance(attr, a_type)
+
+    @staticmethod
+    def __getAttributes():
+        return tuple((name, type(obj)) for name, obj in Service.__dict__.items() if
+                     not name.startswith("_") and not isinstance(obj, staticmethod) and name is not "type")
