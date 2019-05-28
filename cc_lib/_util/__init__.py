@@ -22,12 +22,15 @@ __all__ = (
     'getMangledAttr',
     'setMangledAttr',
     'calcNthTerm',
-    'calcDuration'
+    'calcDuration',
+    'getSubclass'
 )
 
 
 from typing import Any, Union, Tuple
+from inspect import stack, getmodule
 from math import ceil, log10
+from uuid import uuid4
 
 
 class Singleton(type):
@@ -113,3 +116,21 @@ def calcDuration(min_duration: int, max_duration: int, retry_num: int, factor: U
     if duration <= max_duration:
         return duration
     return max_duration
+
+
+def getSubclass(obj: Union[type, dict], parent: type):
+    validateInstance(obj, (type, dict))
+    if isinstance(obj, dict):
+        sub_cls = type("{}_{}".format(parent.__name__, uuid4().hex), (parent,), obj)
+        try:
+            frm = stack()[-1]
+            mod = getmodule(frm[0])
+            setattr(sub_cls, "__module__", mod.__name__)
+        except (IndexError, AttributeError):
+            pass
+        return sub_cls
+    else:
+        attr_dict = obj.__dict__.copy()
+        del attr_dict['__dict__']
+        del attr_dict['__weakref__']
+        return type(obj.__name__, (parent,), attr_dict)
