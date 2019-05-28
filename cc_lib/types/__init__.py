@@ -15,8 +15,9 @@
 """
 
 from ._device import *
-import cc_lib.types.service
+from ._service import *
 
 __all__ = (
     _device.__all__,
+    _service.__all__
 )
