@@ -55,56 +55,42 @@ class SensorService(Service):
     type = Sensor
 
 
+def actuator_service(obj) -> type:
+    return __getSubclass(obj, ActuatorService)
 
-class service:
-    __count = 0
 
-    def __new__(cls, *args, **kwargs):
-        __err = "instantiation of class '{}' not allowed".format(__class__.__name__)
-        raise TypeError(__err)
+def sensor_service(obj) -> type:
+    return __getSubclass(obj, SensorService)
 
-    @staticmethod
-    def actuator(obj) -> type:
-        sub_cls = __class__.__getSubclass(obj)
-        setattr(sub_cls, "type", Actuator)
+
+def __getSubclass(obj, parent):
+    __validate(obj)
+    if isinstance(obj, dict):
+        sub_cls = type("{}_{}".format(parent.__name__, uuid4().hex), (parent,), obj)
+        try:
+            frm = stack()[-1]
+            mod = getmodule(frm[0])
+            setattr(sub_cls, "__module__", mod.__name__)
+        except (IndexError, AttributeError):
+            pass
         return sub_cls
+    else:
+        attr_dict = obj.__dict__.copy()
+        del attr_dict['__dict__']
+        del attr_dict['__weakref__']
+        return type(obj.__name__, (parent,), attr_dict)
 
-    @staticmethod
-    def sensor(obj) -> type:
-        sub_cls = __class__.__getSubclass(obj)
-        setattr(sub_cls, "type", Sensor)
-        return sub_cls
 
-    @staticmethod
-    def __getSubclass(obj):
-        __class__.__validate(obj)
+def __validate(obj):
+    validateInstance(obj, (type, dict))
+    for a_name, a_type in __getAttributes():
         if isinstance(obj, dict):
-            sub_cls = type("{}_{}".format(Service.__name__, __class__.__count), (Service,), obj)
-            __class__.__count += 1
-            try:
-                frm = stack()[-1]
-                mod = getmodule(frm[0])
-                setattr(sub_cls, "__module__", mod.__name__)
-            except (IndexError, AttributeError):
-                pass
-            return sub_cls
+            attr = obj[a_name]
         else:
-            attr_dict = obj.__dict__.copy()
-            del attr_dict['__dict__']
-            del attr_dict['__weakref__']
-            return type(obj.__name__, (Service,), attr_dict)
+            attr = getattr(obj, a_name)
+        validateInstance(attr, a_type)
 
-    @staticmethod
-    def __validate(obj):
-        validateInstance(obj, (type, dict))
-        for a_name, a_type in __class__.__getAttributes():
-            if isinstance(obj, dict):
-                attr = obj[a_name]
-            else:
-                attr = getattr(obj, a_name)
-            validateInstance(attr, a_type)
 
-    @staticmethod
-    def __getAttributes():
-        return tuple((name, type(obj)) for name, obj in Service.__dict__.items() if
-                     not name.startswith("_") and not isinstance(obj, staticmethod) and name is not "type")
+def __getAttributes():
+    return tuple((name, type(obj)) for name, obj in Service.__dict__.items() if
+                 not name.startswith("_") and not isinstance(obj, staticmethod) and name is not "type")
