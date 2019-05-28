@@ -14,110 +14,76 @@
    limitations under the License.
 """
 
-__all__ = ('Service', 'actuator', 'sensor')
+__all__ = ('Service', )
 
-from ..._util import Singleton, validateInstance
-
-
-actuator = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Actuator"
-sensor = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Sensor"
+from ..._util import validateInstance
+from inspect import stack, getmodule
 
 
-class Service(metaclass=Singleton):
+class Service:
+    __attributes = (
+        ("uri", str),
+        ("name", str),
+        # ("input", ),
+        # ("output", ),
+        ("description", str)
+    )
+    #__methods = ("task", )
+    __actuator = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Actuator"
+    __sensor = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Sensor"
+    __count = 0
+
     def __new__(cls, *args, **kwargs):
         if cls is __class__:
-            __err = "direct instantiation of class '{}' not allowed".format(__class__.__name__)
+            __err = "instantiation of class '{}' not allowed".format(__class__.__name__)
             raise TypeError(__err)
-        __instance = super(Service, cls).__new__(cls)
-        __instance.__input = None
-        __instance.__output = None
-        __instance.__uri = str()
-        __instance.__type = str()
-        __instance.__name = str()
-        __instance.__description = str()
-        if not hasattr(__instance, "task") or not callable(getattr(__instance, "task")):
-            __err = "can't instantiate class '{}' with required method 'task'".format(cls.__name__)
-            raise TypeError(__err)
-        return __instance
+        return super(Service, cls).__new__(cls)
 
-    @property
-    def input(self) -> dict:
-        return self.__input
+    @staticmethod
+    def actuator(obj) -> type:
+        sub_cls = __class__.__getSubclass(obj)
+        setattr(sub_cls, "type", __class__.__actuator)
+        return sub_cls
 
-    @input.setter
-    def input(self, arg):
-        if self.__input:
-            raise AttributeError
-        self.__input = arg
+    @staticmethod
+    def sensor(obj) -> type:
+        sub_cls = __class__.__getSubclass(obj)
+        setattr(sub_cls, "type", __class__.__sensor)
+        return sub_cls
 
-    @property
-    def output(self) -> dict:
-        return self.__output
+    @staticmethod
+    def __getSubclass(obj):
+        __class__.__validate(obj)
+        if isinstance(obj, dict):
+            sub_cls = type("{}_{}".format(Service.__name__, __class__.__count), (Service,), obj)
+            __class__.__count += 1
+            try:
+                frm = stack()[-1]
+                mod = getmodule(frm[0])
+                setattr(sub_cls, "__module__", mod.__name__)
+            except (IndexError, AttributeError):
+                pass
+            return sub_cls
+        else:
+            attr_dict = obj.__dict__.copy()
+            del attr_dict['__dict__']
+            del attr_dict['__weakref__']
+            return type(obj.__name__, (Service,), attr_dict)
 
-    @output.setter
-    def output(self, arg):
-        if self.__output:
-            raise AttributeError
-        self.__output = arg
-
-    @property
-    def uri(self) -> str:
-        return self.__uri
-
-    @uri.setter
-    def uri(self, arg: str):
-        validateInstance(arg, str)
-        if self.__uri:
-            raise AttributeError
-        self.__uri = arg
-
-    @property
-    def type(self) -> str:
-        return self.__type
-
-    @type.setter
-    def type(self, arg: str):
-        validateInstance(arg, str)
-        if self.__type:
-            raise AttributeError
-        self.__type = arg
-
-    @property
-    def name(self) -> str:
-        return self.__name
-
-    @name.setter
-    def name(self, arg: str) -> None:
-        validateInstance(arg, str)
-        self.__name = arg
-
-    @property
-    def description(self) -> str:
-        return self.__description
-
-    @description.setter
-    def description(self, arg: str) -> None:
-        validateInstance(arg, str)
-        self.__description = arg
-
-
-# class Actuator(_Service):
-#     def __new__(cls, *args, **kwargs):
-#         __instance = super().__new__(cls, *args, **kwargs)
-#         setattr(
-#             __instance,
-#             "{}__type".format(_Service.__name__),
-#             "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Actuator"
-#         )
-#         return __instance
-#
-#
-# class Sensor(_Service):
-#     def __new__(cls, *args, **kwargs):
-#         __instance = super().__new__(cls, *args, **kwargs)
-#         setattr(
-#             __instance,
-#             "{}__type".format(_Service.__name__),
-#             "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Sensor"
-#         )
-#         return __instance
+    @staticmethod
+    def __validate(obj):
+        validateInstance(obj, (type, dict))
+        for a_name, a_type in __class__.__attributes:
+            if isinstance(obj, dict):
+                attr = obj[a_name]
+            else:
+                attr = getattr(obj, a_name)
+            validateInstance(attr, a_type)
+        # for m_name in __class__.__methods:
+        #     if isinstance(obj, dict):
+        #         func = obj[m_name]
+        #     else:
+        #         func = getattr(obj, m_name)
+        #     if not callable(func):
+        #         err = "'{}' object not callable".format(m_name)
+        #         raise TypeError(err)
