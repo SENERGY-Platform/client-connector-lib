@@ -16,9 +16,10 @@
 
 __all__ = ('Device', 'device')
 
-from .._util import validateInstance, getSubclass
+from .._util import validateInstance, validateSubclass, getSubclass
 from ._service import Service
 from collections import OrderedDict
+from typing import Union
 
 
 class Device:
