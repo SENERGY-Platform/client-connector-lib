@@ -143,9 +143,16 @@ class Device:
         for a_name, a_type in _getAttributes():
             attr = getattr(cls, a_name)
             validateInstance(attr, a_type)
+            if a_name is "services":
+                for key, srv in attr.items():
+                    if isinstance(srv, type):
+                        validateSubclass(srv, Service)
+                    else:
+                        validateInstance(srv, Service)
+                    validateInstance(key, str)
 
 
-def device(obj) -> type:
+def device(obj: Union[type, dict]) -> type:
     validateInstance(obj, (type, dict))
     return getSubclass(obj, Device)
 
