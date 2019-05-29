@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('DeviceManager', 'isDevice')
+__all__ = ('DeviceManager', )
 
 from typing import List
 from threading import Lock
@@ -24,17 +24,6 @@ import cc_lib
 logger = cc_lib.logger.getLogger(__name__)
 
 
-def isDevice(obj: object) -> bool:
-    """
-    Check if a object is a Device or a Device subclass
-    :param obj: object to check
-    :return: Boolean
-    """
-    if type(obj) is cc_lib.types.Device or issubclass(type(obj), cc_lib.types.Device):
-        return True
-    return False
-
-
 class DeviceManager:
 
     def __init__(self):
@@ -42,7 +31,7 @@ class DeviceManager:
         self.__lock = Lock()
 
     def add(self, device: cc_lib.types.Device) -> None:
-        if not isDevice(device):
+        if not isinstance(device, cc_lib.types.Device):
             raise TypeError
         self.__lock.acquire()
         if device.id not in self.__device_pool:
@@ -52,7 +41,7 @@ class DeviceManager:
         self.__lock.release()
 
     def delete(self, device_id: str) -> None:
-        if not type(device_id) is str:
+        if not isinstance(device_id, str):
             raise TypeError
         self.__lock.acquire()
         try:
@@ -62,7 +51,7 @@ class DeviceManager:
         self.__lock.release()
 
     def get(self, device_id: str) -> cc_lib.types.Device:
-        if type(device_id) is not str:
+        if not isinstance(device_id, str):
             raise TypeError
         self.__lock.acquire()
         try:
