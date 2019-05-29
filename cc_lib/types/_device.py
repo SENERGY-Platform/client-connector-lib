@@ -127,10 +127,11 @@ class Device:
         :return: String.
         """
         attributes = [
-            ('id', self.id),
-            ('remote_id', self.remote_id),
-            ('name', self.name),
-            ('tags', self.tags)
+            ('id', repr(self.id)),
+            ('remote_id', repr(self.remote_id)),
+            ('name', repr(self.name)),
+            ('tags', repr(self.tags)),
+            ('services', [key for key in self.__class__.services])
         ]
         if kwargs:
             for arg, value in kwargs.items():
