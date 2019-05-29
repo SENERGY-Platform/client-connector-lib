@@ -302,7 +302,7 @@ class Client(metaclass=Singleton):
                     method=http.Method.POST,
                     body={
                         "name": device.name,
-                        "device_type": device.type_id,
+                        "device_type": device.__class__.uri,
                         "uri": "{}-{}".format(cc_conf.device.id_prefix, device.id),
                         "tags": device.tags
                     },
@@ -398,7 +398,7 @@ class Client(metaclass=Singleton):
                 body={
                     "id": device.remote_id,
                     "name": device.name,
-                    "device_type": device.type_id,
+                    "device_type": device.__class__.uri,
                     "uri": "{}-{}".format(cc_conf.device.id_prefix, device.id),
                     "tags": device.tags
                 },
