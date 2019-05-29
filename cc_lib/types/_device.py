@@ -24,6 +24,7 @@ from collections import OrderedDict
 class Device:
     uri = str()
     description = str()
+    services = dict()
 
     def __new__(cls, *args, **kwargs):
         if cls is __class__:
