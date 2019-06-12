@@ -72,6 +72,8 @@ def initLogging() -> None:
     if not cc_conf.logger.level in logging_levels.keys():
         err = "unknown log level '{}'".format(cc_conf.logger.level)
         raise LoggerError(err)
+    if cc_conf.logger.colored:
+        stream_handler.setFormatter(color_formatter)
     logger.setLevel(logging_levels[cc_conf.logger.level])
     if cc_conf.logger.rotating_log:
         logger.removeHandler(stream_handler)
