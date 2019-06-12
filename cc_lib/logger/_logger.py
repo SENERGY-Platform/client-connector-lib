@@ -89,8 +89,7 @@ def initLogging() -> None:
             when="midnight",
             backupCount=cc_conf.logger.rotating_log_backup_count
         )
-        formatter = logging.Formatter(fmt=msg_fmt, datefmt=date_fmt)
-        log_handler.setFormatter(formatter)
+        log_handler.setFormatter(standard_formatter)
         logger.addHandler(log_handler)
 
 
