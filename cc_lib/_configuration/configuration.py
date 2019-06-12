@@ -65,6 +65,7 @@ class ConnectorConf:
     @section
     class logger:
         level: str = 'info'
+        colored: bool = False
         rotating_log: bool = False
         rotating_log_backup_count: int = 14
 
