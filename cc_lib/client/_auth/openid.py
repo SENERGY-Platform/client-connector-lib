@@ -23,7 +23,7 @@ from time import time as currentTimeStamp
 import json
 
 
-logger = getLogger(__name__.split('.', 1)[-1])
+logger = getLogger(__name__.split('.', 1)[-1].replace("_", ""))
 
 
 class OpenIdError(Exception):

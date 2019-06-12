@@ -41,7 +41,7 @@ from json import dumps as jsonDumps
 from json import JSONDecodeError
 
 
-logger = getLogger(__name__.rsplit(".", 1)[-1])
+logger = getLogger(__name__.rsplit(".", 1)[-1].replace("_", ""))
 
 
 class _SendHandler:

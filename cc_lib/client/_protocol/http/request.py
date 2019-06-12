@@ -27,7 +27,7 @@ import urllib.parse
 import json
 
 
-logger = getLogger(__name__.split('.', 1)[-1])
+logger = getLogger(__name__.split('.', 1)[-1].replace("_", ""))
 
 
 ca_file = None

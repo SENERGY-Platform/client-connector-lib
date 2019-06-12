@@ -34,7 +34,7 @@ from typing import Any, Union
 from ssl import CertificateError
 
 
-logger = getLogger(__name__.split('.', 1)[-1])
+logger = getLogger(__name__.split('.', 1)[-1].replace("_", ""))
 
 
 qos_map = {
