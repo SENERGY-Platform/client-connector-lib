@@ -57,6 +57,7 @@ class ColorFormatter(logging.Formatter):
 
 msg_fmt = '%(asctime)s - %(levelname)s: [%(name)s] %(message)s'
 date_fmt = '%m.%d.%Y %I:%M:%S %p'
+standard_formatter = logging.Formatter(fmt=msg_fmt, datefmt=date_fmt)
 color_formatter = ColorFormatter(fmt=msg_fmt, datefmt=date_fmt)
 
 stream_handler = logging.StreamHandler()
