@@ -61,7 +61,7 @@ standard_formatter = logging.Formatter(fmt=msg_fmt, datefmt=date_fmt)
 color_formatter = ColorFormatter(fmt=msg_fmt, datefmt=date_fmt)
 
 stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(color_formatter)
+stream_handler.setFormatter(standard_formatter)
 
 logger = logging.getLogger('connector')
 logger.propagate = False
