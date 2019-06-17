@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-from simple_conf import configuration, section, initConfig
+from simple_conf import configuration, section, loadConfig
 from os import getcwd, makedirs
 from os.path import exists as path_exists
 from typing import Union
@@ -82,10 +82,10 @@ class ConnectorConf:
         id_prefix: str = None
 
 
-cc_conf = ConnectorConf(conf_file='connector.conf', user_path=user_dir, ext_aft_crt=True, init=False)
+cc_conf = ConnectorConf(conf_file='connector.conf', user_path=user_dir, ext_aft_crt=True, load=False)
 
 
 def initConnectorConf() -> None:
     if not path_exists(user_dir):
         makedirs(user_dir)
-    initConfig(cc_conf)
+    loadConfig(cc_conf)

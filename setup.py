@@ -42,7 +42,7 @@ setuptools.setup(
     copyright=metadata.get('__copyright__'),
     install_requires=[
         'paho-mqtt>=1.4.0,<2',
-        'simple-conf-manager @ git+https://github.com/y-du/simple-conf-manager.git@0.6.0'
+        'simple-conf-manager @ git+https://github.com/y-du/simple-conf-manager.git@1.0.0'
     ],
     packages=setuptools.find_packages(),
     python_requires='>=3.5.3',
