@@ -950,7 +950,7 @@ class Client(metaclass=Singleton):
         :param devices: List or tuple of devices.
         :return: Hash as string.
         """
-        hashes = [sha1(device.id.encode()).hexdigest() for device in devices]
+        hashes = [sha1("{}{}".format(device.id, device.name).encode()).hexdigest() for device in devices]
         hashes.sort()
         return sha1("".join(hashes).encode()).hexdigest()
 
