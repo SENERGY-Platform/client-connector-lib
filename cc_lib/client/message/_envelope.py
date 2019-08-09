@@ -111,8 +111,6 @@ class CommandEnvelope(Envelope):
             timestamp: Optional[float] = None
     ):
         super().__init__(device, service, message, corr_id)
-        if corr_id:
-            __class__.__checkType(corr_id, str)
         self.__completion_strategy = completion_strategy
         self.__timestamp = timestamp
 
