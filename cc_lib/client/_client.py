@@ -20,7 +20,7 @@ from .._configuration.configuration import cc_conf, initConnectorConf
 from .._util import Singleton, validateInstance, setMangledAttr, calcDuration
 from ..logger._logger import getLogger, initLogging
 from ..types import Device
-from .message import Envelope, Message
+from .message import CommandEnvelope, EventEnvelope, Message
 from ._exception import *
 from ._auth import OpenIdClient, NoTokenError
 from ._protocol import http, mqtt
@@ -44,9 +44,10 @@ from json import JSONDecodeError
 logger = getLogger(__name__.rsplit(".", 1)[-1].replace("_", ""))
 
 
-class _SendHandler:
-    event = "event"
-    response = "response"
+handler_map = {
+    CommandEnvelope: "response",
+    EventEnvelope: "event"
+}
 
 
 class CompletionStrategy:
@@ -614,7 +615,7 @@ class Client(metaclass=Singleton):
             envelope = jsonLoads(envelope)
             if time() - envelope["timestamp"] <= cc_conf.connector.max_cmd_age:
                 self.__cmd_queue.put_nowait(
-                    Envelope(
+                    CommandEnvelope(
                         device=__class__.__parseDeviceID(uri[1]),
                         service=uri[2],
                         message=Message(
@@ -622,8 +623,8 @@ class Client(metaclass=Singleton):
                             metadata=envelope["payload"].setdefault("metadata", str())
                         ),
                         corr_id=envelope["correlation_id"],
-                        cmd_strategy=envelope["completion_strategy"],
-                        cmd_timestamp=envelope["timestamp"]
+                        completion_strategy=envelope["completion_strategy"],
+                        timestamp=envelope["timestamp"]
                     )
                 )
             else:
@@ -644,10 +645,15 @@ class Client(metaclass=Singleton):
                 )
             )
 
-    def __send(self, handler: str, envelope: Envelope, event_worker):
-        logger.debug("sending {} '{}' to platform ...".format(handler, envelope.correlation_id))
+    def __send(self, envelope: Union[CommandEnvelope, EventEnvelope], event_worker):
+        logger.debug("sending {} '{}' to platform ...".format(handler_map[type(envelope)], envelope.correlation_id))
         if not self.__connected_flag:
-            logger.error("sending {} '{}' to platform failed - not connected".format(handler, envelope.correlation_id))
+            logger.error(
+                "sending {} '{}' to platform failed - not connected".format(
+                    handler_map[type(envelope)],
+                    envelope.correlation_id
+                )
+            )
             raise NotConnectedError
         try:
             def on_done():
@@ -655,32 +661,52 @@ class Client(metaclass=Singleton):
                     try:
                         raise event_worker.exception
                     except Exception as ex:
-                        if handler == _SendHandler.event:
+                        if isinstance(envelope, EventEnvelope):
                             event_worker.exception = SendEventError(ex)
-                        elif handler == _SendHandler.response:
+                        elif isinstance(envelope, CommandEnvelope):
                             event_worker.exception = SendResponseError(ex)
                         else:
                             event_worker.exception = SendError(ex)
                         logger.error(
-                            "sending {} '{}' to platform failed - {}".format(handler, envelope.correlation_id, ex)
+                            "sending {} '{}' to platform failed - {}".format(
+                                handler_map[type(envelope)],
+                                envelope.correlation_id, ex
+                            )
                         )
                 elif mqtt.qos_map.setdefault(cc_conf.connector.qos, 1) > 0:
-                    logger.debug("sending {} '{}' to platform successful".format(handler, envelope.correlation_id))
+                    logger.debug(
+                        "sending {} '{}' to platform successful".format(
+                            handler_map[type(envelope)],
+                            envelope.correlation_id
+                        )
+                    )
             event_worker.usr_method = on_done
             self.__comm.publish(
-                topic="{}/{}/{}".format(handler, __class__.__prefixDeviceID(envelope.device_id), envelope.service_uri),
-                payload=jsonDumps(dict(envelope.message)) if handler is _SendHandler.event else jsonDumps(dict(envelope)),
+                topic="{}/{}/{}".format(
+                    handler_map[type(envelope)], __class__.__prefixDeviceID(envelope.device_id), envelope.service_uri
+                ),
+                payload=jsonDumps(dict(envelope.message)) if isinstance(envelope, EventEnvelope) else jsonDumps(dict(envelope)),
                 qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
                 event_worker=event_worker
             )
         except mqtt.NotConnectedError:
-            logger.error("sending {} '{}' to platform failed - not connected".format(handler, envelope.correlation_id))
+            logger.error(
+                "sending {} '{}' to platform failed - not connected".format(
+                    handler_map[type(envelope)],
+                    envelope.correlation_id
+                )
+            )
             raise NotConnectedError
         except mqtt.PublishError as ex:
-            logger.error("sending {} '{}' to platform failed - {}".format(handler, envelope.correlation_id, ex))
-            if handler == _SendHandler.event:
+            logger.error(
+                "sending {} '{}' to platform failed - {}".format(
+                    handler_map[type(envelope)],
+                    envelope.correlation_id, ex
+                )
+            )
+            if isinstance(envelope, EventEnvelope):
                 raise SendEventError
-            elif handler == _SendHandler.response:
+            elif isinstance(envelope, CommandEnvelope):
                 raise SendResponseError
             else:
                 raise SendError
@@ -896,7 +922,7 @@ class Client(metaclass=Singleton):
             future.wait()
             future.result()
 
-    def receiveCommand(self, block: bool = True, timeout: Optional[Union[int, float]] = None) -> Envelope:
+    def receiveCommand(self, block: bool = True, timeout: Optional[Union[int, float]] = None) -> CommandEnvelope:
         """
         Receive a command.
         :param block: If 'True' blocks until a command is available.
@@ -910,18 +936,18 @@ class Client(metaclass=Singleton):
         except QueueEmpty:
             raise CommandQueueEmptyError
 
-    def sendResponse(self, envelope: Envelope, asynchronous: bool = False) -> Optional[Future]:
+    def sendResponse(self, envelope: CommandEnvelope, asynchronous: bool = False) -> Optional[Future]:
         """
         Send a response to the platform after handling a command.
         :param envelope: Envelope object received from a command via receiveCommand.
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        validateInstance(envelope, Envelope)
+        validateInstance(envelope, CommandEnvelope)
         validateInstance(asynchronous, bool)
         worker = EventWorker(
             target=self.__send,
-            args=(_SendHandler.response, envelope),
+            args=(envelope, ),
             name="send-response-".format(envelope.correlation_id),
         )
         future = worker.start()
@@ -931,18 +957,18 @@ class Client(metaclass=Singleton):
             future.wait()
             future.result()
 
-    def emmitEvent(self, envelope: Envelope, asynchronous: bool = False) -> Optional[Future]:
+    def emmitEvent(self, envelope: EventEnvelope, asynchronous: bool = False) -> Optional[Future]:
         """
         Send an event to the platform.
         :param envelope: Envelope object.
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        validateInstance(envelope, Envelope)
+        validateInstance(envelope, EventEnvelope)
         validateInstance(asynchronous, bool)
         worker = EventWorker(
             target=self.__send,
-            args=(_SendHandler.event, envelope),
+            args=(envelope, ),
             name="send-event-".format(envelope.correlation_id)
         )
         future = worker.start()
