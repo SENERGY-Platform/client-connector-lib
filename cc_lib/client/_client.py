@@ -612,7 +612,9 @@ class Client(metaclass=Singleton):
         try:
             uri = uri.split("/")
             envelope = jsonLoads(envelope)
-            if time() - envelope["timestamp"] <= cc_conf.connector.max_cmd_age:
+            t = time()
+            logger.debug("{} - {} = {}".format(t, envelope["timestamp"], t - envelope["timestamp"]))
+            if t - envelope["timestamp"] <= cc_conf.connector.max_cmd_age:
                 self.__cmd_queue.put_nowait(
                     Envelope(
                         device=__class__.__parseDeviceID(uri[1]),
