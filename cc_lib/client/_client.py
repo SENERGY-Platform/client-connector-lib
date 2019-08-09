@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ("Client", )
+__all__ = ("Client", "CompletionStrategy")
 
 from .._configuration.configuration import cc_conf, initConnectorConf
 from .._util import Singleton, validateInstance, setMangledAttr, calcDuration
