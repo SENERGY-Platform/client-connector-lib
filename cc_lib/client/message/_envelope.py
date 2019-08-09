@@ -99,7 +99,7 @@ class Envelope:
         for item in items:
             yield item
 
-    def __repr__(self):
+    def __str__(self):
         """
         Provide a string representation.
         :return: String.
