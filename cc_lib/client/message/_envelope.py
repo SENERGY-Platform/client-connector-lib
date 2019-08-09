@@ -92,7 +92,10 @@ class Envelope:
             ('service_uri', self.service_uri),
             ('message', self.message)
         ]
-        return "{}({})".format(__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
+        return "{}({})".format(
+            type(self).__name__,
+            ", ".join(["=".join([key, str(value)]) for key, value in attributes])
+        )
 
 
 class CommandEnvelope(Envelope):
