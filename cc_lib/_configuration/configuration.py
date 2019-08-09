@@ -41,6 +41,7 @@ class ConnectorConf:
         qos: int = "normal"
         msg_retry: int = 5
         keepalive: int = 20
+        max_cmd_age: int = 20
         loop_time: Union[int, float] = 1
         reconn_delay_min: int = 1
         reconn_delay_max: int = 240
