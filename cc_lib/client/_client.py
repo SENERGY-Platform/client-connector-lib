@@ -49,6 +49,11 @@ class _SendHandler:
     response = "response"
 
 
+class CompletionStrategy:
+    optimistic = "optimistic"
+    pessimistic = "pessimistic"
+
+
 class Client(metaclass=Singleton):
     """
     Client class for client-connector projects.
@@ -607,17 +612,23 @@ class Client(metaclass=Singleton):
         try:
             uri = uri.split("/")
             envelope = jsonLoads(envelope)
-            self.__cmd_queue.put_nowait(
-                Envelope(
-                    device=__class__.__parseDeviceID(uri[1]),
-                    service=uri[2],
-                    message=Message(
-                        data=envelope["payload"].setdefault("data", str()),
-                        metadata=envelope["payload"].setdefault("metadata", str())
-                    ),
-                    corr_id=envelope["correlation_id"]
+            if time() - envelope["timestamp"] <= cc_conf.connector.max_cmd_age:
+                self.__cmd_queue.put_nowait(
+                    Envelope(
+                        device=__class__.__parseDeviceID(uri[1]),
+                        service=uri[2],
+                        message=Message(
+                            data=envelope["payload"].setdefault("data", str()),
+                            metadata=envelope["payload"].setdefault("metadata", str())
+                        ),
+                        corr_id=envelope["correlation_id"],
+                        completion_strategy=envelope["completion_strategy"]
+                    )
                 )
-            )
+            else:
+                logger.warning(
+                    "dropped command - max age exceeded - correlation id: '{}'".format(envelope["correlation_id"])
+                )
         except JSONDecodeError as ex:
             logger.error("could not parse command - '{}'\nservice uri: '{}'\ncommand: '{}'".format(ex, uri, envelope))
         except (KeyError, AttributeError) as ex:
