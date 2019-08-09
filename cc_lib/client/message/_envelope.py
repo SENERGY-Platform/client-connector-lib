@@ -15,7 +15,7 @@
 """
 
 
-__all__ = ("Envelope", )
+__all__ = ("CommandEnvelope", "EventEnvelope")
 
 
 from ._message import Message
@@ -26,16 +26,9 @@ from uuid import uuid4 as uuid
 
 class Envelope:
 
-    __slots__ = ('__correlation_id', '__device_id', '__service_uri', '__message', '__cmd_strategy', '__cmd_timestamp')
+    __slots__ = ('__correlation_id', '__device_id', '__service_uri', '__message')
 
-    def __init__(
-            self,
-            device: Union[Device, str],
-            service: str, message: Message,
-            corr_id: Optional[str] = None,
-            cmd_strategy: Optional[str] = None,
-            cmd_timestamp: Optional[float] = None
-    ):
+    def __init__(self, device: Union[Device, str], service: str, message: Message, corr_id: Optional[str] = None):
         if type(device) is str:
             self.__device_id = device
         elif type(device) is Device or issubclass(type(device), Device):
@@ -47,8 +40,6 @@ class Envelope:
             __class__.__checkType(corr_id, str)
         self.__correlation_id = corr_id or str(uuid())
         self.__service_uri = service
-        self.__cmd_strategy = cmd_strategy
-        self.__cmd_timestamp = cmd_timestamp
         self.message = message
 
     @property
@@ -62,14 +53,6 @@ class Envelope:
     @property
     def service_uri(self) -> str:
         return self.__service_uri
-
-    @property
-    def cmd_strategy(self) -> str:
-        return self.__cmd_strategy
-
-    @property
-    def cmd_timestamp(self) -> float:
-        return self.__cmd_timestamp
 
     @property
     def message(self) -> Message:
@@ -93,7 +76,6 @@ class Envelope:
     def __iter__(self):
         items = (
             ('correlation_id', self.correlation_id),
-            ('completion_strategy', self.cmd_strategy),
             ('payload', dict(self.message))
         )
         for item in items:
@@ -108,8 +90,39 @@ class Envelope:
             ('correlation_id', self.correlation_id),
             ('device_id', self.device_id),
             ('service_uri', self.service_uri),
-            ('cmd_strategy', self.cmd_strategy),
-            ('cmd_timestamp', self.cmd_timestamp),
             ('message', self.message)
         ]
         return "{}({})".format(__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
+
+
+class CommandEnvelope(Envelope):
+
+    __slots__ = ('__completion_strategy', '__timestamp')
+
+    def __init__(
+            self,
+            device: Union[Device, str],
+            service: str, message: Message,
+            corr_id: Optional[str] = None,
+            completion_strategy: Optional[str] = None,
+            timestamp: Optional[float] = None
+    ):
+        super().__init__(device, service, message, corr_id)
+        if corr_id:
+            __class__.__checkType(corr_id, str)
+        self.__completion_strategy = completion_strategy
+        self.__timestamp = timestamp
+
+    @property
+    def completion_strategy(self) -> str:
+        return self.__completion_strategy
+
+    @property
+    def timestamp(self) -> float:
+        return self.__timestamp
+
+
+class EventEnvelope(Envelope):
+
+    def __init__(self, device: Union[Device, str], service: str, message: Message):
+        super().__init__(device, service, message)
