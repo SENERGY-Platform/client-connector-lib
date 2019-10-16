@@ -15,8 +15,9 @@
 """
 
 from simple_conf import configuration, section, loadConfig
-from os import getcwd, makedirs
+from os import getcwd, makedirs, getenv
 from os.path import exists as path_exists
+from os.path import join as path_join
 from typing import Union
 import logging
 
@@ -28,7 +29,9 @@ sc_logger = logging.getLogger('simple-conf')
 sc_logger.addHandler(stream_handler)
 sc_logger.setLevel(logging.INFO)
 
-user_dir = '{}/cc-lib'.format(getcwd())
+user_dir = getenv("CC_LIB_USER_PATH") or getcwd()
+user_dir = path_join(user_dir, "cc-lib")
+
 
 @configuration
 class ConnectorConf:
