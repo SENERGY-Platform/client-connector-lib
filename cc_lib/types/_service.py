@@ -51,6 +51,6 @@ def sensor_service(obj) -> type:
     return getSubclass(obj, SensorService)
 
 
-def _getAttributes() -> tuple:
-    return tuple((name, type(obj)) for name, obj in Service.__dict__.items() if
-                 not name.startswith("_") and not isinstance(obj, staticmethod) and name is not "type")
+# def _getAttributes() -> tuple:
+#     return tuple((name, type(obj)) for name, obj in Service.__dict__.items() if
+#                  not name.startswith("_") and not isinstance(obj, staticmethod) and name is not "type")
