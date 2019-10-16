@@ -23,7 +23,7 @@ class Service:
     local_id = str()
 
     def __new__(cls, *args, **kwargs):
-        if cls in (Service, ActuatorService, SensorService):
+        if cls is __class__:
             __err = "instantiation of class '{}' not allowed".format(cls.__name__)
             raise TypeError(__err)
         return super(__class__, cls).__new__(cls)
@@ -35,20 +35,9 @@ class Service:
     #         validateInstance(attr, a_type)
 
 
-class ActuatorService(Service):
-    type = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Actuator"
-
-
-class SensorService(Service):
-    type = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Sensor"
-
-
-def actuator_service(obj) -> type:
-    return getSubclass(obj, ActuatorService)
-
-
-def sensor_service(obj) -> type:
-    return getSubclass(obj, SensorService)
+def service(obj: type) -> type:
+    validateInstance(obj, type)
+    return getSubclass(obj, Service)
 
 
 # def _getAttributes() -> tuple:
