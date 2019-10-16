@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('ActuatorService', 'SensorService', 'actuator_service', 'sensor_service')
+__all__ = ('Service', 'service')
 
 from .._util import validateInstance, getSubclass
 
