@@ -56,12 +56,12 @@ class Device:
     def remote_id(self) -> str:
         return self.__remote_id
 
-    @remote_id.setter
-    def remote_id(self, arg: str):
-        validateInstance(arg, str)
-        if self.__remote_id:
-            raise AttributeError
-        self.__remote_id = arg
+    # @remote_id.setter
+    # def remote_id(self, arg: str):
+    #     validateInstance(arg, str)
+    #     if self.__remote_id:
+    #         raise AttributeError
+    #     self.__remote_id = arg
 
     @property
     def name(self) -> str:
