@@ -85,7 +85,6 @@ class Device:
             ('id', repr(self.id)),
             ('remote_id', repr(self.remote_id)),
             ('name', repr(self.name)),
-            ('tags', repr(self.tags)),
             ('services', [key for key in self.__class__.services])
         ]
         if kwargs:
