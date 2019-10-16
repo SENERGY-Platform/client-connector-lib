@@ -14,12 +14,10 @@
    limitations under the License.
 """
 
-__all__ = ('Device', 'device')
+__all__ = ('Device', 'device', 'ServiceNotFoundError')
 
-from .._util import validateInstance, validateSubclass, getSubclass
+from .._util import validateInstance, getSubclass
 from ._service import Service
-from collections import OrderedDict
-from typing import Union
 
 
 class ServiceNotFoundError(Exception):
