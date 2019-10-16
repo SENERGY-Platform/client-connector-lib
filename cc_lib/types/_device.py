@@ -25,8 +25,8 @@ class ServiceNotFoundError(Exception):
 
 
 class Device:
-    services = dict()
     device_type_id = str()
+    services = tuple()
 
     def __new__(cls, *args, **kwargs):
         if cls is __class__:
