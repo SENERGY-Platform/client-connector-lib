@@ -28,11 +28,11 @@ class Service:
             raise TypeError(__err)
         return super(__class__, cls).__new__(cls)
 
-    @classmethod
-    def _validate(cls) -> None:
-        for a_name, a_type in _getAttributes():
-            attr = getattr(cls, a_name)
-            validateInstance(attr, a_type)
+    # @classmethod
+    # def _validate(cls) -> None:
+    #     for a_name, a_type in _getAttributes():
+    #         attr = getattr(cls, a_name)
+    #         validateInstance(attr, a_type)
 
 
 class ActuatorService(Service):
