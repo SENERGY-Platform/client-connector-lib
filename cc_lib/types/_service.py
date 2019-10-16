@@ -20,11 +20,6 @@ from .._util import validateInstance, getSubclass
 
 
 class Service:
-    name = str()
-    type = str()
-    # input =
-    # output =
-    description = str()
     local_id = str()
 
     def __new__(cls, *args, **kwargs):
