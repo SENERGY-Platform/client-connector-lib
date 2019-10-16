@@ -113,6 +113,6 @@ def device(obj: Union[type, dict]) -> type:
     return getSubclass(obj, Device)
 
 
-def _getAttributes() -> tuple:
-    return tuple((name, type(obj)) for name, obj in Device.__dict__.items() if
-                 not name.startswith("_") and not isinstance(obj, staticmethod))
+# def _getAttributes() -> tuple:
+#     return tuple((name, type(obj)) for name, obj in Device.__dict__.items() if
+#                  not name.startswith("_") and not isinstance(obj, staticmethod))
