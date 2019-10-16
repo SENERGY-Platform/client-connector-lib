@@ -35,7 +35,6 @@ class Device:
         __instance.__id = str()
         __instance.__remote_id = str()
         __instance.__name = str()
-        __instance.__tags = OrderedDict()
         return __instance
 
     @property
