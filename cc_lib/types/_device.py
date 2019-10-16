@@ -22,6 +22,10 @@ from collections import OrderedDict
 from typing import Union
 
 
+class ServiceNotFoundError(Exception):
+    pass
+
+
 class Device:
     uri = str()
     description = str()
@@ -72,7 +76,7 @@ class Device:
         try:
             return self.__class__.services[service]
         except KeyError:
-            raise KeyError("service '{}' does not exist".format(service))
+            raise ServiceNotFoundError("'{}' does not exist for '{}'".format(service, self.__class__.__name__))
 
     def __str__(self, **kwargs):
         """
