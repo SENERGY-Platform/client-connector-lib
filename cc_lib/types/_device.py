@@ -94,23 +94,22 @@ class Device:
             for arg, value in kwargs.items():
                 attributes.append((arg, value))
 
-    @classmethod
-    def _validate(cls) -> None:
-        for a_name, a_type in _getAttributes():
-            attr = getattr(cls, a_name)
-            validateInstance(attr, a_type)
-            if a_name is "services":
-                for key, srv in attr.items():
-                    if isinstance(srv, type):
-                        validateSubclass(srv, Service)
-                    else:
-                        validateInstance(srv, Service)
-                    validateInstance(key, str)
-
-
 def device(obj: Union[type, dict]) -> type:
     validateInstance(obj, (type, dict))
         return "{}({})".format(self.__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
+
+    # @classmethod
+    # def _validate(cls) -> None:
+    #     for a_name, a_type in _getAttributes():
+    #         attr = getattr(cls, a_name)
+    #         validateInstance(attr, a_type)
+    #         if a_name is "services":
+    #             for srv in attr:
+    #                 if isinstance(srv, type):
+    #                     validateSubclass(srv, Service)
+    #                 else:
+    #                     validateInstance(srv, Service)
+
     return getSubclass(obj, Device)
 
 
