@@ -20,12 +20,12 @@ from .._util import validateInstance, getSubclass
 
 
 class Service:
-    uri = str()
     name = str()
     type = str()
     # input =
     # output =
     description = str()
+    local_id = str()
 
     def __new__(cls, *args, **kwargs):
         if cls in (Service, ActuatorService, SensorService):
