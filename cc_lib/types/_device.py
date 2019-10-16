@@ -27,11 +27,14 @@ class ServiceNotFoundError(Exception):
 class Device:
     device_type_id = str()
     services = tuple()
+    _service_map = dict()
 
     def __new__(cls, *args, **kwargs):
         if cls is __class__:
             __err = "instantiation of class '{}' not allowed".format(__class__.__name__)
             raise TypeError(__err)
+        if not cls._service_map:
+            cls._service_map = {srv.local_id: srv for srv in cls.services}
         __instance = super(__class__, cls).__new__(cls)
         __instance.__id = str()
         __instance.__remote_id = str()
@@ -71,7 +74,7 @@ class Device:
 
     def getService(self, service: str) -> Service:
         try:
-            return self.__class__.services[service]
+            return self.__class__._service_map[service]
         except KeyError:
             raise ServiceNotFoundError("'{}' does not exist for '{}'".format(service, self.__class__.__name__))
 
