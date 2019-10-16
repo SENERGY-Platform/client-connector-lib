@@ -93,9 +93,6 @@ class Device:
         if kwargs:
             for arg, value in kwargs.items():
                 attributes.append((arg, value))
-
-def device(obj: Union[type, dict]) -> type:
-    validateInstance(obj, (type, dict))
         return "{}({})".format(self.__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
 
     # @classmethod
@@ -110,6 +107,9 @@ def device(obj: Union[type, dict]) -> type:
     #                 else:
     #                     validateInstance(srv, Service)
 
+
+def device(obj: type) -> type:
+    validateInstance(obj, type)
     return getSubclass(obj, Device)
 
 
