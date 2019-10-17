@@ -17,7 +17,7 @@
 __all__ = ("Client", "CompletionStrategy")
 
 from .._configuration.configuration import cc_conf, initConnectorConf
-from .._util import Singleton, validateInstance, setMangledAttr, calcDuration
+from .._util import Singleton, validateInstance, calcDuration
 from ..logger._logger import getLogger, initLogging
 from ..types import Device
 from .message import CommandEnvelope, EventEnvelope, Message
@@ -26,7 +26,7 @@ from ._auth import OpenIdClient, NoTokenError
 from ._protocol import http, mqtt
 from ._asynchron import Future, ThreadWorker, EventWorker
 from cc_lib import __version__ as VERSION
-from typing import Callable, Union, Any, Tuple, List, Optional
+from typing import Callable, Union, Tuple, List, Optional
 from getpass import getuser
 from datetime import datetime
 from hashlib import md5, sha1
