@@ -122,7 +122,7 @@ class Client(metaclass=Singleton):
                         "id": None,
                         "name": hub_name,
                         "hash": None,
-                        "devices": list()
+                        "device_local_ids": list()
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
@@ -234,7 +234,7 @@ class Client(metaclass=Singleton):
                                 "id": cc_conf.hub.id,
                                 "name": cc_conf.hub.name,
                                 "hash": devices_hash,
-                                "devices": device_ids
+                                "device_local_ids": device_ids
                             },
                             content_type=http.ContentType.json,
                             headers={"Authorization": "Bearer {}".format(access_token)},
