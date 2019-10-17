@@ -25,7 +25,7 @@ __all__ = (
 )
 
 
-from typing import Any, Union, Tuple
+from typing import Union, Tuple
 from inspect import stack, getmodule
 from math import ceil, log10
 from uuid import uuid4
