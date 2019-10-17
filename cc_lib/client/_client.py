@@ -308,9 +308,8 @@ class Client(metaclass=Singleton):
                     method=http.Method.POST,
                     body={
                         "name": device.name,
-                        "device_type": device.__class__.uri,
-                        "uri": "{}-{}".format(cc_conf.device.id_prefix, device.id),
-                        "tags": device.tags
+                        "device_type_id": device.__class__.device_type_id,
+                        "local_id": "{}-{}".format(cc_conf.device.id_prefix, device.id)
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
@@ -404,9 +403,8 @@ class Client(metaclass=Singleton):
                 body={
                     "id": device.remote_id,
                     "name": device.name,
-                    "device_type": device.__class__.uri,
-                    "uri": "{}-{}".format(cc_conf.device.id_prefix, device.id),
-                    "tags": device.tags
+                    "device_type_id": device.__class__.device_type_id,
+                    "local_id": "{}-{}".format(cc_conf.device.id_prefix, device.id)
                 },
                 content_type=http.ContentType.json,
                 headers={"Authorization": "Bearer {}".format(access_token)},
