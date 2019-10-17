@@ -330,11 +330,11 @@ class Client(metaclass=Singleton):
                 sleep(cc_conf.api.eventual_consistency_delay)
                 logger.info("adding device '{}' to platform successful".format(device.id))
                 device_atr = jsonLoads(resp.body)
-                setMangledAttr(device, "remote_id", device_atr["id"])
+                setattr(device, '_{}__{}'.format(Device.__name__, "remote_id"), device_atr["id"])
             elif resp.status == 200:
                 logger.warning("adding device '{}' to platform - device exists - updating device ...".format(device.id))
                 device_atr = jsonLoads(resp.body)
-                setMangledAttr(device, "remote_id", device_atr["id"])
+                setattr(device, '_{}__{}'.format(Device.__name__, "remote_id"), device_atr["id"])
                 self.__updateDevice(device)
             else:
                 logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
