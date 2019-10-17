@@ -19,8 +19,6 @@ __all__ = (
     'Singleton',
     'validateInstance',
     'validateSubclass',
-    'getMangledAttr',
-    'setMangledAttr',
     'calcNthTerm',
     'calcDuration',
     'getSubclass'
@@ -67,26 +65,6 @@ def validateSubclass(cls: type, parent_cls: Union[type, Tuple[type, ...]]) -> No
     if not issubclass(cls, parent_cls):
         err = "{} not subclass of {}".format(cls, parent_cls)
         raise TypeError(err)
-
-
-def getMangledAttr(obj: object, attr: str) -> Any:
-    """
-    Read mangled attribute.
-    :param obj: Object with mangled attributes.
-    :param attr: Name of mangled attribute.
-    :return: value of mangled attribute.
-    """
-    return getattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr))
-
-
-def setMangledAttr(obj: object, attr: str, arg: Any) -> None:
-    """
-    Write to mangled attribute.
-    :param obj: Object with mangled attributes.
-    :param attr: Name of mangled attribute.
-    :param arg: value to be written.
-    """
-    setattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr), arg)
 
 
 def calcNthTerm(a_1: Union[float, int], r: Union[float, int], n: Union[float, int]) -> Union[float, int]:
