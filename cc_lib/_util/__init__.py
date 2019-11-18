@@ -88,11 +88,14 @@ def calcDuration(min_duration: int, max_duration: int, retry_num: int, factor: U
     :param factor: Speed at which the maximum value will be reached.
     :return: Integer.
     """
-    base_value = calcNthTerm(min_duration, factor, retry_num)
-    magnitude = int(log10(ceil(base_value)))+1
-    duration = ceil(base_value / 10 ** (magnitude - 1)) * 10 ** (magnitude - 1)
-    if duration <= max_duration:
-        return duration
+    try:
+        base_value = calcNthTerm(min_duration, factor, retry_num)
+        magnitude = int(log10(ceil(base_value)))+1
+        duration = ceil(base_value / 10 ** (magnitude - 1)) * 10 ** (magnitude - 1)
+        if duration <= max_duration:
+            return duration
+    except OverflowError:
+        pass
     return max_duration
 
 
