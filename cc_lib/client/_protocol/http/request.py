@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('urlEncode', 'Method', 'ContentType', 'Request', 'URLError', 'SocketTimeout')
+__all__ = ('urlEncode', 'Method', 'ContentType', 'Request', 'URLError', 'SocketTimeout', 'tls_map')
 
 
 from ....logger import getLogger
@@ -38,6 +38,7 @@ try:
 except ImportError as ex:
     pass
 
+tls_map = {0: "http", 1: "https"}
 
 reserved_chars = {
     "!": "%21",
