@@ -53,6 +53,7 @@ class ConnectorConf:
     class auth:
         host: str = None
         path: str = None
+        tls: bool = True
         id: str = None
 
     @section
@@ -77,6 +78,7 @@ class ConnectorConf:
         host: str = None
         hub_endpt: str = None
         device_endpt: str = None
+        tls: bool = True
         request_timeout: Union[int, float] = 30
         eventual_consistency_delay: Union[int, float] = 2
 
