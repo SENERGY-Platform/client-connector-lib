@@ -70,7 +70,7 @@ class Client(metaclass=Singleton):
         logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
         self.__genDeviceIdPrefix()
         self.__auth = OpenIdClient(
-            "https://{}/{}".format(cc_conf.auth.host, cc_conf.auth.path),
+            "{}://{}/{}".format(http.tls_map[cc_conf.auth.tls], cc_conf.auth.host, cc_conf.auth.path),
             cc_conf.credentials.user,
             cc_conf.credentials.pw,
             cc_conf.auth.id
@@ -116,7 +116,7 @@ class Client(metaclass=Singleton):
                     logger.info("generating hub name ...")
                     hub_name = "{}-{}".format(getuser(), datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
                 req = http.Request(
-                    url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.hub_endpt),
+                    url="{}://{}/{}".format(http.tls_map[cc_conf.api.tls], cc_conf.api.host, cc_conf.api.hub_endpt),
                     method=http.Method.POST,
                     body={
                         "id": None,
@@ -142,7 +142,8 @@ class Client(metaclass=Singleton):
             else:
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 req = http.Request(
-                    url="https://{}/{}/{}".format(
+                    url="{}://{}/{}/{}".format(
+                        http.tls_map[cc_conf.api.tls],
                         cc_conf.api.host,
                         cc_conf.api.hub_endpt,
                         http.urlEncode(cc_conf.hub.id)
@@ -198,7 +199,8 @@ class Client(metaclass=Singleton):
                 logger.debug("hash '{}'".format(devices_hash))
                 access_token = self.__auth.getAccessToken()
                 req = http.Request(
-                    url="https://{}/{}/{}".format(
+                    url="{}://{}/{}/{}".format(
+                        http.tls_map[cc_conf.api.tls],
                         cc_conf.api.host,
                         cc_conf.api.hub_endpt,
                         http.urlEncode(cc_conf.hub.id)
@@ -224,7 +226,8 @@ class Client(metaclass=Singleton):
                         logger.debug("synchronizing hub - local hash differs from remote hash")
                         logger.info("synchronizing hub - updating devices ...")
                         req = http.Request(
-                            url="https://{}/{}/{}".format(
+                            url="{}://{}/{}/{}".format(
+                                http.tls_map[cc_conf.api.tls],
                                 cc_conf.api.host,
                                 cc_conf.api.hub_endpt,
                                 http.urlEncode(cc_conf.hub.id)
@@ -291,7 +294,8 @@ class Client(metaclass=Singleton):
             logger.info("adding device '{}' to platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(
+                url="{}://{}/{}/{}-{}".format(
+                    http.tls_map[cc_conf.api.tls],
                     cc_conf.api.host,
                     cc_conf.api.device_endpt,
                     cc_conf.device.id_prefix,
@@ -304,7 +308,7 @@ class Client(metaclass=Singleton):
             resp = req.send()
             if resp.status == 404:
                 req = http.Request(
-                    url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.device_endpt),
+                    url="{}://{}/{}".format(http.tls_map[cc_conf.api.tls], cc_conf.api.host, cc_conf.api.device_endpt),
                     method=http.Method.POST,
                     body={
                         "name": device.name,
@@ -359,7 +363,8 @@ class Client(metaclass=Singleton):
             logger.info("deleting device '{}' from platform ...".format(device_id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(
+                url="{}://{}/{}/{}-{}".format(
+                    http.tls_map[cc_conf.api.tls],
                     cc_conf.api.host,
                     cc_conf.api.device_endpt,
                     cc_conf.device.id_prefix,
@@ -393,7 +398,8 @@ class Client(metaclass=Singleton):
             logger.info("updating device '{}' on platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(
+                url="{}://{}/{}/{}-{}".format(
+                    http.tls_map[cc_conf.api.tls],
                     cc_conf.api.host,
                     cc_conf.api.device_endpt,
                     cc_conf.device.id_prefix,
