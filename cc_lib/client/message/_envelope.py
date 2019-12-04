@@ -20,6 +20,7 @@ __all__ = ("CommandEnvelope", "EventEnvelope")
 
 from ._message import Message
 from ...types import Device
+from ..._util import validateInstance
 import typing
 import uuid
 
@@ -35,9 +36,9 @@ class Envelope:
             self.__device_id = device.id
         else:
             raise TypeError(type(device))
-        __class__.__checkType(service, str)
+        validateInstance(service, str)
         if corr_id:
-            __class__.__checkType(corr_id, str)
+            validateInstance(corr_id, str)
         self.__correlation_id = corr_id or str(uuid.uuid4())
         self.__service_uri = service
         self.message = message
@@ -60,18 +61,8 @@ class Envelope:
 
     @message.setter
     def message(self, arg):
-        __class__.__checkType(arg, Message)
+        validateInstance(arg, Message)
         self.__message = arg
-
-    @staticmethod
-    def __checkType(arg: object, typ: Type) -> None:
-        """
-        Check if arg is the correct type. Raise exception if not.
-        :param: arg: object to check
-        :param: typ: type
-        """
-        if not type(arg) is typ:
-            raise TypeError(type(arg))
 
     def __iter__(self):
         items = (
