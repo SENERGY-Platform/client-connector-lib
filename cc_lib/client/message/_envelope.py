@@ -20,15 +20,15 @@ __all__ = ("CommandEnvelope", "EventEnvelope")
 
 from ._message import Message
 from ...types import Device
-from typing import Optional, Type, Union
-from uuid import uuid4 as uuid
+import typing
+import uuid
 
 
 class Envelope:
 
     __slots__ = ('__correlation_id', '__device_id', '__service_uri', '__message')
 
-    def __init__(self, device: Union[Device, str], service: str, message: Message, corr_id: Optional[str] = None):
+    def __init__(self, device: typing.Union[Device, str], service: str, message: Message, corr_id: typing.Optional[str] = None):
         if type(device) is str:
             self.__device_id = device
         elif type(device) is Device or issubclass(type(device), Device):
@@ -38,7 +38,7 @@ class Envelope:
         __class__.__checkType(service, str)
         if corr_id:
             __class__.__checkType(corr_id, str)
-        self.__correlation_id = corr_id or str(uuid())
+        self.__correlation_id = corr_id or str(uuid.uuid4())
         self.__service_uri = service
         self.message = message
 
@@ -104,11 +104,11 @@ class CommandEnvelope(Envelope):
 
     def __init__(
             self,
-            device: Union[Device, str],
+            device: typing.Union[Device, str],
             service: str, message: Message,
-            corr_id: Optional[str] = None,
-            completion_strategy: Optional[str] = None,
-            timestamp: Optional[float] = None
+            corr_id: typing.Optional[str] = None,
+            completion_strategy: typing.Optional[str] = None,
+            timestamp: typing.Optional[float] = None
     ):
         super().__init__(device, service, message, corr_id)
         self.__completion_strategy = completion_strategy
@@ -125,5 +125,5 @@ class CommandEnvelope(Envelope):
 
 class EventEnvelope(Envelope):
 
-    def __init__(self, device: Union[Device, str], service: str, message: Message):
+    def __init__(self, device: typing.Union[Device, str], service: str, message: Message):
         super().__init__(device, service, message)
