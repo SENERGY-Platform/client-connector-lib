@@ -28,18 +28,7 @@ class Service:
             raise TypeError(__err)
         return super(__class__, cls).__new__(cls)
 
-    # @classmethod
-    # def _validate(cls) -> None:
-    #     for a_name, a_type in _getAttributes():
-    #         attr = getattr(cls, a_name)
-    #         validateInstance(attr, a_type)
-
 
 def service(obj: type) -> type:
     validateInstance(obj, type)
     return getSubclass(obj, Service)
-
-
-# def _getAttributes() -> tuple:
-#     return tuple((name, type(obj)) for name, obj in Service.__dict__.items() if
-#                  not name.startswith("_") and not isinstance(obj, staticmethod) and name is not "type")
