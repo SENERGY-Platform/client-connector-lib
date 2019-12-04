@@ -17,14 +17,8 @@
 __all__ = ('Future', )
 
 
+from .._exception import FutureNotDoneError
 import typing
-
-
-class FutureNotDoneError(Exception):
-    """
-    Can't retrieve result - future not done.
-    """
-    pass
 
 
 class Future:

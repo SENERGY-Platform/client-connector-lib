@@ -38,7 +38,8 @@ __all__ = (
     'CommandQueueEmptyError',
     'SendError',
     'SendResponseError',
-    'SendEventError'
+    'SendEventError',
+    'FutureNotDoneError'
 )
 
 
@@ -198,5 +199,12 @@ class SendResponseError(SendError):
 class SendEventError(SendError):
     """
     Error sending an event.
+    """
+    pass
+
+
+class FutureNotDoneError(Exception):
+    """
+    Can't retrieve result - future not done.
     """
     pass
