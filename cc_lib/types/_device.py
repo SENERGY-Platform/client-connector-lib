@@ -56,13 +56,6 @@ class Device:
     def remote_id(self) -> str:
         return self.__remote_id
 
-    # @remote_id.setter
-    # def remote_id(self, arg: str):
-    #     validateInstance(arg, str)
-    #     if self.__remote_id:
-    #         raise AttributeError
-    #     self.__remote_id = arg
-
     @property
     def name(self) -> str:
         return self.__name
@@ -95,24 +88,7 @@ class Device:
                 attributes.append((arg, value))
         return "{}({})".format(self.__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
 
-    # @classmethod
-    # def _validate(cls) -> None:
-    #     for a_name, a_type in _getAttributes():
-    #         attr = getattr(cls, a_name)
-    #         validateInstance(attr, a_type)
-    #         if a_name is "services":
-    #             for srv in attr:
-    #                 if isinstance(srv, type):
-    #                     validateSubclass(srv, Service)
-    #                 else:
-    #                     validateInstance(srv, Service)
-
 
 def device(obj: type) -> type:
     validateInstance(obj, type)
     return getSubclass(obj, Device)
-
-
-# def _getAttributes() -> tuple:
-#     return tuple((name, type(obj)) for name, obj in Device.__dict__.items() if
-#                  not name.startswith("_") and not isinstance(obj, staticmethod))
