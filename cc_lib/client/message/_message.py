@@ -18,14 +18,14 @@
 __all__ = ("Message", )
 
 
-from typing import Optional, Type
+import typing
 
 
 class Message:
 
     __slots__ = ('__metadata', '__data')
 
-    def __init__(self, data: str, metadata: Optional[str] = None):
+    def __init__(self, data: str, metadata: typing.Optional[str] = None):
         self.metadata = metadata or str()
         self.data = data
 
