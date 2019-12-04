@@ -19,11 +19,11 @@ __all__ = ('ThreadWorker', 'EventWorker')
 
 
 from .future import Future
-from threading import Thread, Event
-from typing import Optional, Callable
+import threading
+import typing
 
 
-class ThreadWorker(Thread):
+class ThreadWorker(threading.Thread):
     def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, *, daemon=None):
         super().__init__(group=group, target=target, name=name, args=args, kwargs=kwargs, daemon=daemon)
         self.result = None
@@ -52,13 +52,13 @@ class ThreadWorker(Thread):
         super().start()
         return future
 
-    def join(self, timeout: Optional[float] = None) -> None:
+    def join(self, timeout: typing.Optional[float] = None) -> None:
         super().join(timeout)
         if self.is_alive():
             raise TimeoutError
 
 
-class EventWorker(Event):
+class EventWorker(threading.Event):
 
     __slots__ = (
         'name', 'result', 'exception', 'usr_method', '_flag', '_cond', '__target', '__args', '__kwargs', '__started'
@@ -93,7 +93,7 @@ class EventWorker(Event):
             self.exception = ex
             self.set()
 
-    def join(self, timeout: Optional[float] = None) -> None:
+    def join(self, timeout: typing.Optional[float] = None) -> None:
         if not self.wait(timeout):
             raise TimeoutError
 
