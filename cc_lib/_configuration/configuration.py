@@ -15,11 +15,9 @@
 """
 
 from simple_conf import configuration, section, loadConfig
-from os import getcwd, makedirs, getenv
-from os.path import exists as path_exists
-from os.path import join as path_join
-from typing import Union
 import logging
+import os
+import typing
 
 formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s: [%(name)s] %(message)s', datefmt='%m.%d.%Y %I:%M:%S %p')
 stream_handler = logging.StreamHandler()
@@ -29,8 +27,8 @@ sc_logger = logging.getLogger('simple-conf')
 sc_logger.addHandler(stream_handler)
 sc_logger.setLevel(logging.INFO)
 
-user_dir = getenv("CC_LIB_USER_PATH") or getcwd()
-user_dir = path_join(user_dir, "cc-lib")
+user_dir = os.getenv("CC_LIB_USER_PATH") or os.getcwd()
+user_dir = os.path.join(user_dir, "cc-lib")
 
 
 @configuration
@@ -44,10 +42,10 @@ class ConnectorConf:
         qos: int = "normal"
         msg_retry: int = 5
         keepalive: int = 20
-        loop_time: Union[int, float] = 1
+        loop_time: typing.Union[int, float] = 1
         reconn_delay_min: int = 1
         reconn_delay_max: int = 240
-        reconn_delay_factor: Union[int, float] = 1.75
+        reconn_delay_factor: typing.Union[int, float] = 1.75
 
     @section
     class auth:
@@ -79,8 +77,8 @@ class ConnectorConf:
         hub_endpt: str = None
         device_endpt: str = None
         tls: bool = True
-        request_timeout: Union[int, float] = 30
-        eventual_consistency_delay: Union[int, float] = 2
+        request_timeout: typing.Union[int, float] = 30
+        eventual_consistency_delay: typing.Union[int, float] = 2
 
     @section
     class device:
@@ -91,6 +89,6 @@ cc_conf = ConnectorConf(conf_file='connector.conf', user_path=user_dir, ext_aft_
 
 
 def initConnectorConf() -> None:
-    if not path_exists(user_dir):
-        makedirs(user_dir)
+    if not os.path.exists(user_dir):
+        os.makedirs(user_dir)
     loadConfig(cc_conf)
