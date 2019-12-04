@@ -27,11 +27,10 @@ __all__ = (
 )
 
 from ....logger import getLogger
-from paho.mqtt.client import Client as PahoClient
-from paho.mqtt.client import MQTT_ERR_SUCCESS, MQTT_ERR_NO_CONN, connack_string, error_string
-from threading import Thread
-from typing import Any, Union
-from ssl import CertificateError
+import paho.mqtt.client
+import threading
+import typing
+import ssl
 
 
 logger = getLogger(__name__.split('.', 1)[-1].replace("_", ""))
@@ -87,7 +86,7 @@ class Client:
         self.__events = dict()
         self.__loop_thread = None
         self.__usr_disconn = False
-        self.__mqtt = PahoClient(client_id=client_id, clean_session=True)
+        self.__mqtt = paho.mqtt.client.Client(client_id=client_id, clean_session=True)
         self.__setup_mqtt()
         self.on_connect = None
         self.on_disconnect = None
@@ -111,7 +110,7 @@ class Client:
             event.set()
         self.__events.clear()
 
-    def __setEvent(self, e_id: Union[int, str], ex: Exception = None) -> bool:
+    def __setEvent(self, e_id: typing.Union[int, str], ex: Exception = None) -> bool:
         try:
             event = self.__events[e_id]
             del self.__events[e_id]
@@ -126,11 +125,11 @@ class Client:
     def __loop(self, host: str, port: int):
         try:
             rc = self.__mqtt.connect(host=host, port=port, keepalive=self.__keepalive)
-            if rc == MQTT_ERR_SUCCESS:
+            if rc == paho.mqtt.client.MQTT_ERR_SUCCESS:
                 logger.debug("starting loop")
                 loop_ex = None
                 try:
-                    while rc == MQTT_ERR_SUCCESS:
+                    while rc == paho.mqtt.client.MQTT_ERR_SUCCESS:
                         rc = self.__mqtt.loop(timeout=self.__loop_time)
                         if self.__usr_disconn:
                             self.__usr_disconn = False
@@ -144,8 +143,8 @@ class Client:
                     if not event.exception:
                         if loop_ex:
                             event.exception = loop_ex
-                        elif not rc == MQTT_ERR_SUCCESS:
-                            event.exception = ConnectError(error_string(rc).replace(".", "").lower())
+                        elif not rc == paho.mqtt.client.MQTT_ERR_SUCCESS:
+                            event.exception = ConnectError(paho.mqtt.client.error_string(rc).replace(".", "").lower())
                 except KeyError:
                     pass
                 if not self.__setEvent("connect_event"):
@@ -153,11 +152,11 @@ class Client:
                     if loop_ex:
                         self.on_disconnect(99, loop_ex)
                     else:
-                        self.on_disconnect(rc, error_string(rc).replace(".", "").lower())
+                        self.on_disconnect(rc, paho.mqtt.client.error_string(rc).replace(".", "").lower())
             else:
-                # logger.error(error_string(rc).replace(".", "").lower())
-                self.__setEvent("connect_event", ConnectError(error_string(rc).replace(".", "").lower()))
-        except CertificateError as ex:
+                # logger.error(paho.mqtt.client.error_string(rc).replace(".", "").lower())
+                self.__setEvent("connect_event", ConnectError(paho.mqtt.client.error_string(rc).replace(".", "").lower()))
+        except ssl.CertificateError as ex:
             # logger.error("certificate error - {}".format(ex))
             self.__setEvent("connect_event", ConnectError(ex))
         except (ValueError, TypeError) as ex:
@@ -167,36 +166,36 @@ class Client:
             # logger.error("socket error - {}".format(ex))
             self.__setEvent("connect_event", ConnectError(ex))
 
-    def __connectClbk(self, client: PahoClient, userdata: Any, flags: dict, rc: int) -> None:
+    def __connectClbk(self, client: paho.mqtt.client.Client, userdata: typing.Any, flags: dict, rc: int) -> None:
         if rc > 0:
             try:
                 event = self.__events["connect_event"]
-                event.exception = ConnectError(connack_string(rc).replace(".", "").lower())
+                event.exception = ConnectError(paho.mqtt.client.connack_string(rc).replace(".", "").lower())
             except KeyError:
                 pass
         else:
             self.__setEvent("connect_event")
             self.on_connect()
 
-    def __messageClbk(self, client: PahoClient, userdata: Any, message) -> None:
+    def __messageClbk(self, client: paho.mqtt.client.Client, userdata: typing.Any, message) -> None:
         self.on_message(message.payload, message.topic)
 
-    def __publishClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
+    def __publishClbk(self, client: paho.mqtt.client.Client, userdata: typing.Any, mid: int) -> None:
         self.__setEvent(mid)
 
-    def __subscribeClbk(self, client: PahoClient, userdata: Any, mid: int, granted_qos: int) -> None:
+    def __subscribeClbk(self, client: paho.mqtt.client.Client, userdata: typing.Any, mid: int, granted_qos: int) -> None:
         if 128 in granted_qos:
             self.__setEvent(mid, SubscribeNotAllowedError("subscribe request not allowed"))
         else:
             self.__setEvent(mid)
 
-    def __unsubscribeClbk(self, client: PahoClient, userdata: Any, mid: int) -> None:
+    def __unsubscribeClbk(self, client: paho.mqtt.client.Client, userdata: typing.Any, mid: int) -> None:
         self.__setEvent(mid)
 
     def connect(self, host: str, port: int, usr: str, pw: str, event_worker) -> None:
         self.__mqtt.username_pw_set(usr, pw)
         self.__events["connect_event"] = event_worker
-        self.__loop_thread = Thread(target=self.__loop, name="mqtt-loop", args=(host, port), daemon=True)
+        self.__loop_thread = threading.Thread(target=self.__loop, name="mqtt-loop", args=(host, port), daemon=True)
         self.__loop_thread.start()
 
     def reset(self, client_id: str):
@@ -211,42 +210,42 @@ class Client:
     def subscribe(self, topic: str, qos: int, event_worker) -> None:
         try:
             res = self.__mqtt.subscribe(topic=topic, qos=qos)
-            if res[0] is MQTT_ERR_SUCCESS:
+            if res[0] is paho.mqtt.client.MQTT_ERR_SUCCESS:
                 self.__events[res[1]] = event_worker
                 logger.debug("request subscribe for '{}'".format(topic))
-            elif res[0] == MQTT_ERR_NO_CONN:
+            elif res[0] == paho.mqtt.client.MQTT_ERR_NO_CONN:
                 raise NotConnectedError
             else:
-                raise SubscribeError(error_string(res[0]).replace(".", "").lower())
+                raise SubscribeError(paho.mqtt.client.error_string(res[0]).replace(".", "").lower())
         except OSError as ex:
             raise SubscribeError(ex)
 
     def unsubscribe(self, topic: str, event_worker) -> None:
         try:
             res = self.__mqtt.unsubscribe(topic=topic)
-            if res[0] is MQTT_ERR_SUCCESS:
+            if res[0] is paho.mqtt.client.MQTT_ERR_SUCCESS:
                 self.__events[res[1]] = event_worker
                 logger.debug("request unsubscribe for '{}'".format(topic))
-            elif res[0] == MQTT_ERR_NO_CONN:
+            elif res[0] == paho.mqtt.client.MQTT_ERR_NO_CONN:
                 raise NotConnectedError
             else:
-                raise UnsubscribeError(error_string(res[0]).replace(".", "").lower())
+                raise UnsubscribeError(paho.mqtt.client.error_string(res[0]).replace(".", "").lower())
         except OSError as ex:
             raise UnsubscribeError(ex)
 
     def publish(self, topic: str, payload: str, qos: int, event_worker) -> None:
         try:
             msg_info = self.__mqtt.publish(topic=topic, payload=payload, qos=qos, retain=False)
-            if msg_info.rc == MQTT_ERR_SUCCESS:
+            if msg_info.rc == paho.mqtt.client.MQTT_ERR_SUCCESS:
                 if qos > 0:
                     self.__events[msg_info.mid] = event_worker
                 else:
                     event_worker.usr_method()
                     event_worker.set()
                 logger.debug("publish '{}' - (q{}, m{})".format(payload, qos, msg_info.mid))
-            elif msg_info.rc == MQTT_ERR_NO_CONN:
+            elif msg_info.rc == paho.mqtt.client.MQTT_ERR_NO_CONN:
                 raise NotConnectedError
             else:
-                raise PublishError(error_string(msg_info.rc).replace(".", "").lower())
+                raise PublishError(paho.mqtt.client.error_string(msg_info.rc).replace(".", "").lower())
         except (ValueError, OSError) as ex:
             raise PublishError(ex)
