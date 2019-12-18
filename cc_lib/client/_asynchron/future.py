@@ -17,14 +17,8 @@
 __all__ = ('Future', )
 
 
-from typing import Callable, Any, Optional
-
-
-class FutureNotDoneError(Exception):
-    """
-    Can't retrieve result - future not done.
-    """
-    pass
+from .._exception import FutureNotDoneError
+import typing
 
 
 class Future:
@@ -34,7 +28,7 @@ class Future:
     def __init__(self, worker):
         self.__worker = worker
 
-    def result(self) -> Any:
+    def result(self) -> typing.Any:
         if not self.__worker.done:
             raise FutureNotDoneError
         if self.__worker.exception:
@@ -47,10 +41,10 @@ class Future:
     def running(self) -> bool:
         return not self.__worker.done
 
-    def wait(self, timeout: Optional[float] = None) -> None:
+    def wait(self, timeout: typing.Optional[float] = None) -> None:
         self.__worker.join(timeout)
 
-    # def addDoneCallback(self, func: Callable[[], None]) -> None:
+    # def addDoneCallback(self, func: typing.Callable[[], None]) -> None:
     #     self.__worker.callback = func
 
     @property

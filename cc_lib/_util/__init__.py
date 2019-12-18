@@ -19,18 +19,15 @@ __all__ = (
     'Singleton',
     'validateInstance',
     'validateSubclass',
-    'getMangledAttr',
-    'setMangledAttr',
     'calcNthTerm',
     'calcDuration',
     'getSubclass'
 )
 
-
-from typing import Any, Union, Tuple
-from inspect import stack, getmodule
-from math import ceil, log10
-from uuid import uuid4
+import typing
+import inspect
+import math
+import uuid
 
 
 class Singleton(type):
@@ -44,7 +41,7 @@ class Singleton(type):
         return cls._instances[cls]
 
 
-def validateInstance(obj: object, cls: Union[type, Tuple[type, ...]]) -> None:
+def validateInstance(obj: object, cls: typing.Union[type, typing.Tuple[type, ...]]) -> None:
     """
     Raise TypeError if given object is not an instance of given class.
     Also works with instances of sub classes derived from the given class.
@@ -57,7 +54,7 @@ def validateInstance(obj: object, cls: Union[type, Tuple[type, ...]]) -> None:
         raise TypeError(err)
 
 
-def validateSubclass(cls: type, parent_cls: Union[type, Tuple[type, ...]]) -> None:
+def validateSubclass(cls: type, parent_cls: typing.Union[type, typing.Tuple[type, ...]]) -> None:
     """
     Raise TypeError if given class is not sub class of given class.
     :param cls: Class to be validated.
@@ -69,27 +66,7 @@ def validateSubclass(cls: type, parent_cls: Union[type, Tuple[type, ...]]) -> No
         raise TypeError(err)
 
 
-def getMangledAttr(obj: object, attr: str) -> Any:
-    """
-    Read mangled attribute.
-    :param obj: Object with mangled attributes.
-    :param attr: Name of mangled attribute.
-    :return: value of mangled attribute.
-    """
-    return getattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr))
-
-
-def setMangledAttr(obj: object, attr: str, arg: Any) -> None:
-    """
-    Write to mangled attribute.
-    :param obj: Object with mangled attributes.
-    :param attr: Name of mangled attribute.
-    :param arg: value to be written.
-    """
-    setattr(obj, '_{}__{}'.format(obj.__class__.__name__, attr), arg)
-
-
-def calcNthTerm(a_1: Union[float, int], r: Union[float, int], n: Union[float, int]) -> Union[float, int]:
+def calcNthTerm(a_1: typing.Union[float, int], r: typing.Union[float, int], n: typing.Union[float, int]) -> typing.Union[float, int]:
     """
     Calculates the nth term of a geometric progression (an = a1 * r^(n-1)).
     :param a_1: First term.
@@ -100,7 +77,7 @@ def calcNthTerm(a_1: Union[float, int], r: Union[float, int], n: Union[float, in
     return a_1 * r ** (n - 1)
 
 
-def calcDuration(min_duration: int, max_duration: int, retry_num: int, factor: Union[float, int]) -> int:
+def calcDuration(min_duration: int, max_duration: int, retry_num: int, factor: typing.Union[float, int]) -> int:
     """
     Calculate a value to be used as sleep duration based on a geometric progression.
     Won't return values above max_duration.
@@ -110,21 +87,24 @@ def calcDuration(min_duration: int, max_duration: int, retry_num: int, factor: U
     :param factor: Speed at which the maximum value will be reached.
     :return: Integer.
     """
-    base_value = calcNthTerm(min_duration, factor, retry_num)
-    magnitude = int(log10(ceil(base_value)))+1
-    duration = ceil(base_value / 10 ** (magnitude - 1)) * 10 ** (magnitude - 1)
-    if duration <= max_duration:
-        return duration
+    try:
+        base_value = calcNthTerm(min_duration, factor, retry_num)
+        magnitude = int(math.log10(math.ceil(base_value)))+1
+        duration = math.ceil(base_value / 10 ** (magnitude - 1)) * 10 ** (magnitude - 1)
+        if duration <= max_duration:
+            return duration
+    except OverflowError:
+        pass
     return max_duration
 
 
-def getSubclass(obj: Union[type, dict], parent: type):
+def getSubclass(obj: typing.Union[type, dict], parent: type):
     validateInstance(obj, (type, dict))
     if isinstance(obj, dict):
-        sub_cls = type("{}_{}".format(parent.__name__, uuid4().hex), (parent,), obj)
+        sub_cls = type("{}_{}".format(parent.__name__, uuid.uuid4().hex), (parent,), obj)
         try:
-            frm = stack()[-1]
-            mod = getmodule(frm[0])
+            frm = inspect.stack()[-1]
+            mod = inspect.getmodule(frm[0])
             setattr(sub_cls, "__module__", mod.__name__)
         except (IndexError, AttributeError):
             pass

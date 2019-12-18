@@ -14,48 +14,21 @@
    limitations under the License.
 """
 
-__all__ = ('ActuatorService', 'SensorService', 'actuator_service', 'sensor_service')
+__all__ = ('Service', 'service')
 
 from .._util import validateInstance, getSubclass
 
 
 class Service:
-    uri = str()
-    name = str()
-    type = str()
-    # input =
-    # output =
-    description = str()
+    local_id = str()
 
     def __new__(cls, *args, **kwargs):
-        if cls in (Service, ActuatorService, SensorService):
+        if cls is __class__:
             __err = "instantiation of class '{}' not allowed".format(cls.__name__)
             raise TypeError(__err)
         return super(__class__, cls).__new__(cls)
 
-    @classmethod
-    def _validate(cls) -> None:
-        for a_name, a_type in _getAttributes():
-            attr = getattr(cls, a_name)
-            validateInstance(attr, a_type)
 
-
-class ActuatorService(Service):
-    type = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Actuator"
-
-
-class SensorService(Service):
-    type = "http://www.sepl.wifa.uni-leipzig.de/ontlogies/device-repo#Sensor"
-
-
-def actuator_service(obj) -> type:
-    return getSubclass(obj, ActuatorService)
-
-
-def sensor_service(obj) -> type:
-    return getSubclass(obj, SensorService)
-
-
-def _getAttributes() -> tuple:
-    return tuple((name, type(obj)) for name, obj in Service.__dict__.items() if
-                 not name.startswith("_") and not isinstance(obj, staticmethod) and name is not "type")
+def service(obj: type) -> type:
+    validateInstance(obj, type)
+    return getSubclass(obj, Service)

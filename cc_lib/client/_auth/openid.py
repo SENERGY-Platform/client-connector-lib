@@ -19,7 +19,7 @@ __all__ = ('OpenIdClient', 'NoTokenError')
 from ...logger import getLogger
 from ..._configuration.configuration import cc_conf
 from ...client._protocol import http
-from time import time as currentTimeStamp
+import time
 import json
 
 
@@ -46,7 +46,7 @@ class Token:
     def __init__(self, token: str, max_age: int):
         self.token = token
         self.max_age = max_age
-        self.time_stamp = int(currentTimeStamp())
+        self.time_stamp = int(time.time())
 
 
 class OpenIdClient:
@@ -64,9 +64,9 @@ class OpenIdClient:
     def getAccessToken(self) -> str:
         try:
             if self.__access_token:
-                if int(currentTimeStamp()) - self.__access_token.time_stamp >= self.__access_token.max_age:
+                if int(time.time()) - self.__access_token.time_stamp >= self.__access_token.max_age:
                     logger.debug('access token expired')
-                    if int(currentTimeStamp()) - self.__refresh_token.time_stamp >= self.__refresh_token.max_age:
+                    if int(time.time()) - self.__refresh_token.time_stamp >= self.__refresh_token.max_age:
                         logger.debug('refresh token expired')
                         self.__tokenRequest()
                     else:

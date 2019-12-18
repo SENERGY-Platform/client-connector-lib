@@ -14,20 +14,28 @@
    limitations under the License.
 """
 
-__all__ = ('urlEncode', 'Method', 'ContentType', 'Request', 'URLError', 'SocketTimeout')
+__all__ = ('urlEncode', 'Method', 'ContentType', 'Request', 'URLError', 'SocketTimeout', 'tls_map')
 
 
 from ....logger import getLogger
 from .response import Response
-from typing import Union, Iterable, SupportsAbs, Optional
-from socket import timeout as SocketTimeout
-from urllib.error import URLError, HTTPError
+import typing
+import socket
+import urllib.error
 import urllib.request
 import urllib.parse
 import json
 
 
 logger = getLogger(__name__.split('.', 1)[-1].replace("_", ""))
+
+
+class SocketTimeout(Exception):
+    pass
+
+
+class URLError(Exception):
+    pass
 
 
 ca_file = None
@@ -38,6 +46,7 @@ try:
 except ImportError as ex:
     pass
 
+tls_map = {0: "http", 1: "https"}
 
 reserved_chars = {
     "!": "%21",
@@ -88,7 +97,7 @@ class ContentType:
 
 
 class Request:
-    def __init__(self, url: str, method: str = Method.GET, body: Optional[Union[Iterable, SupportsAbs]] = None, content_type: Optional[str] = None, headers: Optional[dict] = None, timeout: int = 30):
+    def __init__(self, url: str, method: str = Method.GET, body: typing.Optional[typing.Union[typing.Iterable, typing.SupportsAbs]] = None, content_type: typing.Optional[str] = None, headers: typing.Optional[dict] = None, timeout: int = 30):
         self.__url = url
         self.__method = method
         self.__body = body
@@ -129,18 +138,18 @@ class Request:
                 body=resp.read().decode(),
                 headers=dict(resp.info().items())
             )
-        except HTTPError as ex:
+        except urllib.error.HTTPError as ex:
             return Response(
                 status=ex.code,
                 body=ex.reason,
                 headers=dict(ex.headers.items())
             )
-        except URLError as ex:
+        except urllib.error.URLError as ex:
             logger.error("{} - '{}'".format(ex, self.__url))
-            raise
-        except SocketTimeout:
+            raise URLError(ex)
+        except socket.timeout as ex:
             logger.error("timed out - '{}' - {}".format(self.__url, self.__method))
-            raise
+            raise SocketTimeout(ex)
 
     def __repr__(self):
         """

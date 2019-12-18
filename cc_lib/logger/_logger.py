@@ -17,14 +17,13 @@
 __all__ = ('getLogger', )
 
 from .._configuration.configuration import user_dir, cc_conf
-from logging.handlers import TimedRotatingFileHandler
-from threading import RLock
-from os import makedirs
-from os.path import exists as path_exists
+import os
+import threading
 import logging
+import logging.handlers
 
 
-lock = RLock()
+lock = threading.RLock()
 
 
 logging_levels = {
@@ -78,13 +77,13 @@ def initLogging() -> None:
     if cc_conf.logger.rotating_log:
         logger.removeHandler(stream_handler)
         logs_path = '{}/logs'.format(user_dir)
-        if not path_exists(logs_path):
+        if not os.path.exists(logs_path):
             try:
-                makedirs(logs_path)
+                os.makedirs(logs_path)
             except OSError as ex:
                 raise LoggerError(ex)
         file_path = '{}/connector.log'.format(logs_path)
-        log_handler = TimedRotatingFileHandler(
+        log_handler = logging.handlers.TimedRotatingFileHandler(
             file_path,
             when="midnight",
             backupCount=cc_conf.logger.rotating_log_backup_count

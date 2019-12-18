@@ -18,14 +18,15 @@
 __all__ = ("Message", )
 
 
-from typing import Optional, Type
+from ..._util import validateInstance
+import typing
 
 
 class Message:
 
     __slots__ = ('__metadata', '__data')
 
-    def __init__(self, data: str, metadata: Optional[str] = None):
+    def __init__(self, data: str, metadata: typing.Optional[str] = None):
         self.metadata = metadata or str()
         self.data = data
 
@@ -35,7 +36,7 @@ class Message:
 
     @metadata.setter
     def metadata(self, arg: str):
-        __class__.__checkType(arg, str)
+        validateInstance(arg, str)
         self.__metadata = arg
 
     @property
@@ -44,18 +45,8 @@ class Message:
 
     @data.setter
     def data(self, arg: str):
-        __class__.__checkType(arg, str)
+        validateInstance(arg, str)
         self.__data = arg
-
-    @staticmethod
-    def __checkType(arg: object, typ: Type) -> None:
-        """
-        Check if arg is the correct type. Raise exception if not.
-        :param: arg: object to check
-        :param: typ: type
-        """
-        if not type(arg) is typ:
-            raise TypeError(type(arg))
 
     def __iter__(self):
         items = (('metadata', self.metadata), ('data', self.data))

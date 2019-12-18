@@ -17,7 +17,7 @@
 __all__ = ("Client", "CompletionStrategy")
 
 from .._configuration.configuration import cc_conf, initConnectorConf
-from .._util import Singleton, validateInstance, setMangledAttr, calcDuration
+from .._util import Singleton, validateInstance, calcDuration
 from ..logger._logger import getLogger, initLogging
 from ..types import Device
 from .message import CommandEnvelope, EventEnvelope, Message
@@ -26,19 +26,15 @@ from ._auth import OpenIdClient, NoTokenError
 from ._protocol import http, mqtt
 from ._asynchron import Future, ThreadWorker, EventWorker
 from cc_lib import __version__ as VERSION
-from typing import Callable, Union, Any, Tuple, List, Optional
-from getpass import getuser
-from datetime import datetime
-from hashlib import md5, sha1
-from base64 import urlsafe_b64encode
-from time import time, sleep
-from queue import Queue
-from queue import Full as QueueFull
-from queue import Empty as QueueEmpty
-from threading import Thread, Event, Lock, RLock, current_thread
-from json import loads as jsonLoads
-from json import dumps as jsonDumps
-from json import JSONDecodeError
+import typing
+import getpass
+import datetime
+import hashlib
+import base64
+import time
+import queue
+import threading
+import json
 
 
 logger = getLogger(__name__.rsplit(".", 1)[-1].replace("_", ""))
@@ -70,24 +66,24 @@ class Client(metaclass=Singleton):
         logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
         self.__genDeviceIdPrefix()
         self.__auth = OpenIdClient(
-            "https://{}/{}".format(cc_conf.auth.host, cc_conf.auth.path),
+            "{}://{}/{}".format(http.tls_map[cc_conf.auth.tls], cc_conf.auth.host, cc_conf.auth.path),
             cc_conf.credentials.user,
             cc_conf.credentials.pw,
             cc_conf.auth.id
         )
         self.__comm = None
         self.__connected_flag = False
-        self.__connect_lock = Lock()
+        self.__connect_lock = threading.Lock()
         self.__reconnect_flag = False
-        self.__cmd_queue = Queue()
+        self.__cmd_queue = queue.Queue()
         self.__workers = list()
-        self.__hub_sync_event = Event()
+        self.__hub_sync_event = threading.Event()
         self.__hub_sync_event.set()
-        self.__hub_sync_lock = Lock()
+        self.__hub_sync_lock = threading.Lock()
         self.__hub_init = False
         self.__connect_clbk = None
         self.__disconnect_clbk = None
-        self.__set_clbk_lock = RLock()
+        self.__set_clbk_lock = threading.RLock()
 
     # ------------- internal methods ------------- #
 
@@ -95,14 +91,14 @@ class Client(metaclass=Singleton):
         if not cc_conf.device.id_prefix:
             try:
                 usr_time_str = '{}{}'.format(
-                    md5(bytes(cc_conf.credentials.user, 'UTF-8')).hexdigest(),
-                    time()
+                    hashlib.md5(bytes(cc_conf.credentials.user, 'UTF-8')).hexdigest(),
+                    time.time()
                 )
             except TypeError:
                 logger.critical("generating device ID prefix failed")
                 raise DeviceIdPrefixError
-            cc_conf.device.id_prefix = urlsafe_b64encode(
-                md5(usr_time_str.encode()).digest()
+            cc_conf.device.id_prefix = base64.urlsafe_b64encode(
+                hashlib.md5(usr_time_str.encode()).digest()
             ).decode().rstrip('=')
 
     def __initHub(self) -> None:
@@ -114,15 +110,15 @@ class Client(metaclass=Singleton):
                 hub_name = cc_conf.hub.name
                 if not hub_name:
                     logger.info("generating hub name ...")
-                    hub_name = "{}-{}".format(getuser(), datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
+                    hub_name = "{}-{}".format(getpass.getuser(), datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
                 req = http.Request(
-                    url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.hub_endpt),
+                    url="{}://{}/{}".format(http.tls_map[cc_conf.api.tls], cc_conf.api.host, cc_conf.api.hub_endpt),
                     method=http.Method.POST,
                     body={
                         "id": None,
                         "name": hub_name,
                         "hash": None,
-                        "devices": list()
+                        "device_local_ids": list()
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
@@ -132,7 +128,7 @@ class Client(metaclass=Singleton):
                 if not resp.status == 200:
                     logger.error("initializing hub failed - {} {}".format(resp.status, resp.body))
                     raise HubInitializationError
-                hub = jsonLoads(resp.body)
+                hub = json.loads(resp.body)
                 cc_conf.hub.id = hub["id"]
                 if not cc_conf.hub.name:
                     cc_conf.hub.name = hub_name
@@ -142,7 +138,8 @@ class Client(metaclass=Singleton):
             else:
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 req = http.Request(
-                    url="https://{}/{}/{}".format(
+                    url="{}://{}/{}/{}".format(
+                        http.tls_map[cc_conf.api.tls],
                         cc_conf.api.host,
                         cc_conf.api.hub_endpt,
                         http.urlEncode(cc_conf.hub.id)
@@ -168,14 +165,14 @@ class Client(metaclass=Singleton):
         except (http.SocketTimeout, http.URLError) as ex:
             logger.error("initializing hub failed - {}".format(ex))
             raise HubInitializationError
-        except JSONDecodeError as ex:
+        except json.JSONDecodeError as ex:
             logger.error("initializing hub failed - could not decode response - {}".format(ex))
             raise HubInitializationError
         except KeyError as ex:
             logger.error("initializing hub failed - malformed response - missing key {}".format(ex))
             raise HubInitializationError
 
-    def __syncHub(self, devices: List[Device]) -> None:
+    def __syncHub(self, devices: typing.List[Device]) -> None:
         self.__hub_sync_lock.acquire()
         if not self.__hub_init:
             self.__hub_sync_lock.release()
@@ -198,7 +195,8 @@ class Client(metaclass=Singleton):
                 logger.debug("hash '{}'".format(devices_hash))
                 access_token = self.__auth.getAccessToken()
                 req = http.Request(
-                    url="https://{}/{}/{}".format(
+                    url="{}://{}/{}/{}".format(
+                        http.tls_map[cc_conf.api.tls],
                         cc_conf.api.host,
                         cc_conf.api.hub_endpt,
                         http.urlEncode(cc_conf.hub.id)
@@ -210,7 +208,7 @@ class Client(metaclass=Singleton):
                 )
                 resp = req.send()
                 if resp.status == 200:
-                    hub = jsonLoads(resp.body)
+                    hub = json.loads(resp.body)
                     if not hub["name"] == cc_conf.hub.name:
                         logger.warning(
                             "synchronizing hub - local name '{}' differs from remote name '{}'".format(
@@ -224,7 +222,8 @@ class Client(metaclass=Singleton):
                         logger.debug("synchronizing hub - local hash differs from remote hash")
                         logger.info("synchronizing hub - updating devices ...")
                         req = http.Request(
-                            url="https://{}/{}/{}".format(
+                            url="{}://{}/{}/{}".format(
+                                http.tls_map[cc_conf.api.tls],
                                 cc_conf.api.host,
                                 cc_conf.api.hub_endpt,
                                 http.urlEncode(cc_conf.hub.id)
@@ -234,7 +233,7 @@ class Client(metaclass=Singleton):
                                 "id": cc_conf.hub.id,
                                 "name": cc_conf.hub.name,
                                 "hash": devices_hash,
-                                "devices": device_ids
+                                "device_local_ids": device_ids
                             },
                             content_type=http.ContentType.json,
                             headers={"Authorization": "Bearer {}".format(access_token)},
@@ -269,7 +268,7 @@ class Client(metaclass=Singleton):
             except (http.SocketTimeout, http.URLError) as ex:
                 logger.error("synchronizing hub failed - {}".format(ex))
                 raise HubSyncError
-            except JSONDecodeError as ex:
+            except json.JSONDecodeError as ex:
                 logger.error("synchronizing hub failed - could not decode response - {}".format(ex))
                 raise HubSyncError
             except KeyError as ex:
@@ -286,12 +285,13 @@ class Client(metaclass=Singleton):
         if self.__hub_init:
             self.__hub_sync_event.wait()
         if worker:
-            self.__workers.append(current_thread())
+            self.__workers.append(threading.current_thread())
         try:
             logger.info("adding device '{}' to platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(
+                url="{}://{}/{}/{}-{}".format(
+                    http.tls_map[cc_conf.api.tls],
                     cc_conf.api.host,
                     cc_conf.api.device_endpt,
                     cc_conf.device.id_prefix,
@@ -304,13 +304,12 @@ class Client(metaclass=Singleton):
             resp = req.send()
             if resp.status == 404:
                 req = http.Request(
-                    url="https://{}/{}".format(cc_conf.api.host, cc_conf.api.device_endpt),
+                    url="{}://{}/{}".format(http.tls_map[cc_conf.api.tls], cc_conf.api.host, cc_conf.api.device_endpt),
                     method=http.Method.POST,
                     body={
                         "name": device.name,
-                        "device_type": device.__class__.uri,
-                        "uri": "{}-{}".format(cc_conf.device.id_prefix, device.id),
-                        "tags": device.tags
+                        "device_type_id": device.__class__.device_type_id,
+                        "local_id": "{}-{}".format(cc_conf.device.id_prefix, device.id)
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
@@ -328,14 +327,14 @@ class Client(metaclass=Singleton):
                         cc_conf.api.eventual_consistency_delay
                     )
                 )
-                sleep(cc_conf.api.eventual_consistency_delay)
+                time.sleep(cc_conf.api.eventual_consistency_delay)
                 logger.info("adding device '{}' to platform successful".format(device.id))
-                device_atr = jsonLoads(resp.body)
-                setMangledAttr(device, "remote_id", device_atr["id"])
+                device_atr = json.loads(resp.body)
+                setattr(device, '_{}__{}'.format(Device.__name__, "remote_id"), device_atr["id"])
             elif resp.status == 200:
                 logger.warning("adding device '{}' to platform - device exists - updating device ...".format(device.id))
-                device_atr = jsonLoads(resp.body)
-                setMangledAttr(device, "remote_id", device_atr["id"])
+                device_atr = json.loads(resp.body)
+                setattr(device, '_{}__{}'.format(Device.__name__, "remote_id"), device_atr["id"])
                 self.__updateDevice(device)
             else:
                 logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
@@ -346,7 +345,7 @@ class Client(metaclass=Singleton):
         except (http.SocketTimeout, http.URLError) as ex:
             logger.error("adding device '{}' to platform failed - {}".format(device.id, ex))
             raise DeviceAddError
-        except JSONDecodeError as ex:
+        except json.JSONDecodeError as ex:
             logger.warning("adding device '{}' to platform - could not decode response - {}".format(device.id, ex))
         except KeyError as ex:
             logger.warning("adding device '{}' to platform - malformed response - missing key {}".format(device.id, ex))
@@ -355,12 +354,13 @@ class Client(metaclass=Singleton):
         if self.__hub_init:
             self.__hub_sync_event.wait()
         if worker:
-            self.__workers.append(current_thread())
+            self.__workers.append(threading.current_thread())
         try:
             logger.info("deleting device '{}' from platform ...".format(device_id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(
+                url="{}://{}/{}/{}-{}".format(
+                    http.tls_map[cc_conf.api.tls],
                     cc_conf.api.host,
                     cc_conf.api.device_endpt,
                     cc_conf.device.id_prefix,
@@ -394,7 +394,8 @@ class Client(metaclass=Singleton):
             logger.info("updating device '{}' on platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
-                url="https://{}/{}/{}-{}".format(
+                url="{}://{}/{}/{}-{}".format(
+                    http.tls_map[cc_conf.api.tls],
                     cc_conf.api.host,
                     cc_conf.api.device_endpt,
                     cc_conf.device.id_prefix,
@@ -404,9 +405,8 @@ class Client(metaclass=Singleton):
                 body={
                     "id": device.remote_id,
                     "name": device.name,
-                    "device_type": device.__class__.uri,
-                    "uri": "{}-{}".format(cc_conf.device.id_prefix, device.id),
-                    "tags": device.tags
+                    "device_type_id": device.__class__.device_type_id,
+                    "local_id": "{}-{}".format(cc_conf.device.id_prefix, device.id)
                 },
                 content_type=http.ContentType.json,
                 headers={"Authorization": "Bearer {}".format(access_token)},
@@ -439,7 +439,7 @@ class Client(metaclass=Singleton):
             )
         )
         if self.__connect_clbk:
-            clbk_thread = Thread(target=self.__connect_clbk, args=(self, ), name="user-connect-callback", daemon=True)
+            clbk_thread = threading.Thread(target=self.__connect_clbk, args=(self, ), name="user-connect-callback", daemon=True)
             clbk_thread.start()
 
     def __onDisconnect(self, code: int, reason: str) -> None:
@@ -453,7 +453,7 @@ class Client(metaclass=Singleton):
         else:
             logger.info("disconnected by user")
         if self.__disconnect_clbk:
-            clbk_thread = Thread(
+            clbk_thread = threading.Thread(
                 target=self.__disconnect_clbk,
                 args=(self, ),
                 name="user-disconnect-callback",
@@ -461,7 +461,7 @@ class Client(metaclass=Singleton):
             )
             clbk_thread.start()
         if self.__reconnect_flag:
-            reconnect_thread = Thread(target=self.__reconnect, name="reconnect", daemon=True)
+            reconnect_thread = threading.Thread(target=self.__reconnect, name="reconnect", daemon=True)
             reconnect_thread.start()
 
     def __connect(self, event_worker) -> None:
@@ -478,13 +478,13 @@ class Client(metaclass=Singleton):
         logger.info("connecting to '{}' on '{}' ... ".format(cc_conf.connector.host, cc_conf.connector.port))
         if self.__comm:
             self.__comm.reset(
-                cc_conf.hub.id if self.__hub_init else md5(bytes(cc_conf.credentials.user, "UTF-8")).hexdigest()
+                cc_conf.hub.id if self.__hub_init else hashlib.md5(bytes(cc_conf.credentials.user, "UTF-8")).hexdigest()
             )
         else:
             if not cc_conf.connector.tls:
                 logger.warning("TLS encryption disabled")
             self.__comm = mqtt.Client(
-                client_id=cc_conf.hub.id if self.__hub_init else md5(
+                client_id=cc_conf.hub.id if self.__hub_init else hashlib.md5(
                     bytes(cc_conf.credentials.user, "UTF-8")
                 ).hexdigest(),
                 msg_retry=cc_conf.connector.msg_retry,
@@ -539,7 +539,7 @@ class Client(metaclass=Singleton):
                     logger.info("reconnect in {}s ...".format(seconds))
                 elif minutes:
                     logger.info("reconnect in {}m ...".format(minutes))
-                sleep(duration)
+                time.sleep(duration)
             worker = EventWorker(
                 target=self.__connect,
                 name="connect"
@@ -608,36 +608,31 @@ class Client(metaclass=Singleton):
             logger.error("disconnecting device '{}' from platform failed - {}".format(device_id, ex))
             raise DeviceDisconnectError
 
-    def __handleCommand(self, envelope: Union[str, bytes], uri: Union[str, bytes]) -> None:
+    def __handleCommand(self, envelope: typing.Union[str, bytes], uri: typing.Union[str, bytes]) -> None:
         logger.debug("received command ...\nservice uri: '{}'\ncommand: '{}'".format(uri, envelope))
         try:
             uri = uri.split("/")
-            envelope = jsonLoads(envelope)
-            if time() - envelope["timestamp"] <= cc_conf.connector.max_cmd_age:
-                self.__cmd_queue.put_nowait(
-                    CommandEnvelope(
-                        device=__class__.__parseDeviceID(uri[1]),
-                        service=uri[2],
-                        message=Message(
-                            data=envelope["payload"].setdefault("data", str()),
-                            metadata=envelope["payload"].setdefault("metadata", str())
-                        ),
-                        corr_id=envelope["correlation_id"],
-                        completion_strategy=envelope["completion_strategy"],
-                        timestamp=envelope["timestamp"]
-                    )
+            envelope = json.loads(envelope)
+            self.__cmd_queue.put_nowait(
+                CommandEnvelope(
+                    device=__class__.__parseDeviceID(uri[1]),
+                    service=uri[2],
+                    message=Message(
+                        data=envelope["payload"].setdefault("data", str()),
+                        metadata=envelope["payload"].setdefault("metadata", str())
+                    ),
+                    corr_id=envelope["correlation_id"],
+                    completion_strategy=envelope["completion_strategy"],
+                    timestamp=envelope["timestamp"]
                 )
-            else:
-                logger.warning(
-                    "dropped command - max age exceeded - correlation id: '{}'".format(envelope["correlation_id"])
-                )
-        except JSONDecodeError as ex:
+            )
+        except json.JSONDecodeError as ex:
             logger.error("could not parse command - '{}'\nservice uri: '{}'\ncommand: '{}'".format(ex, uri, envelope))
         except (KeyError, AttributeError) as ex:
             logger.error(
                 "malformed service uri or command - '{}'\nservice uri: '{}'\ncommand: '{}'".format(ex, uri, envelope)
             )
-        except QueueFull:
+        except queue.Full:
             logger.error(
                 "could not route command to user - queue full - \nservice uri: '{}'\ncommand: '{}'".format(
                     uri,
@@ -645,7 +640,7 @@ class Client(metaclass=Singleton):
                 )
             )
 
-    def __send(self, envelope: Union[CommandEnvelope, EventEnvelope], event_worker):
+    def __send(self, envelope: typing.Union[CommandEnvelope, EventEnvelope], event_worker):
         logger.debug("sending {} '{}' to platform ...".format(handler_map[type(envelope)], envelope.correlation_id))
         if not self.__connected_flag:
             logger.error(
@@ -685,7 +680,7 @@ class Client(metaclass=Singleton):
                 topic="{}/{}/{}".format(
                     handler_map[type(envelope)], __class__.__prefixDeviceID(envelope.device_id), envelope.service_uri
                 ),
-                payload=jsonDumps(dict(envelope.message)) if isinstance(envelope, EventEnvelope) else jsonDumps(dict(envelope)),
+                payload=json.dumps(dict(envelope.message)) if isinstance(envelope, EventEnvelope) else json.dumps(dict(envelope)),
                 qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
                 event_worker=event_worker
             )
@@ -713,7 +708,7 @@ class Client(metaclass=Singleton):
 
     # ------------- user methods ------------- #
 
-    def setConnectClbk(self, func: Callable[['Client'], None]) -> None:
+    def setConnectClbk(self, func: typing.Callable[['Client'], None]) -> None:
         """
         Set a callback function to be called when the client successfully connects to the platform.
         :param func: User function.
@@ -724,7 +719,7 @@ class Client(metaclass=Singleton):
         with self.__set_clbk_lock:
             self.__connect_clbk = func
 
-    def setDisconnectClbk(self, func: Callable[['Client'], None]) -> None:
+    def setDisconnectClbk(self, func: typing.Callable[['Client'], None]) -> None:
         """
         Set a callback function to be called when the client disconnects from the platform.
         :param func: User function.
@@ -735,7 +730,7 @@ class Client(metaclass=Singleton):
         with self.__set_clbk_lock:
             self.__disconnect_clbk = func
 
-    def initHub(self, asynchronous: bool = False) -> Optional[Future]:
+    def initHub(self, asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Initialize a hub. Check if hub exists and create new hub if necessary.
         :param asynchronous: If 'True' method returns a ClientFuture object.
@@ -749,7 +744,7 @@ class Client(metaclass=Singleton):
         else:
             self.__initHub()
 
-    def syncHub(self, devices: List[Device], asynchronous: bool = False) -> Optional[Future]:
+    def syncHub(self, devices: typing.List[Device], asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Synchronize a hub. Associate devices managed by the client with the hub and update hub name.
         Devices must be added via addDevice.
@@ -767,7 +762,7 @@ class Client(metaclass=Singleton):
         else:
             self.__syncHub(devices)
 
-    def addDevice(self, device: Device, asynchronous: bool = False) -> Optional[Future]:
+    def addDevice(self, device: Device, asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Add a device to local device manager and remote platform. Blocks by default.
         :param device: Device object.
@@ -788,7 +783,7 @@ class Client(metaclass=Singleton):
         else:
             self.__addDevice(device)
 
-    def deleteDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
+    def deleteDevice(self, device: typing.Union[Device, str], asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Delete a device from local device manager and remote platform. Blocks by default.
         :param device: Device ID or Device object.
@@ -812,7 +807,7 @@ class Client(metaclass=Singleton):
         else:
             self.__deleteDevice(device)
 
-    def updateDevice(self, device: Device, asynchronous: bool = False) -> Optional[Future]:
+    def updateDevice(self, device: Device, asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Update a device on the platform.
         :param device: Device object or device ID.
@@ -833,7 +828,7 @@ class Client(metaclass=Singleton):
         else:
             self.__updateDevice(device)
 
-    def connect(self, reconnect: bool = False, asynchronous: bool = False) -> Optional[Future]:
+    def connect(self, reconnect: bool = False, asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Connect to platform message broker.
         :param asynchronous: If 'True' method returns a ClientFuture object.
@@ -874,7 +869,7 @@ class Client(metaclass=Singleton):
         except mqtt.NotConnectedError:
             raise NotConnectedError
 
-    def connectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
+    def connectDevice(self, device: typing.Union[Device, str], asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Connect a device to the platform.
         :param device: Device object or device ID.
@@ -898,7 +893,7 @@ class Client(metaclass=Singleton):
             future.wait()
             future.result()
 
-    def disconnectDevice(self, device: Union[Device, str], asynchronous: bool = False) -> Optional[Future]:
+    def disconnectDevice(self, device: typing.Union[Device, str], asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Disconnect a device from the platform.
         :param device: Device object or device ID.
@@ -922,7 +917,7 @@ class Client(metaclass=Singleton):
             future.wait()
             future.result()
 
-    def receiveCommand(self, block: bool = True, timeout: Optional[Union[int, float]] = None) -> CommandEnvelope:
+    def receiveCommand(self, block: bool = True, timeout: typing.Optional[typing.Union[int, float]] = None) -> CommandEnvelope:
         """
         Receive a command.
         :param block: If 'True' blocks until a command is available.
@@ -933,10 +928,10 @@ class Client(metaclass=Singleton):
         validateInstance(timeout, (int, float, type(None)))
         try:
             return self.__cmd_queue.get(block=block, timeout=timeout)
-        except QueueEmpty:
+        except queue.Empty:
             raise CommandQueueEmptyError
 
-    def sendResponse(self, envelope: CommandEnvelope, asynchronous: bool = False) -> Optional[Future]:
+    def sendResponse(self, envelope: CommandEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Send a response to the platform after handling a command.
         :param envelope: Envelope object received from a command via receiveCommand.
@@ -957,7 +952,7 @@ class Client(metaclass=Singleton):
             future.wait()
             future.result()
 
-    def emmitEvent(self, envelope: EventEnvelope, asynchronous: bool = False) -> Optional[Future]:
+    def emmitEvent(self, envelope: EventEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Send an event to the platform.
         :param envelope: Envelope object.
@@ -982,15 +977,15 @@ class Client(metaclass=Singleton):
     # ------------- class / static methods ------------- #
 
     @staticmethod
-    def __hashDevices(devices: Union[Tuple[Device], List[Device]]) -> str:
+    def __hashDevices(devices: typing.Union[typing.Tuple[Device], typing.List[Device]]) -> str:
         """
         Hash attributes of the provided devices with SHA1.
         :param devices: List or tuple of devices.
         :return: Hash as string.
         """
-        hashes = [sha1("{}{}".format(device.id, device.name).encode()).hexdigest() for device in devices]
+        hashes = [hashlib.sha1("{}{}".format(device.id, device.name).encode()).hexdigest() for device in devices]
         hashes.sort()
-        return sha1("".join(hashes).encode()).hexdigest()
+        return hashlib.sha1("".join(hashes).encode()).hexdigest()
 
     @staticmethod
     def __prefixDeviceID(device_id: str) -> str:
