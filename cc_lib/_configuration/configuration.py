@@ -43,9 +43,9 @@ class ConnectorConf:
         msg_retry: int = 5
         keepalive: int = 20
         loop_time: typing.Union[int, float] = 1
-        reconn_delay_min: int = 10
-        reconn_delay_max: int = 240
-        reconn_delay_factor: typing.Union[int, float] = 1.75
+        reconn_delay_min: int = 5
+        reconn_delay_max: int = 120
+        reconn_delay_factor: typing.Union[int, float] = 1.85
 
     @section
     class auth:
