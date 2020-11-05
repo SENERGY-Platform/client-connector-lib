@@ -69,7 +69,7 @@ class Client(metaclass=Singleton):
         initConnectorConf()
         initLogging()
         logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
-        self.__genDeviceIdPrefix()
+        # self.__genDeviceIdPrefix()
         host = cc_conf.auth.host
         if cc_conf.auth.port is not None:
             host += ":" + str(cc_conf.auth.port)
@@ -96,19 +96,19 @@ class Client(metaclass=Singleton):
 
     # ------------- internal methods ------------- #
 
-    def __genDeviceIdPrefix(self):
-        if not cc_conf.device.id_prefix:
-            try:
-                usr_time_str = '{}{}'.format(
-                    hashlib.md5(bytes(cc_conf.credentials.user, 'UTF-8')).hexdigest(),
-                    time.time()
-                )
-            except TypeError:
-                logger.critical("generating device ID prefix failed")
-                raise DeviceIdPrefixError
-            cc_conf.device.id_prefix = base64.urlsafe_b64encode(
-                hashlib.md5(usr_time_str.encode()).digest()
-            ).decode().rstrip('=')
+    # def __genDeviceIdPrefix(self):
+    #     if not cc_conf.device.id_prefix:
+    #         try:
+    #             usr_time_str = '{}{}'.format(
+    #                 hashlib.md5(bytes(cc_conf.credentials.user, 'UTF-8')).hexdigest(),
+    #                 time.time()
+    #             )
+    #         except TypeError:
+    #             logger.critical("generating device ID prefix failed")
+    #             raise DeviceIdPrefixError
+    #         cc_conf.device.id_prefix = base64.urlsafe_b64encode(
+    #             hashlib.md5(usr_time_str.encode()).digest()
+    #         ).decode().rstrip('=')
 
     def __initHub(self) -> None:
         try:
@@ -200,7 +200,8 @@ class Client(metaclass=Singleton):
                         worker.join()
                         logger.debug("synchronizing hub - task '{}' finished".format(worker.name))
                     self.__workers.clear()
-                device_ids = tuple(__class__.__prefixDeviceID(device.id) for device in devices)
+                # device_ids = tuple(__class__.__prefixDeviceID(device.id) for device in devices)
+                device_ids = tuple(device.id for device in devices)
                 devices_hash = __class__.__hashDevices(devices)
                 logger.debug("hub ID '{}'".format(cc_conf.hub.id))
                 logger.debug("devices {}".format(device_ids))
@@ -308,11 +309,17 @@ class Client(metaclass=Singleton):
             if cc_conf.api.port is not None:
                 host += ":" + str(cc_conf.api.port)
             req = http.Request(
-                url="{}://{}/{}/{}-{}".format(
+                # url="{}://{}/{}/{}-{}".format(
+                #     http.tls_map[cc_conf.api.tls],
+                #     host,
+                #     cc_conf.api.device_endpt,
+                #     cc_conf.device.id_prefix,
+                #     http.urlEncode(device.id)
+                # ),
+                url="{}://{}/{}/{}".format(
                     http.tls_map[cc_conf.api.tls],
                     host,
                     cc_conf.api.device_endpt,
-                    cc_conf.device.id_prefix,
                     http.urlEncode(device.id)
                 ),
                 method=http.Method.GET,
@@ -327,7 +334,8 @@ class Client(metaclass=Singleton):
                     body={
                         "name": device.name,
                         "device_type_id": device.device_type_id,
-                        "local_id": "{}-{}".format(cc_conf.device.id_prefix, device.id)
+                        # "local_id": "{}-{}".format(cc_conf.device.id_prefix, device.id)
+                        "local_id": device.id
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
@@ -380,11 +388,17 @@ class Client(metaclass=Singleton):
             if cc_conf.api.port is not None:
                 host += ":" + str(cc_conf.api.port)
             req = http.Request(
-                url="{}://{}/{}/{}-{}".format(
+                # url="{}://{}/{}/{}-{}".format(
+                #     http.tls_map[cc_conf.api.tls],
+                #     host,
+                #     cc_conf.api.device_endpt,
+                #     cc_conf.device.id_prefix,
+                #     http.urlEncode(device_id)
+                # ),
+                url="{}://{}/{}/{}".format(
                     http.tls_map[cc_conf.api.tls],
                     host,
                     cc_conf.api.device_endpt,
-                    cc_conf.device.id_prefix,
                     http.urlEncode(device_id)
                 ),
                 method=http.Method.DELETE,
@@ -418,11 +432,17 @@ class Client(metaclass=Singleton):
             if cc_conf.api.port is not None:
                 host += ":" + str(cc_conf.api.port)
             req = http.Request(
-                url="{}://{}/{}/{}-{}".format(
+                # url="{}://{}/{}/{}-{}".format(
+                #     http.tls_map[cc_conf.api.tls],
+                #     host,
+                #     cc_conf.api.device_endpt,
+                #     cc_conf.device.id_prefix,
+                #     http.urlEncode(device.id)
+                # ),
+                url="{}://{}/{}/{}".format(
                     http.tls_map[cc_conf.api.tls],
                     host,
                     cc_conf.api.device_endpt,
-                    cc_conf.device.id_prefix,
                     http.urlEncode(device.id)
                 ),
                 method=http.Method.PUT,
@@ -430,7 +450,8 @@ class Client(metaclass=Singleton):
                     "id": device.remote_id,
                     "name": device.name,
                     "device_type_id": device.device_type_id,
-                    "local_id": "{}-{}".format(cc_conf.device.id_prefix, device.id)
+                    # "local_id": "{}-{}".format(cc_conf.device.id_prefix, device.id)
+                    "local_id": device.id
                 },
                 content_type=http.ContentType.json,
                 headers={"Authorization": "Bearer {}".format(access_token)},
@@ -598,7 +619,8 @@ class Client(metaclass=Singleton):
                     logger.info("connecting device '{}' to platform successful".format(device_id))
             event_worker.usr_method = on_done
             self.__comm.subscribe(
-                topic="command/{}/+".format(__class__.__prefixDeviceID(device_id)),
+                # topic="command/{}/+".format(__class__.__prefixDeviceID(device_id)),
+                topic="command/{}/+".format(device_id),
                 qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
                 event_worker=event_worker
             )
@@ -626,7 +648,8 @@ class Client(metaclass=Singleton):
                     logger.info("disconnecting device '{}' from platform successful".format(device_id))
             event_worker.usr_method = on_done
             self.__comm.unsubscribe(
-                topic="command/{}/+".format(__class__.__prefixDeviceID(device_id)),
+                # topic="command/{}/+".format(__class__.__prefixDeviceID(device_id)),
+                topic="command/{}/+".format(device_id),
                 event_worker=event_worker
             )
         except mqtt.NotConnectedError:
@@ -652,7 +675,8 @@ class Client(metaclass=Singleton):
                 logger.debug("received command ...\nservice uri: '{}'\ncommand: '{}'".format(uri, envelope))
                 self.__cmd_queue.put_nowait(
                     CommandEnvelope(
-                        device=__class__.__parseDeviceID(uri_parts[1]),
+                        # device=__class__.__parseDeviceID(uri_parts[1]),
+                        device=uri_parts[1],
                         service=uri_parts[2],
                         message=Message(
                             data=envelope["payload"].setdefault("data", str()),
@@ -722,7 +746,8 @@ class Client(metaclass=Singleton):
                 )
             else:
                 topic="{}/{}/{}".format(
-                    handler_map[type(envelope)], __class__.__prefixDeviceID(envelope.device_id), envelope.service_uri
+                    # handler_map[type(envelope)], __class__.__prefixDeviceID(envelope.device_id), envelope.service_uri
+                    handler_map[type(envelope)], envelope.device_id, envelope.service_uri
                 )
             if isinstance(envelope, EventEnvelope):
                 payload = json.dumps(dict(envelope.message))
@@ -1078,20 +1103,20 @@ class Client(metaclass=Singleton):
         hashes.sort()
         return hashlib.sha1("".join(hashes).encode()).hexdigest()
 
-    @staticmethod
-    def __prefixDeviceID(device_id: str) -> str:
-        """
-        Prefix a ID.
-        :param device_id: Device ID.
-        :return: Prefixed device ID.
-        """
-        return "{}-{}".format(cc_conf.device.id_prefix, device_id)
+    # @staticmethod
+    # def __prefixDeviceID(device_id: str) -> str:
+    #     """
+    #     Prefix a ID.
+    #     :param device_id: Device ID.
+    #     :return: Prefixed device ID.
+    #     """
+    #     return "{}-{}".format(cc_conf.device.id_prefix, device_id)
 
-    @staticmethod
-    def __parseDeviceID(device_id: str) -> str:
-        """
-        Remove prefix from device ID.
-        :param device_id: Device ID with prefix.
-        :return: Device ID.
-        """
-        return device_id.replace("{}-".format(cc_conf.device.id_prefix), "")
+    # @staticmethod
+    # def __parseDeviceID(device_id: str) -> str:
+    #     """
+    #     Remove prefix from device ID.
+    #     :param device_id: Device ID with prefix.
+    #     :return: Device ID.
+    #     """
+    #     return device_id.replace("{}-".format(cc_conf.device.id_prefix), "")
