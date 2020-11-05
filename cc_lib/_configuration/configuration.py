@@ -83,9 +83,9 @@ class ConnectorConf:
         request_timeout: typing.Union[int, float] = 30
         eventual_consistency_delay: typing.Union[int, float] = 2
 
-    @section
-    class device:
-        id_prefix: str = None
+    # @section
+    # class device:
+    #     id_prefix: str = None
 
 
 cc_conf = ConnectorConf(conf_file='connector.conf', user_path=user_dir, ext_aft_crt=True, load=False)
