@@ -530,7 +530,7 @@ class Client(metaclass=Singleton):
                 logger.warning("TLS encryption disabled")
             fogTopic = None
             if cc_conf.connector.enable_fog is True:
-                fogTopic = handler_map[FogEnvelope] + '/control/#'
+                fogTopic = handler_map[FogEnvelope] + '/control'
             self.__comm = mqtt.Client(
                 client_id=cc_conf.hub.id if self.__hub_init else hashlib.md5(
                     bytes(cc_conf.credentials.user, "UTF-8")

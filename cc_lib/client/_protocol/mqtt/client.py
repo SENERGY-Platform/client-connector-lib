@@ -130,7 +130,7 @@ class Client:
             if rc == paho.mqtt.client.MQTT_ERR_SUCCESS:
                 if self.__fogTopic is not None:
                     logger.info("subscribing to fog topic '" + self.__fogTopic + "' because enable_fog is set")
-                    res = self.__mqtt.subscribe(self.__fogTopic, qos_map[cc_conf.connector.qos])
+                    res = self.__mqtt.subscribe([(self.__fogTopic, qos_map[cc_conf.connector.qos]), (self.__fogTopic + '/#', qos_map[cc_conf.connector.qos])])
                     if res[0] is paho.mqtt.client.MQTT_ERR_SUCCESS:
                         logger.debug("request subscribe for '{}'".format(self.__fogTopic))
                     elif res[0] == paho.mqtt.client.MQTT_ERR_NO_CONN:
