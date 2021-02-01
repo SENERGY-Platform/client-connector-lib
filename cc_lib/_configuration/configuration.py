@@ -70,10 +70,9 @@ class ConnectorConf:
 
     @section
     class api:
-        host: str = None
         hub_endpt: str = None
         device_endpt: str = None
-        tls: bool = True
+        auth_endpt: str = None
         request_timeout: typing.Union[int, float] = 30
         eventual_consistency_delay: typing.Union[int, float] = 2
 
