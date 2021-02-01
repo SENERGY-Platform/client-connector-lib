@@ -49,9 +49,6 @@ class ConnectorConf:
 
     @section
     class auth:
-        host: str = None
-        path: str = None
-        tls: bool = True
         id: str = None
 
     @section
