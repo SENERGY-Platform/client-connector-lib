@@ -66,8 +66,8 @@ class Client(metaclass=Singleton):
         logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
         self.__auth = OpenIdClient(
             cc_conf.api.auth_endpt,
-            cc_conf.credentials.user,
-            cc_conf.credentials.pw,
+            cc_conf.auth.user,
+            cc_conf.auth.pw,
             cc_conf.auth.id
         )
         self.__comm = None
@@ -442,14 +442,14 @@ class Client(metaclass=Singleton):
         logger.info("connecting to '{}' on '{}' ... ".format(cc_conf.connector.host, cc_conf.connector.port))
         if self.__comm:
             self.__comm.reset(
-                cc_conf.hub.id if self.__hub_init else hashlib.md5(bytes(cc_conf.credentials.user, "UTF-8")).hexdigest()
+                cc_conf.hub.id if self.__hub_init else hashlib.md5(bytes(cc_conf.auth.user, "UTF-8")).hexdigest()
             )
         else:
             if not cc_conf.connector.tls:
                 logger.warning("TLS encryption disabled")
             self.__comm = mqtt.Client(
                 client_id=cc_conf.hub.id if self.__hub_init else hashlib.md5(
-                    bytes(cc_conf.credentials.user, "UTF-8")
+                    bytes(cc_conf.auth.user, "UTF-8")
                 ).hexdigest(),
                 msg_retry=cc_conf.connector.msg_retry,
                 keepalive=cc_conf.connector.keepalive,
@@ -479,8 +479,8 @@ class Client(metaclass=Singleton):
         self.__comm.connect(
             host=cc_conf.connector.host,
             port=cc_conf.connector.port,
-            usr=cc_conf.credentials.user,
-            pw=cc_conf.credentials.pw,
+            usr=cc_conf.auth.user,
+            pw=cc_conf.auth.pw,
             event_worker=event_worker
         )
 

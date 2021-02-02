@@ -60,9 +60,6 @@ class CC_Lib:
     @conf_manager.section
     class auth:
         id: str = None
-
-    @conf_manager.section
-    class credentials:
         user: str = None
         pw: str = None
 
