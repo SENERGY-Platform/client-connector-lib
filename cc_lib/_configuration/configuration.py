@@ -17,24 +17,34 @@
 import logging
 import os
 import typing
-import simple_env_var
+
+
+file_conf_manager = os.getenv("CC_LIB_CONF_MANAGER") == "file"
+
+if file_conf_manager:
+    import simple_conf as conf_manager
+else:
+    import simple_env_var as conf_manager
+
 
 formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s: [%(name)s] %(message)s', datefmt='%m.%d.%Y %I:%M:%S %p')
 stream_handler = logging.StreamHandler()
 stream_handler.setFormatter(formatter)
 
-sc_logger = logging.getLogger('simple-env-var')
+if file_conf_manager:
+    sc_logger = logging.getLogger('simple-conf')
+else:
+    sc_logger = logging.getLogger('simple-env-var')
 sc_logger.addHandler(stream_handler)
 sc_logger.setLevel(logging.INFO)
 
 user_dir = os.getenv("CC_LIB_USER_PATH") or os.getcwd()
-user_dir = os.path.join(user_dir, "cc-lib")
 
 
-@simple_env_var.configuration
-class ConnectorConf:
+@conf_manager.configuration
+class CC_Lib:
 
-    @simple_env_var.section
+    @conf_manager.section
     class connector:
         host: str = None
         port: int = None
@@ -47,28 +57,28 @@ class ConnectorConf:
         reconn_delay_max: int = 120
         reconn_delay_factor: typing.Union[int, float] = 1.85
 
-    @simple_env_var.section
+    @conf_manager.section
     class auth:
         id: str = None
 
-    @simple_env_var.section
+    @conf_manager.section
     class credentials:
         user: str = None
         pw: str = None
 
-    @simple_env_var.section
+    @conf_manager.section
     class hub:
         name: str = None
         id: str = None
 
-    @simple_env_var.section
+    @conf_manager.section
     class logger:
         level: str = 'info'
         colored: bool = False
         rotating_log: bool = False
         rotating_log_backup_count: int = 14
 
-    @simple_env_var.section
+    @conf_manager.section
     class api:
         hub_endpt: str = None
         device_endpt: str = None
@@ -76,19 +86,20 @@ class ConnectorConf:
         request_timeout: typing.Union[int, float] = 30
         eventual_consistency_delay: typing.Union[int, float] = 2
 
-    @simple_env_var.section
+    @conf_manager.section
     class device:
         id_prefix: str = None
 
-    @simple_env_var.section
+    @conf_manager.section
     class fog:
         enable: bool = False
 
 
-cc_conf = ConnectorConf(load=False)
+if file_conf_manager:
+    cc_conf = CC_Lib(conf_file='cc_lib.conf', user_path=user_dir, ext_aft_crt=True, load=False)
+else:
+    cc_conf = CC_Lib(load=False)
 
 
 def initConnectorConf() -> None:
-    if not os.path.exists(user_dir):
-        os.makedirs(user_dir)
-    simple_env_var.loadConfig(cc_conf)
+    conf_manager.loadConfig(cc_conf)
