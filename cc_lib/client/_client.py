@@ -69,6 +69,10 @@ class Client:
             cc_conf.auth.pw,
             cc_conf.auth.id
         )
+        self.__user = user
+        self.__pw = pw
+        self.__device_id_prefix = device_id_prefix
+        self.__fog_enabled = fog_enabled
         self.__comm = None
         self.__connected_flag = False
         self.__connect_lock = threading.Lock()
