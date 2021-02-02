@@ -84,6 +84,7 @@ class ConnectorConf:
     class fog:
         enable: bool = False
 
+
 cc_conf = ConnectorConf(conf_file='connector.conf', user_path=user_dir, ext_aft_crt=True, load=False)
 
 
