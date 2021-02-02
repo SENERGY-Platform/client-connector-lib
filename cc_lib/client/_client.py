@@ -51,13 +51,12 @@ class CompletionStrategy:
     pessimistic = "pessimistic"
 
 
-class Client(metaclass=Singleton):
+class Client:
     """
     Client class for client-connector projects.
-    To avoid multiple instantiations the Client class implements the singleton pattern.
     """
 
-    def __init__(self):
+    def __init__(self, user: str, pw: str, client_id: str, device_id_prefix: typing.Optional[str] = None, fog_enabled: typing.Optional[bool] = False):
         """
         Create a Client instance. Set device manager, initiate configuration and library logging facility.
         """
