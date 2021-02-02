@@ -58,12 +58,6 @@ class CC_Lib:
         reconn_delay_factor: typing.Union[int, float] = 1.85
 
     @conf_manager.section
-    class auth:
-        id: str = None
-        user: str = None
-        pw: str = None
-
-    @conf_manager.section
     class hub:
         name: str = None
         id: str = None

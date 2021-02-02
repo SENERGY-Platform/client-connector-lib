@@ -17,7 +17,7 @@
 __all__ = ("Client", "CompletionStrategy")
 
 from .._configuration.configuration import cc_conf, initConnectorConf
-from .._util import Singleton, validateInstance, calcDuration
+from .._util import validateInstance, calcDuration
 from ..logger._logger import getLogger, initLogging
 from ..types import Device
 from .message import CommandEnvelope, EventEnvelope, Message
@@ -27,10 +27,8 @@ from ._protocol import http, mqtt
 from ._asynchron import Future, ThreadWorker, EventWorker
 from cc_lib import __version__ as VERSION
 import typing
-import getpass
 import datetime
 import hashlib
-import base64
 import time
 import queue
 import threading
@@ -63,16 +61,11 @@ class Client:
         initConnectorConf()
         initLogging()
         logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
-        self.__auth = OpenIdClient(
-            cc_conf.api.auth_endpt,
-            cc_conf.auth.user,
-            cc_conf.auth.pw,
-            cc_conf.auth.id
-        )
         self.__user = user
         self.__pw = pw
         self.__device_id_prefix = device_id_prefix
         self.__fog_enabled = fog_enabled
+        self.__auth = OpenIdClient(cc_conf.api.auth_endpt, user, pw, client_id)
         self.__comm = None
         self.__connected_flag = False
         self.__connect_lock = threading.Lock()
@@ -82,23 +75,22 @@ class Client:
         self.__hub_sync_event = threading.Event()
         self.__hub_sync_event.set()
         self.__hub_sync_lock = threading.Lock()
-        self.__hub_init = False
         self.__connect_clbk = None
         self.__disconnect_clbk = None
         self.__set_clbk_lock = threading.RLock()
+        self.__hub_id = None
 
     # ------------- internal methods ------------- #
 
-    def __initHub(self) -> None:
+    def __initHub(self, hub_id, hub_name) -> str:
         try:
             logger.info("initializing hub ...")
             access_token = self.__auth.getAccessToken()
-            if not cc_conf.hub.id:
+            if not hub_id:
                 logger.info("creating new hub ...")
-                hub_name = cc_conf.hub.name
                 if not hub_name:
                     logger.info("generating hub name ...")
-                    hub_name = "{}-{}".format(getpass.getuser(), datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
+                    hub_name = "{}-{}".format(self.__user, datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
                 req = http.Request(
                     url=cc_conf.api.hub_endpt,
                     method=http.Method.POST,
@@ -117,27 +109,25 @@ class Client:
                     logger.error("initializing hub failed - {} {}".format(resp.status, resp.body))
                     raise HubInitializationError
                 hub = json.loads(resp.body)
-                cc_conf.hub.id = hub["id"]
-                if not cc_conf.hub.name:
-                    cc_conf.hub.name = hub_name
-                self.__hub_init = True
-                logger.debug("hub ID '{}'".format(cc_conf.hub.id))
+                self.__hub_id = hub["id"]
+                logger.debug("hub ID '{}'".format(self.__hub_id))
                 logger.info("initializing hub successful")
+                return self.__hub_id
             else:
-                logger.debug("hub ID '{}'".format(cc_conf.hub.id))
+                logger.debug("hub ID '{}'".format(hub_id))
                 req = http.Request(
-                    url="{}/{}".format(cc_conf.api.hub_endpt, http.urlEncode(cc_conf.hub.id)),
+                    url="{}/{}".format(cc_conf.api.hub_endpt, http.urlEncode(hub_id)),
                     method=http.Method.HEAD,
                     headers={"Authorization": "Bearer {}".format(access_token)},
                     timeout=cc_conf.api.request_timeout
                 )
                 resp = req.send()
                 if resp.status == 200:
-                    self.__hub_init = True
+                    self.__hub_id = hub_id
                     logger.info("initializing hub successful")
+                    return self.__hub_id
                 elif resp.status == 404:
                     logger.error("initializing hub failed - hub not found on platform")
-                    cc_conf.hub.id = None
                     raise HubNotFoundError
                 else:
                     logger.error("initializing hub failed - {} {}".format(resp.status, resp.body))
@@ -157,7 +147,7 @@ class Client:
 
     def __syncHub(self, devices: typing.List[Device]) -> None:
         self.__hub_sync_lock.acquire()
-        if not self.__hub_init:
+        if not self.__hub_id:
             self.__hub_sync_lock.release()
             logger.error("hub not initialized - synchronizing hub not possible")
             raise HubNotInitializedError
@@ -258,7 +248,7 @@ class Client:
         self.__hub_sync_lock.release()
 
     def __addDevice(self, device: Device, worker: bool = False) -> None:
-        if self.__hub_init:
+        if self.__hub_id:
             self.__hub_sync_event.wait()
         if worker:
             self.__workers.append(threading.current_thread())
@@ -324,7 +314,7 @@ class Client:
             logger.warning("adding device '{}' to platform - malformed response - missing key {}".format(device.id, ex))
 
     def __deleteDevice(self, device_id: str, worker: bool = False) -> None:
-        if self.__hub_init:
+        if self.__hub_id:
             self.__hub_sync_event.wait()
         if worker:
             self.__workers.append(threading.current_thread())
@@ -444,16 +434,12 @@ class Client:
             raise RuntimeError("already connected")
         logger.info("connecting to '{}' on '{}' ... ".format(cc_conf.connector.host, cc_conf.connector.port))
         if self.__comm:
-            self.__comm.reset(
-                cc_conf.hub.id if self.__hub_init else hashlib.md5(bytes(cc_conf.auth.user, "UTF-8")).hexdigest()
-            )
+            self.__comm.reset(self.__hub_id or hashlib.md5(bytes(self.__user, "UTF-8")).hexdigest())
         else:
             if not cc_conf.connector.tls:
                 logger.warning("TLS encryption disabled")
             self.__comm = mqtt.Client(
-                client_id=cc_conf.hub.id if self.__hub_init else hashlib.md5(
-                    bytes(cc_conf.auth.user, "UTF-8")
-                ).hexdigest(),
+                client_id=self.__hub_id or hashlib.md5(bytes(self.__user, "UTF-8")).hexdigest(),
                 msg_retry=cc_conf.connector.msg_retry,
                 keepalive=cc_conf.connector.keepalive,
                 loop_time=cc_conf.connector.loop_time,
@@ -482,8 +468,8 @@ class Client:
         self.__comm.connect(
             host=cc_conf.connector.host,
             port=cc_conf.connector.port,
-            usr=cc_conf.auth.user,
-            pw=cc_conf.auth.pw,
+            usr=self.__user,
+            pw=self.__pw,
             event_worker=event_worker
         )
 
@@ -699,19 +685,22 @@ class Client:
         with self.__set_clbk_lock:
             self.__disconnect_clbk = func
 
-    def initHub(self, asynchronous: bool = False) -> typing.Optional[Future]:
+    def initHub(self, hub_id: typing.Optional[str] = None, hub_name: typing.Optional[str] = None, asynchronous: bool = False) -> typing.Union[str, Future]:
         """
         Initialize a hub. Check if hub exists and create new hub if necessary.
-        :param asynchronous: If 'True' method returns a ClientFuture object.
-        :return: Future or None.
+        :param hub_id: If none is given a new hub will be created.
+        :param hub_name: If none is given a new name will be generated. Only used during hub creation.
+        :param asynchronous: If 'True' method returns a Future object.
+        :return: Future object or Hub ID (str).
         """
+        validateInstance(hub_id, (str, type(None)))
         validateInstance(asynchronous, bool)
         if asynchronous:
-            worker = ThreadWorker(target=self.__initHub, name="init-hub", daemon=True)
+            worker = ThreadWorker(target=self.__initHub, args=(hub_id, ), name="init-hub", daemon=True)
             future = worker.start()
             return future
         else:
-            self.__initHub()
+            return self.__initHub(hub_id=hub_id, hub_name=hub_name)
 
     def syncHub(self, devices: typing.List[Device], asynchronous: bool = False) -> typing.Optional[Future]:
         """
