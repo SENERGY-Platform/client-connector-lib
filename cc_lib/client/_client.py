@@ -38,7 +38,18 @@ import json
 logger = getLogger(__name__.rsplit(".", 1)[-1].replace("_", ""))
 
 
-handler_map = {
+def _hashDevices(devices: typing.Union[typing.Tuple[Device], typing.List[Device]]) -> str:
+    """
+    Hash attributes of the provided devices with SHA1.
+    :param devices: List or tuple of devices.
+    :return: Hash as string.
+    """
+    hashes = [hashlib.sha1("{}{}".format(device.id, device.name).encode()).hexdigest() for device in devices]
+    hashes.sort()
+    return hashlib.sha1("".join(hashes).encode()).hexdigest()
+
+
+_handler_map = {
     CommandEnvelope: "response",
     EventEnvelope: "event"
 }
@@ -165,7 +176,7 @@ class Client:
                     device_ids = tuple(self.__prefixDeviceID(device.id) for device in devices)
                 else:
                     device_ids = tuple(device.id for device in devices)
-                devices_hash = self.__hashDevices(devices)
+                devices_hash = _hashDevices(devices)
                 logger.debug("hub ID '{}'".format(self.__hub_id))
                 logger.debug("devices {}".format(device_ids))
                 logger.debug("hash '{}'".format(devices_hash))
@@ -585,11 +596,11 @@ class Client:
             )
 
     def __send(self, envelope: typing.Union[CommandEnvelope, EventEnvelope], event_worker):
-        logger.debug("sending {} '{}' to platform ...".format(handler_map[type(envelope)], envelope.correlation_id))
+        logger.debug("sending {} '{}' to platform ...".format(_handler_map[type(envelope)], envelope.correlation_id))
         if not self.__connected_flag:
             logger.error(
                 "sending {} '{}' to platform failed - not connected".format(
-                    handler_map[type(envelope)],
+                    _handler_map[type(envelope)],
                     envelope.correlation_id
                 )
             )
@@ -608,21 +619,21 @@ class Client:
                             event_worker.exception = SendError(ex)
                         logger.error(
                             "sending {} '{}' to platform failed - {}".format(
-                                handler_map[type(envelope)],
+                                _handler_map[type(envelope)],
                                 envelope.correlation_id, ex
                             )
                         )
                 elif mqtt.qos_map.setdefault(cc_conf.connector.qos, 1) > 0:
                     logger.debug(
                         "sending {} '{}' to platform successful".format(
-                            handler_map[type(envelope)],
+                            _handler_map[type(envelope)],
                             envelope.correlation_id
                         )
                     )
             event_worker.usr_method = on_done
             self.__comm.publish(
                 topic="{}/{}/{}".format(
-                    handler_map[type(envelope)],
+                    _handler_map[type(envelope)],
                     self.__prefixDeviceID(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
                     envelope.service_uri
                 ),
@@ -633,7 +644,7 @@ class Client:
         except mqtt.NotConnectedError:
             logger.error(
                 "sending {} '{}' to platform failed - not connected".format(
-                    handler_map[type(envelope)],
+                    _handler_map[type(envelope)],
                     envelope.correlation_id
                 )
             )
@@ -641,7 +652,7 @@ class Client:
         except mqtt.PublishError as ex:
             logger.error(
                 "sending {} '{}' to platform failed - {}".format(
-                    handler_map[type(envelope)],
+                    _handler_map[type(envelope)],
                     envelope.correlation_id, ex
                 )
             )
@@ -937,17 +948,3 @@ class Client:
         else:
             future.wait()
             future.result()
-
-
-    # ------------- class / static methods ------------- #
-
-    @staticmethod
-    def __hashDevices(devices: typing.Union[typing.Tuple[Device], typing.List[Device]]) -> str:
-        """
-        Hash attributes of the provided devices with SHA1.
-        :param devices: List or tuple of devices.
-        :return: Hash as string.
-        """
-        hashes = [hashlib.sha1("{}{}".format(device.id, device.name).encode()).hexdigest() for device in devices]
-        hashes.sort()
-        return hashlib.sha1("".join(hashes).encode()).hexdigest()
