@@ -77,11 +77,6 @@ class CC_Lib:
         request_timeout: typing.Union[int, float] = 30
         eventual_consistency_delay: typing.Union[int, float] = 2
 
-    #
-    # @conf_manager.section
-    # class fog:
-    #     enable: bool = False
-
 
 if file_conf_manager:
     cc_conf = CC_Lib(conf_file='cc_lib.conf', user_path=user_dir, ext_aft_crt=True, load=False)
