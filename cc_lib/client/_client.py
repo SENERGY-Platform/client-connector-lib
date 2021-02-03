@@ -409,7 +409,7 @@ class Client:
             else:
                 logger.error(log_msg)
         else:
-            logger.info("disconnected by user")
+            logger.info("client disconnected")
         if self.__disconnect_clbk:
             clbk_thread = threading.Thread(
                 target=self.__disconnect_clbk,
