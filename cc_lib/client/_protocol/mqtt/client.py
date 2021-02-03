@@ -152,7 +152,11 @@ class Client:
                     if loop_ex:
                         self.on_disconnect(99, loop_ex)
                     else:
-                        self.on_disconnect(rc, paho.mqtt.client.error_string(rc).replace(".", "").lower())
+                        # https://github.com/eclipse/paho.mqtt.python/issues/340#issuecomment-447632278
+                        self.on_disconnect(
+                            rc,
+                            "generic error" if rc == 1 else paho.mqtt.client.error_string(rc).replace(".", "").lower()
+                        )
             else:
                 # logger.error(paho.mqtt.client.error_string(rc).replace(".", "").lower())
                 self.__setEvent("connect_event", ConnectError(paho.mqtt.client.error_string(rc).replace(".", "").lower()))
