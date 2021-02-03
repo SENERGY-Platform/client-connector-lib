@@ -166,12 +166,12 @@ class Client:
                 else:
                     device_ids = tuple(device.id for device in devices)
                 devices_hash = self.__hashDevices(devices)
-                logger.debug("hub ID '{}'".format(cc_conf.hub.id))
+                logger.debug("hub ID '{}'".format(self.__hub_id))
                 logger.debug("devices {}".format(device_ids))
                 logger.debug("hash '{}'".format(devices_hash))
                 access_token = self.__auth.getAccessToken()
                 req = http.Request(
-                    url="{}/{}".format(cc_conf.api.hub_endpt, http.urlEncode(cc_conf.hub.id)),
+                    url="{}/{}".format(cc_conf.api.hub_endpt, http.urlEncode(self.__hub_id)),
                     method=http.Method.GET,
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
@@ -180,24 +180,15 @@ class Client:
                 resp = req.send()
                 if resp.status == 200:
                     hub = json.loads(resp.body)
-                    if not hub["name"] == cc_conf.hub.name:
-                        logger.warning(
-                            "synchronizing hub - local name '{}' differs from remote name '{}'".format(
-                                cc_conf.hub.name,
-                                hub["name"]
-                            )
-                        )
-                        logger.info("synchronizing hub - setting hub name to '{}'".format(hub["name"]))
-                        cc_conf.hub.name = hub["name"]
                     if not hub["hash"] == devices_hash:
                         logger.debug("synchronizing hub - local hash differs from remote hash")
                         logger.info("synchronizing hub - updating devices ...")
                         req = http.Request(
-                            url="{}/{}".format(cc_conf.api.hub_endpt, http.urlEncode(cc_conf.hub.id)),
+                            url="{}/{}".format(cc_conf.api.hub_endpt, http.urlEncode(self.__hub_id)),
                             method=http.Method.PUT,
                             body={
-                                "id": cc_conf.hub.id,
-                                "name": cc_conf.hub.name,
+                                "id": self.__hub_id,
+                                "name": hub["name"],
                                 "hash": devices_hash,
                                 "device_local_ids": device_ids
                             },
@@ -213,7 +204,7 @@ class Client:
                             raise HubSyncDeviceError
                         elif resp.status == 404:
                             logger.error("synchronizing hub failed - hub not found on platform")
-                            cc_conf.hub.id = None
+                            self.__hub_id = None
                             raise HubNotFoundError
                         elif not resp.status == 200:
                             logger.error(
@@ -223,7 +214,7 @@ class Client:
                     logger.info("synchronizing hub successful")
                 elif resp.status == 404:
                     logger.error("synchronizing hub failed - hub not found on platform")
-                    cc_conf.hub.id = None
+                    self.__hub_id = None
                     raise HubNotFoundError
                 else:
                     logger.error("synchronizing hub failed - {} {}".format(resp.status, resp.body))
