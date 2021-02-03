@@ -64,7 +64,6 @@ class Client:
     """
     Client class for client-connector projects.
     """
-
     def __init__(self, user: str, pw: str, client_id: str, device_id_prefix: typing.Optional[str] = None, fog_enabled: typing.Optional[bool] = False):
         """
         Create a Client instance. Set device manager, initiate configuration and library logging facility.
