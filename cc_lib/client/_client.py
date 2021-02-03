@@ -388,6 +388,44 @@ class Client:
             logger.error("updating device '{}' on platform failed - {}".format(device.id, ex))
             raise DeviceUpdateError
 
+    def __fog_subscribe(self, event_worker):
+        logger.info("connecting to fog services ...")
+        if not self.__connected_flag:
+            logger.error("connecting to fog services failed - not connected")
+            raise NotConnectedError
+        try:
+            def on_done():
+                if event_worker.exception:
+                    try:
+                        raise event_worker.exception
+                    except mqtt.SubscribeNotAllowedError:
+                        logger.error("connecting to fog services failed - not allowed")
+                    except mqtt.SubscribeError as ex:
+                        logger.error("connecting to fog services failed - {}".format(ex))
+                    except mqtt.NotConnectedError:
+                        logger.error("connecting to fog services failed - not connected")
+                    finally:
+                        try:
+                            self.__comm.disconnect()
+                            logger.info("disconnecting ...")
+                        except Exception:
+                            pass
+                else:
+                    logger.info("connecting to fog services successful")
+
+            event_worker.usr_method = on_done
+            self.__comm.subscribe(
+                topic="fog/control",
+                qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
+                event_worker=event_worker
+            )
+        except mqtt.NotConnectedError:
+            logger.error("connecting to fog services failed - not connected")
+            raise NotConnectedError
+        except mqtt.SubscribeError as ex:
+            logger.error("connecting to fog services failed - {}".format(ex))
+            raise DeviceConnectError
+
     def __onConnect(self) -> None:
         self.__connected_flag = True
         logger.info(
@@ -396,6 +434,12 @@ class Client:
                 cc_conf.connector.port
             )
         )
+        if self.__fog_enabled:
+            worker = EventWorker(
+                target=self.__fog_subscribe,
+                name="subscribe-fog"
+            )
+            worker.start()
         if self.__connect_clbk:
             clbk_thread = threading.Thread(target=self.__connect_clbk, args=(self, ), name="user-connect-callback", daemon=True)
             clbk_thread.start()
