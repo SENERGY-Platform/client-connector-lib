@@ -606,15 +606,22 @@ class Client:
             logger.error("disconnecting device '{}' from platform failed - {}".format(device_id, ex))
             raise DeviceDisconnectError
 
-    def __handleCommand(self, envelope: typing.Union[str, bytes], uri: typing.Union[str, bytes]) -> None:
+    def __routeMessage(self, payload: typing.Union[str, bytes], topic: str):
+        topic = topic.split("/", 1)
+        if topic[0] == "command":
+            self.__handleCommand(envelope=payload, uri=topic[1])
+        elif topic[0] == "fog":
+            self.__handleFogControl(envelope=payload, uri="/".join(topic))
+
+    def __handleCommand(self, envelope: typing.Union[str, bytes], uri: str) -> None:
         logger.debug("received command ...\nservice uri: '{}'\ncommand: '{}'".format(uri, envelope))
         try:
             uri = uri.split("/")
             envelope = json.loads(envelope)
             self.__cmd_queue.put_nowait(
                 CommandEnvelope(
-                    device=self.__parseDeviceID(uri[1]) if self.__device_id_prefix else uri[1],
-                    service=uri[2],
+                    device=self.__parseDeviceID(uri[0]) if self.__device_id_prefix else uri[0],
+                    service=uri[1],
                     message=Message(
                         data=envelope["payload"].setdefault("data", str()),
                         metadata=envelope["payload"].setdefault("metadata", str())
