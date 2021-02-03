@@ -100,7 +100,7 @@ class Client:
                 logger.info("creating new hub ...")
                 if not hub_name:
                     logger.info("generating hub name ...")
-                    hub_name = "{}-{}".format(self.__user, datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
+                    hub_name = "{}-{}".format(self.__user, "{}Z".format(datetime.datetime.utcnow().isoformat()))
                 req = http.Request(
                     url=cc_conf.api.hub_endpt,
                     method=http.Method.POST,
