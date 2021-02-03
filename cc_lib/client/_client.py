@@ -161,7 +161,7 @@ class Client:
                         worker.join()
                         logger.debug("synchronizing hub - task '{}' finished".format(worker.name))
                     self.__workers.clear()
-                if cc_conf.device.id_prefix:
+                if self.__device_id_prefix:
                     device_ids = tuple(self.__prefixDeviceID(device.id) for device in devices)
                 else:
                     device_ids = tuple(device.id for device in devices)
@@ -258,7 +258,7 @@ class Client:
             req = http.Request(
                 url="{}/{}".format(
                     cc_conf.api.device_endpt,
-                    http.urlEncode(self.__prefixDeviceID(device.id)) if cc_conf.device.id_prefix else http.urlEncode(device.id)
+                    http.urlEncode(self.__prefixDeviceID(device.id)) if self.__device_id_prefix else http.urlEncode(device.id)
                 ),
                 method=http.Method.GET,
                 headers={"Authorization": "Bearer {}".format(access_token)},
@@ -272,7 +272,7 @@ class Client:
                     body={
                         "name": device.name,
                         "device_type_id": device.device_type_id,
-                        "local_id": self.__prefixDeviceID(device.id) if cc_conf.device.id_prefix else device.id
+                        "local_id": self.__prefixDeviceID(device.id) if self.__device_id_prefix else device.id
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
@@ -324,7 +324,7 @@ class Client:
             req = http.Request(
                 url="{}/{}".format(
                     cc_conf.api.device_endpt,
-                    http.urlEncode(self.__prefixDeviceID(device_id)) if cc_conf.device.id_prefix else http.urlEncode(device_id)
+                    http.urlEncode(self.__prefixDeviceID(device_id)) if self.__device_id_prefix else http.urlEncode(device_id)
                 ),
                 method=http.Method.DELETE,
                 headers={"Authorization": "Bearer {}".format(access_token)},
@@ -356,14 +356,14 @@ class Client:
             req = http.Request(
                 url="{}/{}".format(
                     cc_conf.api.device_endpt,
-                    http.urlEncode(self.__prefixDeviceID(device.id)) if cc_conf.device.id_prefix else http.urlEncode(device.id)
+                    http.urlEncode(self.__prefixDeviceID(device.id)) if self.__device_id_prefix else http.urlEncode(device.id)
                 ),
                 method=http.Method.PUT,
                 body={
                     "id": device.remote_id,
                     "name": device.name,
                     "device_type_id": device.device_type_id,
-                    "local_id": self.__prefixDeviceID(device.id) if cc_conf.device.id_prefix else device.id
+                    "local_id": self.__prefixDeviceID(device.id) if self.__device_id_prefix else device.id
                 },
                 content_type=http.ContentType.json,
                 headers={"Authorization": "Bearer {}".format(access_token)},
@@ -523,7 +523,7 @@ class Client:
                     logger.info("connecting device '{}' to platform successful".format(device_id))
             event_worker.usr_method = on_done
             self.__comm.subscribe(
-                topic="command/{}/+".format(self.__prefixDeviceID(device_id)) if cc_conf.device.id_prefix else "command/{}/+".format(device_id),
+                topic="command/{}/+".format(self.__prefixDeviceID(device_id) if self.__device_id_prefix else device_id),
                 qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
                 event_worker=event_worker
             )
@@ -551,7 +551,7 @@ class Client:
                     logger.info("disconnecting device '{}' from platform successful".format(device_id))
             event_worker.usr_method = on_done
             self.__comm.unsubscribe(
-                topic="command/{}/+".format(self.__prefixDeviceID(device_id)) if cc_conf.device.id_prefix else "command/{}/+".format(device_id),
+                topic="command/{}/+".format(self.__prefixDeviceID(device_id) if self.__device_id_prefix else device_id),
                 event_worker=event_worker
             )
         except mqtt.NotConnectedError:
@@ -568,7 +568,7 @@ class Client:
             envelope = json.loads(envelope)
             self.__cmd_queue.put_nowait(
                 CommandEnvelope(
-                    device=self.__parseDeviceID(uri[1]) if cc_conf.device.id_prefix else uri[1],
+                    device=self.__parseDeviceID(uri[1]) if self.__device_id_prefix else uri[1],
                     service=uri[2],
                     message=Message(
                         data=envelope["payload"].setdefault("data", str()),
@@ -632,7 +632,7 @@ class Client:
             self.__comm.publish(
                 topic="{}/{}/{}".format(
                     handler_map[type(envelope)],
-                    self.__prefixDeviceID(envelope.device_id) if cc_conf.device.id_prefix else envelope.device_id,
+                    self.__prefixDeviceID(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
                     envelope.service_uri
                 ),
                 payload=json.dumps(dict(envelope.message)) if isinstance(envelope, EventEnvelope) else json.dumps(dict(envelope)),
@@ -660,6 +660,22 @@ class Client:
                 raise SendResponseError
             else:
                 raise SendError
+
+    def __prefixDeviceID(self, device_id: str) -> str:
+        """
+        Prefix a ID.
+        :param device_id: Device ID.
+        :return: Prefixed device ID.
+        """
+        return "{}-{}".format(self.__device_id_prefix, device_id)
+
+    def __parseDeviceID(self, device_id: str) -> str:
+        """
+        Remove prefix from device ID.
+        :param device_id: Device ID with prefix.
+        :return: Device ID.
+        """
+        return device_id.replace("{}-".format(self.__device_id_prefix), "")
 
     # ------------- user methods ------------- #
 
@@ -944,21 +960,3 @@ class Client:
         hashes = [hashlib.sha1("{}{}".format(device.id, device.name).encode()).hexdigest() for device in devices]
         hashes.sort()
         return hashlib.sha1("".join(hashes).encode()).hexdigest()
-
-    @staticmethod
-    def __prefixDeviceID(device_id: str) -> str:
-        """
-        Prefix a ID.
-        :param device_id: Device ID.
-        :return: Prefixed device ID.
-        """
-        return "{}-{}".format(cc_conf.device.id_prefix, device_id)
-
-    @staticmethod
-    def __parseDeviceID(device_id: str) -> str:
-        """
-        Remove prefix from device ID.
-        :param device_id: Device ID with prefix.
-        :return: Device ID.
-        """
-        return device_id.replace("{}-".format(cc_conf.device.id_prefix), "")
