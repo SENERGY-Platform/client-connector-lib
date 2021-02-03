@@ -158,16 +158,12 @@ class Client:
                             "generic error" if rc == 1 else paho.mqtt.client.error_string(rc).replace(".", "").lower()
                         )
             else:
-                # logger.error(paho.mqtt.client.error_string(rc).replace(".", "").lower())
                 self.__setEvent("connect_event", ConnectError(paho.mqtt.client.error_string(rc).replace(".", "").lower()))
         except ssl.CertificateError as ex:
-            # logger.error("certificate error - {}".format(ex))
             self.__setEvent("connect_event", ConnectError(ex))
         except (ValueError, TypeError) as ex:
-            # logger.error("host or port error - {}".format(ex))
             self.__setEvent("connect_event", ConnectError(ex))
-        except OSError as ex:
-            # logger.error("socket error - {}".format(ex))
+        except Exception as ex:
             self.__setEvent("connect_event", ConnectError(ex))
 
     def __connectClbk(self, client: paho.mqtt.client.Client, userdata: typing.Any, flags: dict, rc: int) -> None:
