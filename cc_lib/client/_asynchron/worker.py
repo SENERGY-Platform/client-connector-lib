@@ -64,12 +64,13 @@ class EventWorker(threading.Event):
         'name', 'result', 'exception', 'usr_method', '_flag', '_cond', '__target', '__args', '__kwargs', '__started'
     )
 
-    def __init__(self, target=None, name=None, args=(), kwargs=None, *, usr_method=None):
+    def __init__(self, target=None, name=None, args=(), kwargs=None, *, usr_method=None, usr_data=None):
         super().__init__()
         self.name = name
         self.result = None
         self.exception = None
         self.usr_method = usr_method
+        self.usr_data = usr_data
         self.__target = target
         self.__args = args
         self.__kwargs = kwargs
