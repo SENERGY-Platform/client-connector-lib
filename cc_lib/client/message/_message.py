@@ -15,20 +15,20 @@
 """
 
 
-__all__ = ("Message", )
+__all__ = ("DeviceMessage", )
 
 
 from ..._util import validateInstance
 import typing
 
 
-class Message:
+class DeviceMessage:
 
     __slots__ = ('__metadata', '__data')
 
-    def __init__(self, data: str, metadata: typing.Optional[str] = None):
-        self.metadata = metadata or str()
-        self.data = data
+    def __init__(self, data: typing.Optional[str] = None, metadata: typing.Optional[str] = None):
+        self.__metadata = metadata or str()
+        self.__data = data or str()
 
     @property
     def metadata(self) -> str:
@@ -58,8 +58,7 @@ class Message:
         Provide a string representation.
         :return: String.
         """
-        attributes = [
-            ('metadata', self.metadata),
-            ('data', self.data)
-        ]
-        return "{}({})".format(__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
+        attributes = [('metadata', self.metadata), ('data', self.data)]
+        return "{}({})".format(
+            __class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes])
+        )
