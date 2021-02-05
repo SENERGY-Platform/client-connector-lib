@@ -492,7 +492,7 @@ class Client:
             )
             self.__comm.on_connect = self.__onConnect
             self.__comm.on_disconnect = self.__onDisconnect
-            self.__comm.on_message = self.__handleCommand
+            self.__comm.on_message = self.__routeMessage
         def on_done():
             if event_worker.exception:
                 try:
