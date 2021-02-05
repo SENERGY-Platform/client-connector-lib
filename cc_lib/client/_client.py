@@ -389,32 +389,31 @@ class Client:
             logger.error("updating device '{}' on platform failed - {}".format(device.id, ex))
             raise DeviceUpdateError
 
+    def __fog_subscribe_on_done(self, event_worker: EventWorker):
+        if event_worker.exception:
+            try:
+                raise event_worker.exception
+            except mqtt.SubscribeNotAllowedError:
+                logger.error("connecting to fog services failed - not allowed")
+            except mqtt.SubscribeError as ex:
+                logger.error("connecting to fog services failed - {}".format(ex))
+            except mqtt.NotConnectedError:
+                logger.error("connecting to fog services failed - not connected")
+            finally:
+                try:
+                    self.__comm.disconnect()
+                    logger.info("disconnecting ...")
+                except Exception:
+                    pass
+        else:
+            logger.info("connecting to fog services successful")
+
     def __fog_subscribe(self, event_worker):
         logger.info("connecting to fog services ...")
         if not self.__connected_flag:
             logger.error("connecting to fog services failed - not connected")
             raise NotConnectedError
         try:
-            def on_done():
-                if event_worker.exception:
-                    try:
-                        raise event_worker.exception
-                    except mqtt.SubscribeNotAllowedError:
-                        logger.error("connecting to fog services failed - not allowed")
-                    except mqtt.SubscribeError as ex:
-                        logger.error("connecting to fog services failed - {}".format(ex))
-                    except mqtt.NotConnectedError:
-                        logger.error("connecting to fog services failed - not connected")
-                    finally:
-                        try:
-                            self.__comm.disconnect()
-                            logger.info("disconnecting ...")
-                        except Exception:
-                            pass
-                else:
-                    logger.info("connecting to fog services successful")
-
-            event_worker.usr_method = on_done
             self.__comm.subscribe(
                 topic="fog/control",
                 qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
@@ -438,7 +437,8 @@ class Client:
         if self.__fog_enabled:
             worker = EventWorker(
                 target=self.__fog_subscribe,
-                name="subscribe-fog"
+                name="subscribe-fog",
+                usr_method=self.__fog_subscribe_on_done
             )
             worker.start()
         if self.__connect_clbk:
@@ -467,6 +467,23 @@ class Client:
             reconnect_thread = threading.Thread(target=self.__reconnect, name="reconnect", daemon=True)
             reconnect_thread.start()
 
+    def __connect_on_done(self, event_worker: EventWorker):
+        if event_worker.exception:
+            try:
+                raise event_worker.exception
+            except mqtt.ConnectError as ex:
+                event_worker.exception = ConnectError(ex)
+                log_msg = "connecting to '{}' on '{}' failed - {}".format(
+                    cc_conf.connector.host,
+                    cc_conf.connector.port,
+                    ex
+                )
+                if self.__reconnect_flag:
+                    logger.warning(log_msg)
+                else:
+                    logger.error(log_msg)
+        self.__connect_lock.release()
+
     def __connect(self, event_worker) -> None:
         self.__connect_lock.acquire()
         if self.__connected_flag:
@@ -494,23 +511,6 @@ class Client:
             self.__comm.on_connect = self.__onConnect
             self.__comm.on_disconnect = self.__onDisconnect
             self.__comm.on_message = self.__routeMessage
-        def on_done():
-            if event_worker.exception:
-                try:
-                    raise event_worker.exception
-                except mqtt.ConnectError as ex:
-                    event_worker.exception = ConnectError(ex)
-                    log_msg = "connecting to '{}' on '{}' failed - {}".format(
-                        cc_conf.connector.host,
-                        cc_conf.connector.port,
-                        ex
-                    )
-                    if self.__reconnect_flag:
-                        logger.warning(log_msg)
-                    else:
-                        logger.error(log_msg)
-            self.__connect_lock.release()
-        event_worker.usr_method = on_done
         self.__comm.connect(
             host=cc_conf.connector.host,
             port=cc_conf.connector.port,
@@ -541,10 +541,27 @@ class Client:
                 time.sleep(duration)
             worker = EventWorker(
                 target=self.__connect,
-                name="connect"
+                name="connect",
+                usr_method=self.__connect_on_done
             )
             future = worker.start()
             future.wait()
+
+    def __connect_device_on_done(self, event_worker: EventWorker):
+        if event_worker.exception:
+            try:
+                raise event_worker.exception
+            except mqtt.SubscribeNotAllowedError as ex:
+                event_worker.exception = DeviceConnectNotAllowedError(ex)
+                logger.error("connecting device '{}' to platform failed - not allowed".format(event_worker.usr_data))
+            except mqtt.SubscribeError as ex:
+                event_worker.exception = DeviceConnectError(ex)
+                logger.error("connecting device '{}' to platform failed - {}".format(event_worker.usr_data, ex))
+            except mqtt.NotConnectedError:
+                event_worker.exception = NotConnectedError
+                logger.error("connecting device '{}' to platform failed - not connected".format(event_worker.usr_data))
+        else:
+            logger.info("connecting device '{}' to platform successful".format(event_worker.usr_data))
 
     def __connectDevice(self, device_id: str, event_worker) -> None:
         logger.info("connecting device '{}' to platform ...".format(device_id))
@@ -552,22 +569,6 @@ class Client:
             logger.error("connecting device '{}' to platform failed - not connected".format(device_id))
             raise NotConnectedError
         try:
-            def on_done():
-                if event_worker.exception:
-                    try:
-                        raise event_worker.exception
-                    except mqtt.SubscribeNotAllowedError as ex:
-                        event_worker.exception = DeviceConnectNotAllowedError(ex)
-                        logger.error("connecting device '{}' to platform failed - not allowed".format(device_id))
-                    except mqtt.SubscribeError as ex:
-                        event_worker.exception = DeviceConnectError(ex)
-                        logger.error("connecting device '{}' to platform failed - {}".format(device_id, ex))
-                    except mqtt.NotConnectedError:
-                        event_worker.exception = NotConnectedError
-                        logger.error("connecting device '{}' to platform failed - not connected".format(device_id))
-                else:
-                    logger.info("connecting device '{}' to platform successful".format(device_id))
-            event_worker.usr_method = on_done
             self.__comm.subscribe(
                 topic="command/{}/+".format(self.__prefixDeviceID(device_id) if self.__device_id_prefix else device_id),
                 qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
@@ -580,22 +581,22 @@ class Client:
             logger.error("connecting device '{}' to platform failed - {}".format(device_id, ex))
             raise DeviceConnectError
 
+    def __disconnect_device_on_done(self, event_worker: EventWorker):
+        if event_worker.exception:
+            try:
+                raise event_worker.exception
+            except Exception as ex:
+                event_worker.exception = DeviceDisconnectError(ex)
+                logger.error("disconnecting device '{}' from platform failed - {}".format(event_worker.usr_data, ex))
+        else:
+            logger.info("disconnecting device '{}' from platform successful".format(event_worker.usr_data))
+
     def __disconnectDevice(self, device_id: str, event_worker) -> None:
         logger.info("disconnecting device '{}' from platform ...".format(device_id))
         if not self.__connected_flag:
             logger.error("disconnecting device '{}' from platform failed - not connected".format(device_id))
             raise NotConnectedError
         try:
-            def on_done():
-                if event_worker.exception:
-                    try:
-                        raise event_worker.exception
-                    except Exception as ex:
-                        event_worker.exception = DeviceDisconnectError(ex)
-                        logger.error("disconnecting device '{}' from platform failed - {}".format(device_id, ex))
-                else:
-                    logger.info("disconnecting device '{}' from platform successful".format(device_id))
-            event_worker.usr_method = on_done
             self.__comm.unsubscribe(
                 topic="command/{}/+".format(self.__prefixDeviceID(device_id) if self.__device_id_prefix else device_id),
                 event_worker=event_worker
@@ -651,6 +652,31 @@ class Client:
                 )
             )
 
+    def __send_on_done(self, event_worker: EventWorker):
+        if event_worker.exception:
+            try:
+                raise event_worker.exception
+            except Exception as ex:
+                if isinstance(event_worker.usr_data, EventEnvelope):
+                    event_worker.exception = SendEventError(ex)
+                elif isinstance(event_worker.usr_data, CommandEnvelope):
+                    event_worker.exception = SendResponseError(ex)
+                else:
+                    event_worker.exception = SendError(ex)
+                logger.error(
+                    "sending {} '{}' to platform failed - {}".format(
+                        _handler_map[type(event_worker.usr_data)],
+                        event_worker.usr_data.correlation_id, ex
+                    )
+                )
+        elif mqtt.qos_map.setdefault(cc_conf.connector.qos, 1) > 0:
+            logger.debug(
+                "sending {} '{}' to platform successful".format(
+                    _handler_map[type(event_worker.usr_data)],
+                    event_worker.usr_data.correlation_id
+                )
+            )
+
     def __send(self, envelope: typing.Union[CommandEnvelope, EventEnvelope], event_worker):
         logger.debug("sending {} '{}' to platform ...".format(_handler_map[type(envelope)], envelope.correlation_id))
         if not self.__connected_flag:
@@ -662,31 +688,6 @@ class Client:
             )
             raise NotConnectedError
         try:
-            def on_done():
-                if event_worker.exception:
-                    try:
-                        raise event_worker.exception
-                    except Exception as ex:
-                        if isinstance(envelope, EventEnvelope):
-                            event_worker.exception = SendEventError(ex)
-                        elif isinstance(envelope, CommandEnvelope):
-                            event_worker.exception = SendResponseError(ex)
-                        else:
-                            event_worker.exception = SendError(ex)
-                        logger.error(
-                            "sending {} '{}' to platform failed - {}".format(
-                                _handler_map[type(envelope)],
-                                envelope.correlation_id, ex
-                            )
-                        )
-                elif mqtt.qos_map.setdefault(cc_conf.connector.qos, 1) > 0:
-                    logger.debug(
-                        "sending {} '{}' to platform successful".format(
-                            _handler_map[type(envelope)],
-                            envelope.correlation_id
-                        )
-                    )
-            event_worker.usr_method = on_done
             self.__comm.publish(
                 topic="{}/{}/{}".format(
                     _handler_map[type(envelope)],
@@ -880,7 +881,8 @@ class Client:
         else:
             worker = EventWorker(
                 target=self.__connect,
-                name="connect"
+                name="connect",
+                usr_method=self.__connect_on_done
             )
             future = worker.start()
         if asynchronous:
@@ -916,7 +918,9 @@ class Client:
         worker = EventWorker(
             target=self.__connectDevice,
             args=(device, ),
-            name="connect-device-{}".format(device)
+            name="connect-device-{}".format(device),
+            usr_method=self.__connect_device_on_done,
+            usr_data=device
         )
         future = worker.start()
         if asynchronous:
@@ -940,7 +944,9 @@ class Client:
         worker = EventWorker(
             target=self.__disconnectDevice,
             args=(device,),
-            name="disconnect-device-{}".format(device)
+            name="disconnect-device-{}".format(device),
+            usr_method=self.__disconnect_device_on_done,
+            usr_data=device
         )
         future = worker.start()
         if asynchronous:
@@ -976,6 +982,8 @@ class Client:
             target=self.__send,
             args=(envelope, ),
             name="send-response-".format(envelope.correlation_id),
+            usr_method=self.__send_on_done,
+            usr_data=envelope
         )
         future = worker.start()
         if asynchronous:
@@ -996,7 +1004,9 @@ class Client:
         worker = EventWorker(
             target=self.__send,
             args=(envelope, ),
-            name="send-event-".format(envelope.correlation_id)
+            name="send-event-".format(envelope.correlation_id),
+            usr_method=self.__send_on_done,
+            usr_data=envelope
         )
         future = worker.start()
         if asynchronous:
