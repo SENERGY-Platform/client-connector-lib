@@ -20,7 +20,7 @@ from .._configuration.configuration import cc_conf, initConnectorConf
 from .._util import validateInstance, calcDuration
 from ..logger._logger import getLogger, initLogging
 from ..types import Device
-from .message import CommandEnvelope, EventEnvelope, Message
+from .message import CommandEnvelope, EventEnvelope, DeviceMessage
 from ._exception import *
 from ._auth import OpenIdClient, NoTokenError
 from ._protocol import http, mqtt
@@ -623,9 +623,9 @@ class Client:
                 CommandEnvelope(
                     device=self.__parseDeviceID(uri[0]) if self.__device_id_prefix else uri[0],
                     service=uri[1],
-                    message=Message(
-                        data=envelope["payload"].setdefault("data", str()),
-                        metadata=envelope["payload"].setdefault("metadata", str())
+                    message=DeviceMessage(
+                        data=envelope["payload"].get("data"),
+                        metadata=envelope["payload"].get("metadata")
                     ),
                     corr_id=envelope["correlation_id"],
                     completion_strategy=envelope["completion_strategy"],
