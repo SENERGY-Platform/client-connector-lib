@@ -96,12 +96,12 @@ class DeviceEnvelope(Envelope):
 
     @property
     def message(self) -> DeviceMessage:
-        return self.__message
+        return Envelope.message.fget(self)
 
     @message.setter
     def message(self, arg):
         validateInstance(arg, DeviceMessage)
-        self.__message = arg
+        Envelope.message.fset(self, arg)
 
     def __iter__(self):
         items = (
