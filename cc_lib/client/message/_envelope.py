@@ -18,7 +18,7 @@
 __all__ = ("CommandEnvelope", "EventEnvelope")
 
 
-from ._message import Message
+from ._message import *
 from ...types import Device
 from ..._util import validateInstance
 import typing
@@ -27,9 +27,56 @@ import uuid
 
 class Envelope:
 
-    __slots__ = ('__correlation_id', '__device_id', '__service_uri', '__message')
+    __slots__ = ('__message', '__correlation_id')
 
-    def __init__(self, device: typing.Union[Device, str], service: str, message: Message, corr_id: typing.Optional[str] = None):
+    def __init__(self, message: typing.Any = None, corr_id: typing.Optional[str] = None):
+        if corr_id:
+            validateInstance(corr_id, str)
+        self.__correlation_id = corr_id or str(uuid.uuid4())
+        self.message = message
+
+    @property
+    def correlation_id(self) -> str:
+        return self.__correlation_id
+
+    @property
+    def message(self) -> typing.Any:
+        return self.__message
+
+    @message.setter
+    def message(self, arg):
+        self.__message = arg
+
+    def __str__(self, **kwargs):
+        """
+        Provide a string representation.
+        :return: String.
+        """
+        attributes = [
+            ('correlation_id', repr(self.correlation_id)),
+            ('message', repr(self.message))
+        ]
+        if kwargs:
+            for arg, value in kwargs.items():
+                attributes.append((arg, repr(value)))
+        return "{}({})".format(
+            self.__class__.__name__,
+            ", ".join(["=".join([key, str(value)]) for key, value in attributes])
+        )
+
+
+class DeviceEnvelope(Envelope):
+
+    __slots__ = ('__device_id', '__service_uri')
+
+    def __init__(
+            self,
+            device: typing.Union[Device, str],
+            service: str,
+            message: DeviceMessage,
+            corr_id: typing.Optional[str] = None
+    ):
+        super().__init__(message=message, corr_id=corr_id)
         if type(device) is str:
             self.__device_id = device
         elif type(device) is Device or issubclass(type(device), Device):
@@ -37,15 +84,7 @@ class Envelope:
         else:
             raise TypeError(type(device))
         validateInstance(service, str)
-        if corr_id:
-            validateInstance(corr_id, str)
-        self.__correlation_id = corr_id or str(uuid.uuid4())
         self.__service_uri = service
-        self.message = message
-
-    @property
-    def correlation_id(self) -> str:
-        return self.__correlation_id
 
     @property
     def device_id(self) -> str:
@@ -56,12 +95,12 @@ class Envelope:
         return self.__service_uri
 
     @property
-    def message(self) -> Message:
+    def message(self) -> DeviceMessage:
         return self.__message
 
     @message.setter
     def message(self, arg):
-        validateInstance(arg, Message)
+        validateInstance(arg, DeviceMessage)
         self.__message = arg
 
     def __iter__(self):
@@ -73,35 +112,23 @@ class Envelope:
             yield item
 
     def __str__(self):
-        """
-        Provide a string representation.
-        :return: String.
-        """
-        attributes = [
-            ('correlation_id', self.correlation_id),
-            ('device_id', self.device_id),
-            ('service_uri', self.service_uri),
-            ('message', self.message)
-        ]
-        return "{}({})".format(
-            type(self).__name__,
-            ", ".join(["=".join([key, str(value)]) for key, value in attributes])
-        )
+        return super().__str__(device_id=self.device_id, service_uri=self.service_uri)
 
 
-class CommandEnvelope(Envelope):
+class CommandEnvelope(DeviceEnvelope):
 
     __slots__ = ('__completion_strategy', '__timestamp')
 
     def __init__(
             self,
             device: typing.Union[Device, str],
-            service: str, message: Message,
-            corr_id: typing.Optional[str] = None,
-            completion_strategy: typing.Optional[str] = None,
-            timestamp: typing.Optional[float] = None
+            service: str,
+            message: DeviceMessage,
+            corr_id: str,
+            completion_strategy: str,
+            timestamp: float
     ):
-        super().__init__(device, service, message, corr_id)
+        super().__init__(device=device, service=service, message=message, corr_id=corr_id)
         self.__completion_strategy = completion_strategy
         self.__timestamp = timestamp
 
@@ -114,7 +141,8 @@ class CommandEnvelope(Envelope):
         return self.__timestamp
 
 
-class EventEnvelope(Envelope):
+class EventEnvelope(DeviceEnvelope):
 
-    def __init__(self, device: typing.Union[Device, str], service: str, message: Message):
-        super().__init__(device, service, message)
+    def __init__(self, device: typing.Union[Device, str], service: str, message: DeviceMessage):
+        super().__init__(device=device, service=service, message=message)
+
