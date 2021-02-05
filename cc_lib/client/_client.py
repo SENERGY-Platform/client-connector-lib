@@ -638,16 +638,12 @@ class Client:
                     timestamp=envelope["timestamp"]
                 )
             )
-        except json.JSONDecodeError as ex:
-            logger.error("could not parse command - '{}'\nservice uri: '{}'\ncommand: '{}'".format(ex, uri, envelope))
-        except (KeyError, AttributeError) as ex:
+        except Exception as ex:
             logger.error(
-                "malformed service uri or command - '{}'\nservice uri: '{}'\ncommand: '{}'".format(ex, uri, envelope)
-            )
-        except queue.Full:
-            logger.error(
-                "could not route command to user - queue full - \nservice uri: '{}'\ncommand: '{}'".format(
-                    uri,
+                "could not handle command - '{}'\ndevice id: '{}'\nservice uri: '{}'\ncommand: '{}'".format(
+                    ex,
+                    device_id,
+                    service_uri,
                     envelope
                 )
             )
