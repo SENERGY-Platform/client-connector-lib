@@ -106,7 +106,7 @@ class Client:
     def __cleanEvents(self):
         for event in self.__events.values():
             event.exception = NotConnectedError("aborted due to disconnect")
-            event.usr_method()
+            event.usr_method(event)
             event.set()
         self.__events.clear()
 
@@ -116,7 +116,7 @@ class Client:
             del self.__events[e_id]
             if ex:
                 event.exception = ex
-            event.usr_method()
+            event.usr_method(event)
             event.set()
             return True
         except KeyError:
@@ -240,7 +240,7 @@ class Client:
                 if qos > 0:
                     self.__events[msg_info.mid] = event_worker
                 else:
-                    event_worker.usr_method()
+                    event_worker.usr_method(event_worker)
                     event_worker.set()
                 logger.debug("publish '{}' - (q{}, m{})".format(payload, qos, msg_info.mid))
             elif msg_info.rc == paho.mqtt.client.MQTT_ERR_NO_CONN:
