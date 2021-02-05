@@ -608,11 +608,14 @@ class Client:
             raise DeviceDisconnectError
 
     def __routeMessage(self, payload: typing.Union[str, bytes], topic: str):
-        topic = topic.split("/", 1)
-        if topic[0] == "command":
-            self.__handleCommand(envelope=payload, uri=topic[1])
-        elif topic[0] == "fog":
-            self.__handleFogControl(envelope=payload, uri="/".join(topic))
+        try:
+            topic = topic.split("/", 1)
+            if topic[0] == "command":
+                self.__handleCommand(envelope=payload, uri=topic[1])
+            elif topic[0] == "fog":
+                self.__handleFogControl(payload=payload, uri="/".join(topic))
+        except Exception as ex:
+            logger.error("routing received message failed - {}\ntopic: {}\npayload: {}".format(ex, topic, payload))
 
     def __handleCommand(self, envelope: typing.Union[str, bytes], uri: str) -> None:
         logger.debug("received command ...\nservice uri: '{}'\ncommand: '{}'".format(uri, envelope))
