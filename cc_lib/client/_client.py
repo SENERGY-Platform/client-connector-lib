@@ -610,11 +610,11 @@ class Client:
 
     def __routeMessage(self, payload: typing.Union[str, bytes], topic: str):
         try:
-            topic = topic.split("/", 1)
-            if topic[0] == "command":
-                self.__handleCommand(envelope=payload, uri=topic[1])
-            elif topic[0] == "fog":
-                self.__handleFogControl(payload=payload, uri="/".join(topic))
+            topic_parts = topic.split("/")
+            if topic_parts[0] == "command":
+                self.__handleCommand(envelope=payload, device_id=topic_parts[1], service_uri=topic_parts[2])
+            elif topic_parts[0] == "fog":
+                self.__handleFogControl(payload=payload)
         except Exception as ex:
             logger.error("routing received message failed - {}\ntopic: {}\npayload: {}".format(ex, topic, payload))
 
