@@ -618,7 +618,7 @@ class Client:
         except Exception as ex:
             logger.error("routing received message failed - {}\ntopic: {}\npayload: {}".format(ex, topic, payload))
 
-    def __handleFogControl(self, payload: typing.Union[str, bytes], uri: str):
+    def __handleFogControl(self, payload: typing.Union[str, bytes]):
         logger.debug("received fog control ...\npayload: '{}'".format(payload))
 
     def __handleCommand(self, envelope: typing.Union[str, bytes], device_id, service_uri: str) -> None:
