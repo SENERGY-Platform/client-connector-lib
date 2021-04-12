@@ -683,68 +683,40 @@ class Client:
             try:
                 raise event_worker.exception
             except Exception as ex:
-                if isinstance(event_worker.usr_data, EventEnvelope):
-                    event_worker.exception = SendEventError(ex)
-                elif isinstance(event_worker.usr_data, CommandEnvelope):
-                    event_worker.exception = SendResponseError(ex)
-                else:
-                    event_worker.exception = SendError(ex)
+                event_worker.exception = SendError(ex)
                 logger.error(
                     "sending {} '{}' to platform failed - {}".format(
-                        _handler_map[type(event_worker.usr_data)],
+                        event_worker.usr_data.__class__.__name__,
                         event_worker.usr_data.correlation_id, ex
                     )
                 )
-        elif mqtt.qos_map.setdefault(cc_conf.connector.qos, 1) > 0:
+        elif cc_conf.connector.qos > 0:
             logger.debug(
                 "sending {} '{}' to platform successful".format(
-                    _handler_map[type(event_worker.usr_data)],
+                    event_worker.usr_data.__class__.__name__,
                     event_worker.usr_data.correlation_id
                 )
             )
 
-    def __send(self, envelope: typing.Union[CommandEnvelope, EventEnvelope], event_worker):
-        logger.debug("sending {} '{}' to platform ...".format(_handler_map[type(envelope)], envelope.correlation_id))
+    def __send(self, topic: str, payload: str, envelope_type: str, correlation_id: str, event_worker):
+        logger.debug("sending {} '{}' to platform ...".format(envelope_type, correlation_id))
         if not self.__connected_flag:
             logger.error(
-                "sending {} '{}' to platform failed - not connected".format(
-                    _handler_map[type(envelope)],
-                    envelope.correlation_id
-                )
+                "sending {} '{}' to platform failed - not connected".format(envelope_type, correlation_id)
             )
             raise NotConnectedError
         try:
-            self.__comm.publish(
-                topic="{}/{}/{}".format(
-                    _handler_map[type(envelope)],
-                    self.__prefixDeviceID(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
-                    envelope.service_uri
-                ),
-                payload=json.dumps(dict(envelope.message)) if isinstance(envelope, EventEnvelope) else json.dumps(dict(envelope)),
-                qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
-                event_worker=event_worker
-            )
+            self.__comm.publish(topic=topic, payload=payload, qos=cc_conf.connector.qos, event_worker=event_worker)
         except mqtt.NotConnectedError:
             logger.error(
-                "sending {} '{}' to platform failed - not connected".format(
-                    _handler_map[type(envelope)],
-                    envelope.correlation_id
-                )
+                "sending {} '{}' to platform failed - not connected".format(envelope_type, correlation_id)
             )
             raise NotConnectedError
         except mqtt.PublishError as ex:
             logger.error(
-                "sending {} '{}' to platform failed - {}".format(
-                    _handler_map[type(envelope)],
-                    envelope.correlation_id, ex
-                )
+                "sending {} '{}' to platform failed - {}".format(envelope_type, correlation_id, ex)
             )
-            if isinstance(envelope, EventEnvelope):
-                raise SendEventError
-            elif isinstance(envelope, CommandEnvelope):
-                raise SendResponseError
-            else:
-                raise SendError
+            raise SendError
 
     def __prefixDeviceID(self, device_id: str) -> str:
         """
