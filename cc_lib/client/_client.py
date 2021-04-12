@@ -1003,7 +1003,7 @@ class Client:
         try:
             return self.__cmd_queue.get(block=block, timeout=timeout)
         except queue.Empty:
-            raise CommandQueueEmptyError
+            raise QueueEmptyError
 
     def sendResponse(self, envelope: CommandEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
         """

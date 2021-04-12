@@ -35,7 +35,7 @@ __all__ = (
     'ConnectionError',
     'ConnectError',
     'NotConnectedError',
-    'CommandQueueEmptyError',
+    'QueueEmptyError',
     'SendError',
     'FutureNotDoneError',
     'FogError',
@@ -175,9 +175,9 @@ class NotConnectedError(ConnectionError):
     pass
 
 
-class CommandQueueEmptyError(ClientError):
+class QueueEmptyError(ClientError):
     """
-    Command queue is empty.
+    Queue is empty.
     """
     pass
 
