@@ -64,7 +64,7 @@ class Client:
     """
     Client class for client-connector projects.
     """
-    def __init__(self, user: str, pw: str, client_id: str, device_id_prefix: typing.Optional[str] = None, fog_enabled: typing.Optional[bool] = False):
+    def __init__(self, user: str, pw: str, client_id: str, device_id_prefix: typing.Optional[str] = None, fog_processes: typing.Optional[bool] = False, fog_analytics: typing.Optional[bool] = False):
         """
         Create a Client instance. Set device manager, initiate configuration and library logging facility.
         """
@@ -74,7 +74,8 @@ class Client:
         self.__user = user
         self.__pw = pw
         self.__device_id_prefix = device_id_prefix
-        self.__fog_enabled = fog_enabled
+        self.__fog_processes = fog_processes
+        self.__fog_analytics = fog_analytics
         self.__auth = OpenIdClient(cc_conf.api.auth_endpt, user, pw, client_id)
         self.__comm = None
         self.__connected_flag = False
