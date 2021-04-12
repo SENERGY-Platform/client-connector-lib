@@ -445,15 +445,15 @@ class Client:
                 usr_data="processes"
             )
             worker.start()
-        if self.__fog_analytics:
-            worker = EventWorker(
-                target=self.__fog_subscribe,
-                args=("fog/control", ),
-                name="subscribe-fog-analytics",
-                usr_method=self.__fog_subscribe_on_done,
-                usr_data="analytics"
-            )
-            worker.start()
+        # if self.__fog_analytics:
+        #     worker = EventWorker(
+        #         target=self.__fog_subscribe,
+        #         args=("fog/control", ),
+        #         name="subscribe-fog-analytics",
+        #         usr_method=self.__fog_subscribe_on_done,
+        #         usr_data="analytics"
+        #     )
+        #     worker.start()
         if self.__connect_clbk:
             clbk_thread = threading.Thread(target=self.__connect_clbk, args=(self, ), name="user-connect-callback", daemon=True)
             clbk_thread.start()
@@ -627,9 +627,9 @@ class Client:
             if topic_parts[0] == "command":
                 self.__handle_command(payload=payload, device_id=topic_parts[1], service_uri=topic_parts[2])
             elif topic_parts[0] == "processes":
-                self.__handle_fog_process(payload=payload, sub_topic=topic_parts[2])
-            elif topic_parts[0] == "fog":
-                self.__handle_fog_analytics(payload=payload)
+                self.__handle_fog_process(payload=payload, sub_topic="/".join(topic_parts[2:]))
+            # elif topic_parts[0] == "fog":
+            #     self.__handle_fog_analytics(payload=payload)
         except Exception as ex:
             logger.error("routing received message failed - {}\ntopic: {}\npayload: {}".format(ex, topic, payload))
 
@@ -642,8 +642,8 @@ class Client:
                 "could not handle fog processes message - {}\nsub topic: {}\npayload: '{}'".format(ex, sub_topic, payload)
             )
 
-    def __handle_fog_analytics(self, payload: typing.Union[str, bytes]):
-        logger.debug("received fog analytics message ...\npayload: '{}'".format(payload))
+    # def __handle_fog_analytics(self, payload: typing.Union[str, bytes]):
+    #     logger.debug("received fog analytics message ...\npayload: '{}'".format(payload))
 
     def __handle_command(self, payload: typing.Union[str, bytes], device_id, service_uri: str) -> None:
         logger.debug(
