@@ -95,7 +95,7 @@ class Client:
 
     # ------------- internal methods ------------- #
 
-    def __initHub(self, hub_id, hub_name) -> str:
+    def __init_hub(self, hub_id, hub_name) -> str:
         try:
             logger.info("initializing hub ...")
             access_token = self.__auth.getAccessToken()
@@ -158,7 +158,7 @@ class Client:
             logger.error("initializing hub failed - malformed response - missing key {}".format(ex))
             raise HubInitializationError
 
-    def __syncHub(self, devices: typing.List[Device]) -> None:
+    def __sync_hub(self, devices: typing.List[Device]) -> None:
         self.__hub_sync_lock.acquire()
         if not self.__hub_id:
             self.__hub_sync_lock.release()
@@ -175,7 +175,7 @@ class Client:
                         logger.debug("synchronizing hub - task '{}' finished".format(worker.name))
                     self.__workers.clear()
                 if self.__device_id_prefix:
-                    device_ids = tuple(self.__prefixDeviceID(device.id) for device in devices)
+                    device_ids = tuple(self.__prefix_device_id(device.id) for device in devices)
                 else:
                     device_ids = tuple(device.id for device in devices)
                 devices_hash = _hashDevices(devices)
@@ -251,7 +251,7 @@ class Client:
         self.__hub_sync_event.set()
         self.__hub_sync_lock.release()
 
-    def __addDevice(self, device: Device, worker: bool = False) -> None:
+    def __add_device(self, device: Device, worker: bool = False) -> None:
         if self.__hub_id:
             self.__hub_sync_event.wait()
         if worker:
@@ -262,7 +262,7 @@ class Client:
             req = http.Request(
                 url="{}/{}".format(
                     cc_conf.api.device_endpt,
-                    http.urlEncode(self.__prefixDeviceID(device.id)) if self.__device_id_prefix else http.urlEncode(device.id)
+                    http.urlEncode(self.__prefix_device_id(device.id)) if self.__device_id_prefix else http.urlEncode(device.id)
                 ),
                 method=http.Method.GET,
                 headers={"Authorization": "Bearer {}".format(access_token)},
@@ -276,7 +276,7 @@ class Client:
                     body={
                         "name": device.name,
                         "device_type_id": device.device_type_id,
-                        "local_id": self.__prefixDeviceID(device.id) if self.__device_id_prefix else device.id
+                        "local_id": self.__prefix_device_id(device.id) if self.__device_id_prefix else device.id
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
@@ -302,7 +302,7 @@ class Client:
                 logger.warning("adding device '{}' to platform - device exists - updating device ...".format(device.id))
                 device_atr = json.loads(resp.body)
                 setattr(device, '_{}__{}'.format(Device.__name__, "remote_id"), device_atr["id"])
-                self.__updateDevice(device)
+                self.__update_device(device)
             else:
                 logger.error("adding device '{}' to platform failed - {} {}".format(device.id, resp.status, resp.body))
                 raise DeviceAddError
@@ -317,7 +317,7 @@ class Client:
         except KeyError as ex:
             logger.warning("adding device '{}' to platform - malformed response - missing key {}".format(device.id, ex))
 
-    def __deleteDevice(self, device_id: str, worker: bool = False) -> None:
+    def __delete_device(self, device_id: str, worker: bool = False) -> None:
         if self.__hub_id:
             self.__hub_sync_event.wait()
         if worker:
@@ -328,7 +328,7 @@ class Client:
             req = http.Request(
                 url="{}/{}".format(
                     cc_conf.api.device_endpt,
-                    http.urlEncode(self.__prefixDeviceID(device_id)) if self.__device_id_prefix else http.urlEncode(device_id)
+                    http.urlEncode(self.__prefix_device_id(device_id)) if self.__device_id_prefix else http.urlEncode(device_id)
                 ),
                 method=http.Method.DELETE,
                 headers={"Authorization": "Bearer {}".format(access_token)},
@@ -353,21 +353,21 @@ class Client:
             logger.error("deleting device '{}' from platform failed - {}".format(device_id, ex))
             raise DeviceDeleteError
 
-    def __updateDevice(self, device: Device) -> None:
+    def __update_device(self, device: Device) -> None:
         try:
             logger.info("updating device '{}' on platform ...".format(device.id))
             access_token = self.__auth.getAccessToken()
             req = http.Request(
                 url="{}/{}".format(
                     cc_conf.api.device_endpt,
-                    http.urlEncode(self.__prefixDeviceID(device.id)) if self.__device_id_prefix else http.urlEncode(device.id)
+                    http.urlEncode(self.__prefix_device_id(device.id)) if self.__device_id_prefix else http.urlEncode(device.id)
                 ),
                 method=http.Method.PUT,
                 body={
                     "id": device.remote_id,
                     "name": device.name,
                     "device_type_id": device.device_type_id,
-                    "local_id": self.__prefixDeviceID(device.id) if self.__device_id_prefix else device.id
+                    "local_id": self.__prefix_device_id(device.id) if self.__device_id_prefix else device.id
                 },
                 content_type=http.ContentType.json,
                 headers={"Authorization": "Bearer {}".format(access_token)},
@@ -428,7 +428,7 @@ class Client:
             logger.error("connecting to fog {} failed - {}".format(event_worker.usr_data, ex))
             raise FogConnectError
 
-    def __onConnect(self) -> None:
+    def __on_connect(self) -> None:
         self.__connected_flag = True
         logger.info(
             "connecting to '{}' on '{}' successful".format(
@@ -458,7 +458,7 @@ class Client:
             clbk_thread = threading.Thread(target=self.__connect_clbk, args=(self, ), name="user-connect-callback", daemon=True)
             clbk_thread.start()
 
-    def __onDisconnect(self, code: int, reason: str) -> None:
+    def __on_disconnect(self, code: int, reason: str) -> None:
         self.__connected_flag = False
         if code > 0:
             log_msg = "unexpected disconnect - {}".format(reason)
@@ -521,9 +521,9 @@ class Client:
                 loop_time=cc_conf.connector.loop_time,
                 tls=cc_conf.connector.tls
             )
-            self.__comm.on_connect = self.__onConnect
-            self.__comm.on_disconnect = self.__onDisconnect
-            self.__comm.on_message = self.__routeMessage
+            self.__comm.on_connect = self.__on_connect
+            self.__comm.on_disconnect = self.__on_disconnect
+            self.__comm.on_message = self.__route_message
         self.__comm.connect(
             host=cc_conf.connector.host,
             port=cc_conf.connector.port,
@@ -576,14 +576,14 @@ class Client:
         else:
             logger.info("connecting device '{}' to platform successful".format(event_worker.usr_data))
 
-    def __connectDevice(self, device_id: str, event_worker) -> None:
+    def __connect_device(self, device_id: str, event_worker) -> None:
         logger.info("connecting device '{}' to platform ...".format(device_id))
         if not self.__connected_flag:
             logger.error("connecting device '{}' to platform failed - not connected".format(device_id))
             raise NotConnectedError
         try:
             self.__comm.subscribe(
-                topic="command/{}/+".format(self.__prefixDeviceID(device_id) if self.__device_id_prefix else device_id),
+                topic="command/{}/+".format(self.__prefix_device_id(device_id) if self.__device_id_prefix else device_id),
                 qos=cc_conf.connector.qos,
                 event_worker=event_worker
             )
@@ -604,14 +604,14 @@ class Client:
         else:
             logger.info("disconnecting device '{}' from platform successful".format(event_worker.usr_data))
 
-    def __disconnectDevice(self, device_id: str, event_worker) -> None:
+    def __disconnect_device(self, device_id: str, event_worker) -> None:
         logger.info("disconnecting device '{}' from platform ...".format(device_id))
         if not self.__connected_flag:
             logger.error("disconnecting device '{}' from platform failed - not connected".format(device_id))
             raise NotConnectedError
         try:
             self.__comm.unsubscribe(
-                topic="command/{}/+".format(self.__prefixDeviceID(device_id) if self.__device_id_prefix else device_id),
+                topic="command/{}/+".format(self.__prefix_device_id(device_id) if self.__device_id_prefix else device_id),
                 event_worker=event_worker
             )
         except mqtt.NotConnectedError:
@@ -621,19 +621,19 @@ class Client:
             logger.error("disconnecting device '{}' from platform failed - {}".format(device_id, ex))
             raise DeviceDisconnectError
 
-    def __routeMessage(self, payload: typing.Union[str, bytes], topic: str):
+    def __route_message(self, payload: typing.Union[str, bytes], topic: str):
         try:
             topic_parts = topic.split("/")
             if topic_parts[0] == "command":
-                self.__handleCommand(payload=payload, device_id=topic_parts[1], service_uri=topic_parts[2])
+                self.__handle_command(payload=payload, device_id=topic_parts[1], service_uri=topic_parts[2])
             elif topic_parts[0] == "processes":
-                self.__handleFogProcess(payload=payload, sub_topic=topic_parts[2])
+                self.__handle_fog_process(payload=payload, sub_topic=topic_parts[2])
             elif topic_parts[0] == "fog":
-                self.__handleFogAnalytics(payload=payload)
+                self.__handle_fog_analytics(payload=payload)
         except Exception as ex:
             logger.error("routing received message failed - {}\ntopic: {}\npayload: {}".format(ex, topic, payload))
 
-    def __handleFogProcess(self, payload: typing.Union[str, bytes], sub_topic: str):
+    def __handle_fog_process(self, payload: typing.Union[str, bytes], sub_topic: str):
         logger.debug("received fog processes message ...\nsub id: {}\npayload: '{}'".format(sub_topic, payload))
         try:
             self.__fog_prcs_queue.put_nowait(FogProcessesEnvelope(sub_topic=sub_topic, message=json.loads(payload)))
@@ -642,10 +642,10 @@ class Client:
                 "could not handle fog processes message - {}\nsub topic: {}\npayload: '{}'".format(ex, sub_topic, payload)
             )
 
-    def __handleFogAnalytics(self, payload: typing.Union[str, bytes]):
+    def __handle_fog_analytics(self, payload: typing.Union[str, bytes]):
         logger.debug("received fog analytics message ...\npayload: '{}'".format(payload))
 
-    def __handleCommand(self, payload: typing.Union[str, bytes], device_id, service_uri: str) -> None:
+    def __handle_command(self, payload: typing.Union[str, bytes], device_id, service_uri: str) -> None:
         logger.debug(
             "received command message ...\ndevice id: '{}'\nservice uri: '{}'\npayload: '{}'".format(
                 device_id,
@@ -657,7 +657,7 @@ class Client:
             payload = json.loads(payload)
             self.__cmd_queue.put_nowait(
                 CommandEnvelope(
-                    device=self.__parseDeviceID(device_id) if self.__device_id_prefix else device_id,
+                    device=self.__parse_device_id(device_id) if self.__device_id_prefix else device_id,
                     service=service_uri,
                     message=DeviceMessage(
                         data=payload["payload"].get("data"),
@@ -721,7 +721,7 @@ class Client:
     def __send_cmd_resp(self, envelope: CommandEnvelope, event_worker):
         self.__send(
             topic="response/{}/{}".format(
-                self.__prefixDeviceID(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
+                self.__prefix_device_id(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
                 envelope.service_uri
             ),
             payload=json.dumps(dict(envelope)),
@@ -733,7 +733,7 @@ class Client:
     def __send_event(self, envelope: EventEnvelope, event_worker):
         self.__send(
             topic="event/{}/{}".format(
-                self.__prefixDeviceID(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
+                self.__prefix_device_id(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
                 envelope.service_uri
             ),
             payload=json.dumps(dict(envelope.message)),
@@ -754,7 +754,7 @@ class Client:
             event_worker=event_worker
         )
 
-    def __prefixDeviceID(self, device_id: str) -> str:
+    def __prefix_device_id(self, device_id: str) -> str:
         """
         Prefix a ID.
         :param device_id: Device ID.
@@ -762,7 +762,7 @@ class Client:
         """
         return "{}-{}".format(self.__device_id_prefix, device_id)
 
-    def __parseDeviceID(self, device_id: str) -> str:
+    def __parse_device_id(self, device_id: str) -> str:
         """
         Remove prefix from device ID.
         :param device_id: Device ID with prefix.
@@ -805,11 +805,11 @@ class Client:
         validateInstance(hub_id, (str, type(None)))
         validateInstance(asynchronous, bool)
         if asynchronous:
-            worker = ThreadWorker(target=self.__initHub, args=(hub_id, ), name="init-hub", daemon=True)
+            worker = ThreadWorker(target=self.__init_hub, args=(hub_id,), name="init-hub", daemon=True)
             future = worker.start()
             return future
         else:
-            return self.__initHub(hub_id=hub_id, hub_name=hub_name)
+            return self.__init_hub(hub_id=hub_id, hub_name=hub_name)
 
     def sync_hub(self, devices: typing.List[Device], asynchronous: bool = False) -> typing.Optional[Future]:
         """
@@ -823,11 +823,11 @@ class Client:
         for device in devices:
             validateInstance(device, Device)
         if asynchronous:
-            worker = ThreadWorker(target=self.__syncHub, args=(devices, ), name="sync-hub", daemon=True)
+            worker = ThreadWorker(target=self.__sync_hub, args=(devices,), name="sync-hub", daemon=True)
             future = worker.start()
             return future
         else:
-            self.__syncHub(devices)
+            self.__sync_hub(devices)
 
     def add_device(self, device: Device, asynchronous: bool = False) -> typing.Optional[Future]:
         """
@@ -840,7 +840,7 @@ class Client:
         validateInstance(asynchronous, bool)
         if asynchronous:
             worker = ThreadWorker(
-                target=self.__addDevice,
+                target=self.__add_device,
                 args=(device, True),
                 name="add-device-{}".format(device.id),
                 daemon=True
@@ -848,7 +848,7 @@ class Client:
             future = worker.start()
             return future
         else:
-            self.__addDevice(device)
+            self.__add_device(device)
 
     def delete_device(self, device: typing.Union[Device, str], asynchronous: bool = False) -> typing.Optional[Future]:
         """
@@ -864,7 +864,7 @@ class Client:
             validateInstance(device, str)
         if asynchronous:
             worker = ThreadWorker(
-                target=self.__deleteDevice,
+                target=self.__delete_device,
                 args=(device, True),
                 name="delete-device-{}".format(device),
                 daemon=True
@@ -872,7 +872,7 @@ class Client:
             future = worker.start()
             return future
         else:
-            self.__deleteDevice(device)
+            self.__delete_device(device)
 
     def update_device(self, device: Device, asynchronous: bool = False) -> typing.Optional[Future]:
         """
@@ -885,7 +885,7 @@ class Client:
         validateInstance(asynchronous, bool)
         if asynchronous:
             worker = ThreadWorker(
-                target=self.__updateDevice,
+                target=self.__update_device,
                 args=(device, ),
                 name="update-device-{}".format(device.id),
                 daemon=True
@@ -893,7 +893,7 @@ class Client:
             future = worker.start()
             return future
         else:
-            self.__updateDevice(device)
+            self.__update_device(device)
 
     def connect(self, reconnect: bool = False, asynchronous: bool = False) -> typing.Optional[Future]:
         """
@@ -952,7 +952,7 @@ class Client:
             device = device.id
             validateInstance(device, str)
         worker = EventWorker(
-            target=self.__connectDevice,
+            target=self.__connect_device,
             args=(device, ),
             name="connect-device-{}".format(device),
             usr_method=self.__connect_device_on_done,
@@ -978,7 +978,7 @@ class Client:
             device = device.id
             validateInstance(device, str)
         worker = EventWorker(
-            target=self.__disconnectDevice,
+            target=self.__disconnect_device,
             args=(device,),
             name="disconnect-device-{}".format(device),
             usr_method=self.__disconnect_device_on_done,
