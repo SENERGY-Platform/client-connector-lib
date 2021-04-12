@@ -439,7 +439,7 @@ class Client:
         if self.__fog_processes:
             worker = EventWorker(
                 target=self.__fog_subscribe,
-                args=("processes/{}/#".format(self.__hub_id),),
+                args=("processes/cmd/#".format(self.__hub_id),),
                 name="subscribe-fog-processes",
                 usr_method=self.__fog_subscribe_on_done,
                 usr_data="processes"
