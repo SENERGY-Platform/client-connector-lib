@@ -1055,7 +1055,7 @@ class Client:
         """
         Receive fog processes and control data.
         :param block: If 'True' blocks until a command is available.
-        :param timeout: Return after set amount of time if no command is available.
+        :param timeout: Return after set amount of time if no data is available.
         :return: FogProcessesEnvelope object.
         """
         validateInstance(block, bool)
