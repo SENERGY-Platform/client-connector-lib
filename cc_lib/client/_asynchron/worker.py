@@ -61,7 +61,7 @@ class ThreadWorker(threading.Thread):
 class EventWorker(threading.Event):
 
     __slots__ = (
-        'name', 'result', 'exception', 'usr_method', '_flag', '_cond', '__target', '__args', '__kwargs', '__started'
+        'name', 'result', 'exception', 'usr_method', 'usr_data', '_flag', '_cond', '__target', '__args', '__kwargs', '__started'
     )
 
     def __init__(self, target=None, name=None, args=(), kwargs=None, *, usr_method=None, usr_data=None):
