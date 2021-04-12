@@ -37,9 +37,9 @@ __all__ = (
     'NotConnectedError',
     'CommandQueueEmptyError',
     'SendError',
-    'SendResponseError',
-    'SendEventError',
-    'FutureNotDoneError'
+    'FutureNotDoneError',
+    'FogError',
+    'FogConnectError'
 )
 
 
@@ -189,22 +189,22 @@ class SendError(ClientError):
     pass
 
 
-class SendResponseError(SendError):
-    """
-    Error sending a response.
-    """
-    pass
-
-
-class SendEventError(SendError):
-    """
-    Error sending an event.
-    """
-    pass
-
-
 class FutureNotDoneError(Exception):
     """
     Can't retrieve result - future not done.
+    """
+    pass
+
+
+class FogError(ClientError):
+    """
+    Fog error.
+    """
+    pass
+
+
+class FogConnectError(FogError):
+    """
+    Error connecting to fog service.
     """
     pass
