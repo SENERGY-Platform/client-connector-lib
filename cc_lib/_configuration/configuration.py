@@ -49,7 +49,7 @@ class CC_Lib:
         host: str = None
         port: int = None
         tls: bool = True
-        qos: int = "normal"
+        qos: int = 1
         msg_retry: int = 5
         keepalive: int = 20
         loop_time: typing.Union[int, float] = 1
