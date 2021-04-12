@@ -22,8 +22,7 @@ __all__ = (
     'UnsubscribeError',
     'PublishError',
     'SubscribeNotAllowedError',
-    'ConnectError',
-    'qos_map'
+    'ConnectError'
 )
 
 from ....logger import getLogger
@@ -34,13 +33,6 @@ import ssl
 
 
 logger = getLogger(__name__.split('.', 1)[-1].replace("_", ""))
-
-
-qos_map = {
-    "low": 0,
-    "normal": 1,
-    "high": 2
-}
 
 
 class MqttClientError(Exception):
