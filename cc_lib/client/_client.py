@@ -729,6 +729,18 @@ class Client:
             correlation_id=envelope.correlation_id,
             event_worker=event_worker
         )
+
+    def __send_event(self, envelope: EventEnvelope, event_worker):
+        self.__send(
+            topic="event/{}/{}".format(
+                self.__prefixDeviceID(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
+                envelope.service_uri
+            ),
+            payload=json.dumps(dict(envelope.message)),
+            envelope_type=envelope.__class__.__name__,
+            correlation_id=envelope.correlation_id,
+            event_worker=event_worker
+        )
     def __prefixDeviceID(self, device_id: str) -> str:
         """
         Prefix a ID.
