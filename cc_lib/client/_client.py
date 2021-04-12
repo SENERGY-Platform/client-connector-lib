@@ -631,8 +631,17 @@ class Client:
         except Exception as ex:
             logger.error("routing received message failed - {}\ntopic: {}\npayload: {}".format(ex, topic, payload))
 
-    def __handleFogControl(self, payload: typing.Union[str, bytes]):
-        logger.debug("received fog control ...\npayload: '{}'".format(payload))
+    def __handleFogProcess(self, payload: typing.Union[str, bytes], sub_topic: str):
+        logger.debug("received fog processes message ...\nsub id: {}\npayload: '{}'".format(sub_topic, payload))
+        try:
+            self.__fog_prcs_queue.put_nowait(FogProcessesEnvelope(sub_topic=sub_topic, message=json.loads(payload)))
+        except Exception as ex:
+            logger.error(
+                "could not handle fog processes message - {}\nsub topic: {}\npayload: '{}'".format(ex, sub_topic, payload)
+            )
+
+    def __handleFogAnalytics(self, payload: typing.Union[str, bytes]):
+        logger.debug("received fog analytics message ...\npayload: '{}'".format(payload))
 
     def __handleCommand(self, envelope: typing.Union[str, bytes], device_id, service_uri: str) -> None:
         logger.debug(
