@@ -901,6 +901,8 @@ class Client:
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
+        if self.__fog_processes and not self.__hub_id:
+            raise ConnectError("fog processes requires initialized hub")
         validateInstance(reconnect, bool)
         validateInstance(asynchronous, bool)
         self.__reconnect_flag = reconnect
