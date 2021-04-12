@@ -20,7 +20,7 @@ from .._configuration.configuration import cc_conf, initConnectorConf
 from .._util import validateInstance, calcDuration
 from ..logger._logger import getLogger, initLogging
 from ..types import Device
-from .message import CommandEnvelope, EventEnvelope, DeviceMessage
+from .message import CommandEnvelope, EventEnvelope, FogProcessesEnvelope, DeviceMessage
 from ._exception import *
 from ._auth import OpenIdClient, NoTokenError
 from ._protocol import http, mqtt
