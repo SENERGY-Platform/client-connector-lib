@@ -15,7 +15,7 @@
 """
 
 
-__all__ = ("CommandEnvelope", "EventEnvelope")
+__all__ = ("CommandEnvelope", "EventEnvelope", "FogProcessesEnvelope")
 
 
 from ._message import *
@@ -145,4 +145,27 @@ class EventEnvelope(DeviceEnvelope):
 
     def __init__(self, device: typing.Union[Device, str], service: str, message: DeviceMessage):
         super().__init__(device=device, service=service, message=message)
+
+
+class FogProcessesEnvelope(Envelope):
+
+    __slots__ = ('__sub_topic',)
+
+    def __init__(self, sub_topic: str, message: str):
+        super().__init__(message=message)
+        validateInstance(sub_topic, str)
+        self.__sub_topic = sub_topic
+
+    @property
+    def sub_topic(self) -> str:
+        return self.__sub_topic
+
+    @property
+    def message(self) -> str:
+        return Envelope.message.fget(self)
+
+    @message.setter
+    def message(self, arg):
+        validateInstance(arg, str)
+        Envelope.message.fset(self, arg)
 
