@@ -1050,3 +1050,40 @@ class Client:
         else:
             future.wait()
             future.result()
+
+    def receive_fog_processes(self, block: bool = True, timeout: typing.Optional[typing.Union[int, float]] = None) -> FogProcessesEnvelope:
+        """
+        Receive fog processes and control data.
+        :param block: If 'True' blocks until a command is available.
+        :param timeout: Return after set amount of time if no command is available.
+        :return: FogProcessesEnvelope object.
+        """
+        validateInstance(block, bool)
+        validateInstance(timeout, (int, float, type(None)))
+        try:
+            return self.__fog_prcs_queue.get(block=block, timeout=timeout)
+        except queue.Empty:
+            raise QueueEmptyError
+
+    def send_fog_process_sync(self, envelope: FogProcessesEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
+        """
+            Send fog processes sync data to the platform.
+            :param envelope: FogProcessesEnvelope object.
+            :param asynchronous: If 'True' method returns a ClientFuture object.
+            :return: Future or None.
+        """
+        validateInstance(envelope, FogProcessesEnvelope)
+        validateInstance(asynchronous, bool)
+        worker = EventWorker(
+            target=self.__send_fog_prcs_sync,
+            args=(envelope,),
+            name="send-process-sync-".format(envelope.correlation_id),
+            usr_method=self.__send_on_done,
+            usr_data=envelope
+        )
+        future = worker.start()
+        if asynchronous:
+            return future
+        else:
+            future.wait()
+            future.result()
