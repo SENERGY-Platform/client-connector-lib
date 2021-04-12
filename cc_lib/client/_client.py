@@ -82,6 +82,7 @@ class Client:
         self.__connect_lock = threading.Lock()
         self.__reconnect_flag = False
         self.__cmd_queue = queue.Queue()
+        self.__fog_prcs_queue = queue.Queue()
         self.__fog_analyt_queue = queue.Queue()
         self.__workers = list()
         self.__hub_sync_event = threading.Event()
