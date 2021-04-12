@@ -772,7 +772,7 @@ class Client:
 
     # ------------- user methods ------------- #
 
-    def setConnectClbk(self, func: typing.Callable[['Client'], None]) -> None:
+    def set_connect_clbk(self, func: typing.Callable[['Client'], None]) -> None:
         """
         Set a callback function to be called when the client successfully connects to the platform.
         :param func: User function.
@@ -783,7 +783,7 @@ class Client:
         with self.__set_clbk_lock:
             self.__connect_clbk = func
 
-    def setDisconnectClbk(self, func: typing.Callable[['Client'], None]) -> None:
+    def set_disconnect_clbk(self, func: typing.Callable[['Client'], None]) -> None:
         """
         Set a callback function to be called when the client disconnects from the platform.
         :param func: User function.
@@ -794,7 +794,7 @@ class Client:
         with self.__set_clbk_lock:
             self.__disconnect_clbk = func
 
-    def initHub(self, hub_id: typing.Optional[str] = None, hub_name: typing.Optional[str] = None, asynchronous: bool = False) -> typing.Union[str, Future]:
+    def init_hub(self, hub_id: typing.Optional[str] = None, hub_name: typing.Optional[str] = None, asynchronous: bool = False) -> typing.Union[str, Future]:
         """
         Initialize a hub. Check if hub exists and create new hub if necessary.
         :param hub_id: If none is given a new hub will be created.
@@ -811,7 +811,7 @@ class Client:
         else:
             return self.__initHub(hub_id=hub_id, hub_name=hub_name)
 
-    def syncHub(self, devices: typing.List[Device], asynchronous: bool = False) -> typing.Optional[Future]:
+    def sync_hub(self, devices: typing.List[Device], asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Synchronize a hub. Associate devices managed by the client with the hub and update hub name.
         Devices must be added via addDevice.
@@ -829,7 +829,7 @@ class Client:
         else:
             self.__syncHub(devices)
 
-    def addDevice(self, device: Device, asynchronous: bool = False) -> typing.Optional[Future]:
+    def add_device(self, device: Device, asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Add a device to local device manager and remote platform. Blocks by default.
         :param device: Device object.
@@ -850,7 +850,7 @@ class Client:
         else:
             self.__addDevice(device)
 
-    def deleteDevice(self, device: typing.Union[Device, str], asynchronous: bool = False) -> typing.Optional[Future]:
+    def delete_device(self, device: typing.Union[Device, str], asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Delete a device from local device manager and remote platform. Blocks by default.
         :param device: Device ID or Device object.
@@ -874,7 +874,7 @@ class Client:
         else:
             self.__deleteDevice(device)
 
-    def updateDevice(self, device: Device, asynchronous: bool = False) -> typing.Optional[Future]:
+    def update_device(self, device: Device, asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Update a device on the platform.
         :param device: Device object or device ID.
@@ -939,7 +939,7 @@ class Client:
         except mqtt.NotConnectedError:
             raise NotConnectedError
 
-    def connectDevice(self, device: typing.Union[Device, str], asynchronous: bool = False) -> typing.Optional[Future]:
+    def connect_device(self, device: typing.Union[Device, str], asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Connect a device to the platform.
         :param device: Device object or device ID.
@@ -965,7 +965,7 @@ class Client:
             future.wait()
             future.result()
 
-    def disconnectDevice(self, device: typing.Union[Device, str], asynchronous: bool = False) -> typing.Optional[Future]:
+    def disconnect_device(self, device: typing.Union[Device, str], asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Disconnect a device from the platform.
         :param device: Device object or device ID.
@@ -991,7 +991,7 @@ class Client:
             future.wait()
             future.result()
 
-    def receiveCommand(self, block: bool = True, timeout: typing.Optional[typing.Union[int, float]] = None) -> CommandEnvelope:
+    def receive_command(self, block: bool = True, timeout: typing.Optional[typing.Union[int, float]] = None) -> CommandEnvelope:
         """
         Receive a command.
         :param block: If 'True' blocks until a command is available.
@@ -1005,7 +1005,7 @@ class Client:
         except queue.Empty:
             raise QueueEmptyError
 
-    def sendResponse(self, envelope: CommandEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
+    def send_command_response(self, envelope: CommandEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Send a response to the platform after handling a command.
         :param envelope: Envelope object received from a command via receiveCommand.
@@ -1028,7 +1028,7 @@ class Client:
             future.wait()
             future.result()
 
-    def emmitEvent(self, envelope: EventEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
+    def emmit_event(self, envelope: EventEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Send an event to the platform.
         :param envelope: Envelope object.
