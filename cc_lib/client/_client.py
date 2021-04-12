@@ -480,7 +480,7 @@ class Client:
             reconnect_thread = threading.Thread(target=self.__reconnect, name="reconnect", daemon=True)
             reconnect_thread.start()
 
-    def __connect_on_done(self, event_worker: EventWorker):
+    def __connect_on_done(self, event_worker):
         if event_worker.exception:
             try:
                 raise event_worker.exception
@@ -560,7 +560,7 @@ class Client:
             future = worker.start()
             future.wait()
 
-    def __connect_device_on_done(self, event_worker: EventWorker):
+    def __connect_device_on_done(self, event_worker):
         if event_worker.exception:
             try:
                 raise event_worker.exception
@@ -594,7 +594,7 @@ class Client:
             logger.error("connecting device '{}' to platform failed - {}".format(device_id, ex))
             raise DeviceConnectError
 
-    def __disconnect_device_on_done(self, event_worker: EventWorker):
+    def __disconnect_device_on_done(self, event_worker):
         if event_worker.exception:
             try:
                 raise event_worker.exception
@@ -667,7 +667,7 @@ class Client:
                 )
             )
 
-    def __send_on_done(self, event_worker: EventWorker):
+    def __send_on_done(self, event_worker):
         if event_worker.exception:
             try:
                 raise event_worker.exception
