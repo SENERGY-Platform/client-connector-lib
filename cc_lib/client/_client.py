@@ -391,16 +391,16 @@ class Client:
             logger.error("updating device '{}' on platform failed - {}".format(device.id, ex))
             raise DeviceUpdateError
 
-    def __fog_subscribe_on_done(self, event_worker: EventWorker):
+    def __fog_subscribe_on_done(self, event_worker):
         if event_worker.exception:
             try:
                 raise event_worker.exception
             except mqtt.SubscribeNotAllowedError:
-                logger.error("connecting to fog services failed - not allowed")
+                logger.error("connecting to fog {} failed - not allowed".format(event_worker.usr_data))
             except mqtt.SubscribeError as ex:
-                logger.error("connecting to fog services failed - {}".format(ex))
+                logger.error("connecting to fog {} failed - {}".format(event_worker.usr_data, ex))
             except mqtt.NotConnectedError:
-                logger.error("connecting to fog services failed - not connected")
+                logger.error("connecting to fog {} failed - not connected".format(event_worker.usr_data))
             finally:
                 try:
                     self.__comm.disconnect()
@@ -408,25 +408,25 @@ class Client:
                 except Exception:
                     pass
         else:
-            logger.info("connecting to fog services successful")
+            logger.info("connecting to fog {} successful".format(event_worker.usr_data))
 
-    def __fog_subscribe(self, event_worker):
-        logger.info("connecting to fog services ...")
+    def __fog_subscribe(self, topic, event_worker):
+        logger.info("connecting to fog {} ...".format(event_worker.usr_data))
         if not self.__connected_flag:
-            logger.error("connecting to fog services failed - not connected")
+            logger.error("connecting to fog {} failed - not connected".format(event_worker.usr_data))
             raise NotConnectedError
         try:
             self.__comm.subscribe(
-                topic="fog/control",
-                qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
+                topic=topic,
+                qos=cc_conf.connector.qos,
                 event_worker=event_worker
             )
         except mqtt.NotConnectedError:
-            logger.error("connecting to fog services failed - not connected")
+            logger.error("connecting to fog {} failed - not connected".format(event_worker.usr_data))
             raise NotConnectedError
         except mqtt.SubscribeError as ex:
-            logger.error("connecting to fog services failed - {}".format(ex))
-            raise DeviceConnectError
+            logger.error("connecting to fog {} failed - {}".format(event_worker.usr_data, ex))
+            raise FogConnectError
 
     def __onConnect(self) -> None:
         self.__connected_flag = True
@@ -436,11 +436,22 @@ class Client:
                 cc_conf.connector.port
             )
         )
-        if self.__fog_enabled:
+        if self.__fog_processes:
             worker = EventWorker(
                 target=self.__fog_subscribe,
-                name="subscribe-fog",
-                usr_method=self.__fog_subscribe_on_done
+                args=("processes/{}/#".format(self.__hub_id),),
+                name="subscribe-fog-processes",
+                usr_method=self.__fog_subscribe_on_done,
+                usr_data="processes"
+            )
+            worker.start()
+        if self.__fog_analytics:
+            worker = EventWorker(
+                target=self.__fog_subscribe,
+                args=("fog/control", ),
+                name="subscribe-fog-analytics",
+                usr_method=self.__fog_subscribe_on_done,
+                usr_data="analytics"
             )
             worker.start()
         if self.__connect_clbk:
