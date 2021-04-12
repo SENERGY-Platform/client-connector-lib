@@ -1013,7 +1013,7 @@ class Client:
         validateInstance(envelope, CommandEnvelope)
         validateInstance(asynchronous, bool)
         worker = EventWorker(
-            target=self.__send,
+            target=self.__send_cmd_resp,
             args=(envelope, ),
             name="send-response-".format(envelope.correlation_id),
             usr_method=self.__send_on_done,
@@ -1036,7 +1036,7 @@ class Client:
         validateInstance(envelope, EventEnvelope)
         validateInstance(asynchronous, bool)
         worker = EventWorker(
-            target=self.__send,
+            target=self.__send_event,
             args=(envelope, ),
             name="send-event-".format(envelope.correlation_id),
             usr_method=self.__send_on_done,
