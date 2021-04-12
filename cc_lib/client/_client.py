@@ -643,36 +643,36 @@ class Client:
     def __handleFogAnalytics(self, payload: typing.Union[str, bytes]):
         logger.debug("received fog analytics message ...\npayload: '{}'".format(payload))
 
-    def __handleCommand(self, envelope: typing.Union[str, bytes], device_id, service_uri: str) -> None:
+    def __handleCommand(self, payload: typing.Union[str, bytes], device_id, service_uri: str) -> None:
         logger.debug(
-            "received command ...\ndevice id: '{}'\nservice uri: '{}'\ncommand: '{}'".format(
+            "received command message ...\ndevice id: '{}'\nservice uri: '{}'\npayload: '{}'".format(
                 device_id,
                 service_uri,
-                envelope
+                payload
             )
         )
         try:
-            envelope = json.loads(envelope)
+            payload = json.loads(payload)
             self.__cmd_queue.put_nowait(
                 CommandEnvelope(
                     device=self.__parseDeviceID(device_id) if self.__device_id_prefix else device_id,
                     service=service_uri,
                     message=DeviceMessage(
-                        data=envelope["payload"].get("data"),
-                        metadata=envelope["payload"].get("metadata")
+                        data=payload["payload"].get("data"),
+                        metadata=payload["payload"].get("metadata")
                     ),
-                    corr_id=envelope["correlation_id"],
-                    completion_strategy=envelope["completion_strategy"],
-                    timestamp=envelope["timestamp"]
+                    corr_id=payload["correlation_id"],
+                    completion_strategy=payload["completion_strategy"],
+                    timestamp=payload["timestamp"]
                 )
             )
         except Exception as ex:
             logger.error(
-                "could not handle command - '{}'\ndevice id: '{}'\nservice uri: '{}'\ncommand: '{}'".format(
+                "could not handle command message - '{}'\ndevice id: '{}'\nservice uri: '{}'\npayload: '{}'".format(
                     ex,
                     device_id,
                     service_uri,
-                    envelope
+                    payload
                 )
             )
 
