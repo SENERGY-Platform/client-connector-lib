@@ -584,7 +584,7 @@ class Client:
         try:
             self.__comm.subscribe(
                 topic="command/{}/+".format(self.__prefixDeviceID(device_id) if self.__device_id_prefix else device_id),
-                qos=mqtt.qos_map.setdefault(cc_conf.connector.qos, 1),
+                qos=cc_conf.connector.qos,
                 event_worker=event_worker
             )
         except mqtt.NotConnectedError:
