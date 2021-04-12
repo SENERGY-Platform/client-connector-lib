@@ -625,9 +625,11 @@ class Client:
         try:
             topic_parts = topic.split("/")
             if topic_parts[0] == "command":
-                self.__handleCommand(envelope=payload, device_id=topic_parts[1], service_uri=topic_parts[2])
+                self.__handleCommand(payload=payload, device_id=topic_parts[1], service_uri=topic_parts[2])
+            elif topic_parts[0] == "processes":
+                self.__handleFogProcess(payload=payload, sub_topic=topic_parts[2])
             elif topic_parts[0] == "fog":
-                self.__handleFogControl(payload=payload)
+                self.__handleFogAnalytics(payload=payload)
         except Exception as ex:
             logger.error("routing received message failed - {}\ntopic: {}\npayload: {}".format(ex, topic, payload))
 
