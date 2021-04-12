@@ -741,6 +741,19 @@ class Client:
             correlation_id=envelope.correlation_id,
             event_worker=event_worker
         )
+
+    def __send_fog_prcs_sync(self, envelope: FogProcessesEnvelope, event_worker):
+        self.__send(
+            topic="processes/{}/{}".format(
+                self.__hub_id,
+                envelope.sub_topic
+            ),
+            payload=envelope.message,
+            envelope_type=envelope.__class__.__name__,
+            correlation_id=envelope.correlation_id,
+            event_worker=event_worker
+        )
+
     def __prefixDeviceID(self, device_id: str) -> str:
         """
         Prefix a ID.
