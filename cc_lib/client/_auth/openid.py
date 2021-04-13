@@ -16,7 +16,7 @@
 
 __all__ = ('OpenIdClient', 'NoTokenError')
 
-from ...logger import get_logger
+from ..._util import get_logger
 from ..._configuration.configuration import cc_conf
 from ...client._protocol import http
 import time

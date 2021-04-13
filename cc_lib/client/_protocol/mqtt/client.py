@@ -25,7 +25,7 @@ __all__ = (
     'ConnectError'
 )
 
-from ....logger import get_logger
+from ...._util import get_logger
 import paho.mqtt.client
 import threading
 import typing

@@ -17,7 +17,7 @@
 __all__ = ('url_encode', 'Method', 'ContentType', 'Request', 'URLError', 'SocketTimeout', 'tls_map')
 
 
-from ....logger import get_logger
+from ...._util import get_logger
 from .response import Response
 import typing
 import socket

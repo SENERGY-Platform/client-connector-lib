@@ -16,9 +16,8 @@
 
 __all__ = ("Client", "CompletionStrategy")
 
-from .._configuration.configuration import cc_conf, initConnectorConf
-from .._util import validate_instance, calc_duration
-from ..logger._logger import get_logger, init_logging
+from .._configuration.configuration import cc_conf, init_config
+from .._util import validate_instance, calc_duration, get_logger
 from ..types import Device
 from .message import CommandEnvelope, CommandResponseEnvelope, EventEnvelope, FogProcessesEnvelope, DeviceMessage
 from ._exception import *
@@ -69,7 +68,6 @@ class Client:
         """
         Create a Client instance. Set device manager, initiate configuration and library logging facility.
         """
-        init_logging()
         init_config()
         logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
         self.__user = user or os.getenv("CC_LIB_CREDENTIALS_USER")
