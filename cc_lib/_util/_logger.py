@@ -14,8 +14,15 @@
    limitations under the License.
 """
 
-from ._logger import *
+__all__ = ('get_logger',)
 
-__all__ = (
-    _logger.__all__
-)
+
+import logging
+
+
+logger = logging.getLogger('connector')
+logger.propagate = False
+
+
+def get_logger(name: str) -> logging.Logger:
+    return logger.getChild(name)
