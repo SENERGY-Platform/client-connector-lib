@@ -1027,7 +1027,7 @@ class Client:
             future.wait()
             future.result()
 
-    def emmit_event(self, envelope: EventEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
+    def send_event(self, envelope: EventEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Send an event to the platform.
         :param envelope: Envelope object.
