@@ -99,7 +99,7 @@ class Client:
     def __init_hub(self, hub_id, hub_name) -> str:
         try:
             logger.info("initializing hub ...")
-            access_token = self.__auth.getAccessToken()
+            access_token = self.__auth.get_access_token()
             if not hub_id:
                 logger.info("creating new hub ...")
                 if not hub_name:
@@ -183,7 +183,7 @@ class Client:
                 logger.debug("hub ID '{}'".format(self.__hub_id))
                 logger.debug("devices {}".format(device_ids))
                 logger.debug("hash '{}'".format(devices_hash))
-                access_token = self.__auth.getAccessToken()
+                access_token = self.__auth.get_access_token()
                 req = http.Request(
                     url="{}/{}".format(cc_conf.api.hub_endpt, http.url_encode(self.__hub_id)),
                     method=http.Method.GET,
@@ -259,7 +259,7 @@ class Client:
             self.__workers.append(threading.current_thread())
         try:
             logger.info("adding device '{}' to platform ...".format(device.id))
-            access_token = self.__auth.getAccessToken()
+            access_token = self.__auth.get_access_token()
             req = http.Request(
                 url="{}/{}".format(
                     cc_conf.api.device_endpt,
@@ -325,7 +325,7 @@ class Client:
             self.__workers.append(threading.current_thread())
         try:
             logger.info("deleting device '{}' from platform ...".format(device_id))
-            access_token = self.__auth.getAccessToken()
+            access_token = self.__auth.get_access_token()
             req = http.Request(
                 url="{}/{}".format(
                     cc_conf.api.device_endpt,
@@ -357,7 +357,7 @@ class Client:
     def __update_device(self, device: Device) -> None:
         try:
             logger.info("updating device '{}' on platform ...".format(device.id))
-            access_token = self.__auth.getAccessToken()
+            access_token = self.__auth.get_access_token()
             req = http.Request(
                 url="{}/{}".format(
                     cc_conf.api.device_endpt,

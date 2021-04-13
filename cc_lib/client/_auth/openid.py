@@ -61,23 +61,23 @@ class OpenIdClient:
         self.__not_before_policy = None
         self.__session_state = None
 
-    def getAccessToken(self) -> str:
+    def get_access_token(self) -> str:
         try:
             if self.__access_token:
                 if int(time.time()) - self.__access_token.time_stamp >= self.__access_token.max_age:
                     logger.debug('access token expired')
                     if int(time.time()) - self.__refresh_token.time_stamp >= self.__refresh_token.max_age:
                         logger.debug('refresh token expired')
-                        self.__tokenRequest()
+                        self.__token_request()
                     else:
-                        self.__refreshRequest()
+                        self.__refresh_request()
             else:
-                self.__tokenRequest()
+                self.__token_request()
             return self.__access_token.token
         except (RequestError, ResponseError) as ex:
             raise NoTokenError(ex)
 
-    def __setResponse(self, payload: str) -> None:
+    def __set_response(self, payload: str) -> None:
         try:
             payload = json.loads(payload)
             self.__access_token = Token(payload['access_token'], payload['expires_in'])
@@ -103,7 +103,7 @@ class OpenIdClient:
         try:
             resp = req.send()
             if resp.status == 200:
-                self.__setResponse(resp.body)
+                self.__set_response(resp.body)
             else:
                 logger.error('{} request got bad response - {}'.format(r_type, resp))
                 raise RequestError
@@ -111,7 +111,7 @@ class OpenIdClient:
             logger.error('{} request failed - {}'.format(r_type, ex))
             raise RequestError
 
-    def __tokenRequest(self) -> None:
+    def __token_request(self) -> None:
         payload = {
             'grant_type': 'password',
             'username': self.__usr,
@@ -120,7 +120,7 @@ class OpenIdClient:
         }
         self.__request('token', payload)
 
-    def __refreshRequest(self) -> None:
+    def __refresh_request(self) -> None:
         payload = {
             'grant_type': 'refresh_token',
             'client_id': self.__id,
