@@ -24,7 +24,6 @@ from ._exception import *
 from ._auth import OpenIdClient, NoTokenError
 from ._protocol import http, mqtt
 from ._asynchron import Future, ThreadWorker, EventWorker
-from cc_lib import __version__ as VERSION
 import typing
 import datetime
 import hashlib
@@ -69,7 +68,6 @@ class Client:
         Create a Client instance. Set device manager, initiate configuration and library logging facility.
         """
         init_config()
-        logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
         self.__user = user or os.getenv("CC_LIB_CREDENTIALS_USER")
         self.__pw = pw or os.getenv("CC_LIB_CREDENTIALS_PW")
         self.__device_id_prefix = device_id_prefix
