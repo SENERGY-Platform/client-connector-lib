@@ -16,7 +16,6 @@
 
 from ._client import *
 from ._exception import *
-import cc_lib.client.message
 
 __all__ = (
     _client.__all__,

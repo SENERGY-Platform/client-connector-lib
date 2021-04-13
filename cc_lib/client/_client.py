@@ -19,7 +19,7 @@ __all__ = ("Client", "CompletionStrategy")
 from .._configuration import cc_conf, init_config
 from .._util import validate_instance, calc_duration, get_logger
 from ..types import Device
-from .message import CommandEnvelope, CommandResponseEnvelope, EventEnvelope, FogProcessesEnvelope, DeviceMessage
+from ..types.message import CommandEnvelope, CommandResponseEnvelope, EventEnvelope, FogProcessesEnvelope, DeviceMessage
 from ._exception import *
 from ._auth import OpenIdClient, NoTokenError
 from ._protocol import http, mqtt

@@ -15,6 +15,8 @@
 """
 
 from ._device import *
+import cc_lib.types.message
+
 
 __all__ = (
     _device.__all__
