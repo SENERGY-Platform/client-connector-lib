@@ -14,47 +14,31 @@
    limitations under the License.
 """
 
-__all__ = ('Device', 'device', 'ServiceNotFoundError')
+__all__ = ('Device', )
 
-from .._util import validate_instance, get_subclass
-from ._service import Service
-
-
-class ServiceNotFoundError(Exception):
-    pass
+from .._util import validate_instance
 
 
 class Device:
-    device_type_id = str()
-    services = tuple()
-    _service_map = dict()
-
-    def __new__(cls, *args, **kwargs):
-        if cls is __class__:
-            __err = "instantiation of class '{}' not allowed".format(__class__.__name__)
-            raise TypeError(__err)
-        if not cls._service_map:
-            cls._service_map = {srv.local_id: srv for srv in cls.services}
-        __instance = super(__class__, cls).__new__(cls)
-        __instance.__id = str()
-        __instance.__remote_id = str()
-        __instance.__name = str()
-        return __instance
+    def __init__(self, id: str, name: str, device_type_id: str):
+        validate_instance(id, str)
+        validate_instance(device_type_id, str)
+        self.__id = id
+        self.__device_type_id = device_type_id
+        self.__remote_id = None
+        self.name = name
 
     @property
     def id(self) -> str:
         return self.__id
 
-    @id.setter
-    def id(self, arg: str):
-        validate_instance(arg, str)
-        if self.__id:
-            raise AttributeError
-        self.__id = arg
-
     @property
     def remote_id(self) -> str:
         return self.__remote_id
+
+    @property
+    def device_type_id(self) -> str:
+        return self.__device_type_id
 
     @property
     def name(self) -> str:
@@ -64,12 +48,6 @@ class Device:
     def name(self, arg: str) -> None:
         validate_instance(arg, str)
         self.__name = arg
-
-    def getService(self, service: str) -> Service:
-        try:
-            return self.__class__._service_map[service]
-        except KeyError:
-            raise ServiceNotFoundError("'{}' does not exist for '{}'".format(service, self.__class__.__name__))
 
     def __str__(self, **kwargs):
         """
@@ -81,14 +59,9 @@ class Device:
             ('id', repr(self.id)),
             ('remote_id', repr(self.remote_id)),
             ('name', repr(self.name)),
-            ('services', [key for key in self.__class__.services])
+            ('device_type_id', repr(self.device_type_id))
         ]
         if kwargs:
             for arg, value in kwargs.items():
                 attributes.append((arg, value))
         return "{}({})".format(self.__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
-
-
-def device(obj: type) -> type:
-    validate_instance(obj, type)
-    return get_subclass(obj, Device)
