@@ -19,8 +19,7 @@ __all__ = (
     'validate_instance',
     'validate_subclass',
     'calc_nth_term',
-    'calc_duration',
-    'get_subclass'
+    'calc_duration'
 )
 
 import typing
@@ -84,21 +83,3 @@ def calc_duration(min_duration: int, max_duration: int, retry_num: int, factor: 
     except OverflowError:
         pass
     return max_duration
-
-
-def get_subclass(obj: typing.Union[type, dict], parent: type):
-    validate_instance(obj, (type, dict))
-    if isinstance(obj, dict):
-        sub_cls = type("{}_{}".format(parent.__name__, uuid.uuid4().hex), (parent,), obj)
-        try:
-            frm = inspect.stack()[-1]
-            mod = inspect.getmodule(frm[0])
-            setattr(sub_cls, "__module__", mod.__name__)
-        except (IndexError, AttributeError):
-            pass
-        return sub_cls
-    else:
-        attr_dict = obj.__dict__.copy()
-        del attr_dict['__dict__']
-        del attr_dict['__weakref__']
-        return type(obj.__name__, (parent,), attr_dict)
