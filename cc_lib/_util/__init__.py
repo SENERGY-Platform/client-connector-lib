@@ -14,12 +14,15 @@
    limitations under the License.
 """
 
+from ._logger import get_logger
+
 
 __all__ = (
     'validate_instance',
     'validate_subclass',
     'calc_nth_term',
-    'calc_duration'
+    'calc_duration',
+    'get_logger'
 )
 
 import typing
