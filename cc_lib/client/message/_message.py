@@ -18,7 +18,7 @@
 __all__ = ("DeviceMessage", )
 
 
-from ..._util import validateInstance
+from ..._util import validate_instance
 import typing
 
 
@@ -36,7 +36,7 @@ class DeviceMessage:
 
     @metadata.setter
     def metadata(self, arg: str):
-        validateInstance(arg, str)
+        validate_instance(arg, str)
         self.__metadata = arg
 
     @property
@@ -45,7 +45,7 @@ class DeviceMessage:
 
     @data.setter
     def data(self, arg: str):
-        validateInstance(arg, str)
+        validate_instance(arg, str)
         self.__data = arg
 
     def __iter__(self):

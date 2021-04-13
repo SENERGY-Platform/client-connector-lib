@@ -16,7 +16,7 @@
 
 __all__ = ('Device', 'device', 'ServiceNotFoundError')
 
-from .._util import validateInstance, getSubclass
+from .._util import validate_instance, getSubclass
 from ._service import Service
 
 
@@ -47,7 +47,7 @@ class Device:
 
     @id.setter
     def id(self, arg: str):
-        validateInstance(arg, str)
+        validate_instance(arg, str)
         if self.__id:
             raise AttributeError
         self.__id = arg
@@ -62,7 +62,7 @@ class Device:
 
     @name.setter
     def name(self, arg: str) -> None:
-        validateInstance(arg, str)
+        validate_instance(arg, str)
         self.__name = arg
 
     def getService(self, service: str) -> Service:
@@ -90,5 +90,5 @@ class Device:
 
 
 def device(obj: type) -> type:
-    validateInstance(obj, type)
+    validate_instance(obj, type)
     return getSubclass(obj, Device)

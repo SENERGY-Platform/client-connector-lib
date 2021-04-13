@@ -17,7 +17,7 @@
 __all__ = ("Client", "CompletionStrategy")
 
 from .._configuration.configuration import cc_conf, initConnectorConf
-from .._util import validateInstance, calcDuration
+from .._util import validate_instance, calc_duration
 from ..logger._logger import get_logger, init_logging
 from ..types import Device
 from .message import CommandEnvelope, EventEnvelope, FogProcessesEnvelope, DeviceMessage
@@ -70,7 +70,7 @@ class Client:
         Create a Client instance. Set device manager, initiate configuration and library logging facility.
         """
         initConnectorConf()
-        initLogging()
+        init_logging()
         logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
         self.__user = user or os.getenv("CC_LIB_CREDENTIALS_USER")
         self.__pw = pw or os.getenv("CC_LIB_CREDENTIALS_PW")
@@ -539,7 +539,7 @@ class Client:
                 break
             retry += 1
             if retry > 0:
-                duration = calcDuration(
+                duration = calc_duration(
                     min_duration=cc_conf.connector.reconn_delay_min,
                     max_duration=cc_conf.connector.reconn_delay_max,
                     retry_num=retry,
@@ -803,8 +803,8 @@ class Client:
         :param asynchronous: If 'True' method returns a Future object.
         :return: Future object or Hub ID (str).
         """
-        validateInstance(hub_id, (str, type(None)))
-        validateInstance(asynchronous, bool)
+        validate_instance(hub_id, (str, type(None)))
+        validate_instance(asynchronous, bool)
         if asynchronous:
             worker = ThreadWorker(target=self.__init_hub, args=(hub_id,), name="init-hub", daemon=True)
             future = worker.start()
@@ -819,10 +819,10 @@ class Client:
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        validateInstance(devices, list)
-        validateInstance(asynchronous, bool)
+        validate_instance(devices, list)
+        validate_instance(asynchronous, bool)
         for device in devices:
-            validateInstance(device, Device)
+            validate_instance(device, Device)
         if asynchronous:
             worker = ThreadWorker(target=self.__sync_hub, args=(devices,), name="sync-hub", daemon=True)
             future = worker.start()
@@ -837,8 +837,8 @@ class Client:
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        validateInstance(device, Device)
-        validateInstance(asynchronous, bool)
+        validate_instance(device, Device)
+        validate_instance(asynchronous, bool)
         if asynchronous:
             worker = ThreadWorker(
                 target=self.__add_device,
@@ -858,11 +858,11 @@ class Client:
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        validateInstance(device, (Device, str))
-        validateInstance(asynchronous, bool)
+        validate_instance(device, (Device, str))
+        validate_instance(asynchronous, bool)
         if isinstance(device, Device):
             device = device.id
-            validateInstance(device, str)
+            validate_instance(device, str)
         if asynchronous:
             worker = ThreadWorker(
                 target=self.__delete_device,
@@ -882,8 +882,8 @@ class Client:
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        validateInstance(device, Device)
-        validateInstance(asynchronous, bool)
+        validate_instance(device, Device)
+        validate_instance(asynchronous, bool)
         if asynchronous:
             worker = ThreadWorker(
                 target=self.__update_device,
@@ -904,8 +904,8 @@ class Client:
         """
         if self.__fog_processes and not self.__hub_id:
             raise ConnectError("fog processes requires initialized hub")
-        validateInstance(reconnect, bool)
-        validateInstance(asynchronous, bool)
+        validate_instance(reconnect, bool)
+        validate_instance(asynchronous, bool)
         self.__reconnect_flag = reconnect
         if self.__reconnect_flag:
             worker = ThreadWorker(
@@ -947,11 +947,11 @@ class Client:
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        validateInstance(device, (Device, str))
-        validateInstance(asynchronous, bool)
+        validate_instance(device, (Device, str))
+        validate_instance(asynchronous, bool)
         if isinstance(device, Device):
             device = device.id
-            validateInstance(device, str)
+            validate_instance(device, str)
         worker = EventWorker(
             target=self.__connect_device,
             args=(device, ),
@@ -973,11 +973,11 @@ class Client:
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        validateInstance(device, (Device, str))
-        validateInstance(asynchronous, bool)
+        validate_instance(device, (Device, str))
+        validate_instance(asynchronous, bool)
         if isinstance(device, Device):
             device = device.id
-            validateInstance(device, str)
+            validate_instance(device, str)
         worker = EventWorker(
             target=self.__disconnect_device,
             args=(device,),
@@ -999,8 +999,8 @@ class Client:
         :param timeout: Return after set amount of time if no command is available.
         :return: Envelope object.
         """
-        validateInstance(block, bool)
-        validateInstance(timeout, (int, float, type(None)))
+        validate_instance(block, bool)
+        validate_instance(timeout, (int, float, type(None)))
         try:
             return self.__cmd_queue.get(block=block, timeout=timeout)
         except queue.Empty:
@@ -1013,8 +1013,8 @@ class Client:
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        validateInstance(envelope, CommandEnvelope)
-        validateInstance(asynchronous, bool)
+        validate_instance(envelope, CommandEnvelope)
+        validate_instance(asynchronous, bool)
         worker = EventWorker(
             target=self.__send_cmd_resp,
             args=(envelope, ),
@@ -1036,8 +1036,8 @@ class Client:
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        validateInstance(envelope, EventEnvelope)
-        validateInstance(asynchronous, bool)
+        validate_instance(envelope, EventEnvelope)
+        validate_instance(asynchronous, bool)
         worker = EventWorker(
             target=self.__send_event,
             args=(envelope, ),
@@ -1059,8 +1059,8 @@ class Client:
         :param timeout: Return after set amount of time if no data is available.
         :return: FogProcessesEnvelope object.
         """
-        validateInstance(block, bool)
-        validateInstance(timeout, (int, float, type(None)))
+        validate_instance(block, bool)
+        validate_instance(timeout, (int, float, type(None)))
         try:
             return self.__fog_prcs_queue.get(block=block, timeout=timeout)
         except queue.Empty:
@@ -1073,8 +1073,8 @@ class Client:
             :param asynchronous: If 'True' method returns a ClientFuture object.
             :return: Future or None.
         """
-        validateInstance(envelope, FogProcessesEnvelope)
-        validateInstance(asynchronous, bool)
+        validate_instance(envelope, FogProcessesEnvelope)
+        validate_instance(asynchronous, bool)
         worker = EventWorker(
             target=self.__send_fog_prcs_sync,
             args=(envelope,),

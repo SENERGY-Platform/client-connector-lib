@@ -20,7 +20,7 @@ __all__ = ("CommandEnvelope", "CommandResponseEnvelope", "EventEnvelope", "FogPr
 
 from ._message import *
 from ...types import Device
-from ..._util import validateInstance
+from ..._util import validate_instance
 import typing
 import uuid
 
@@ -31,7 +31,7 @@ class Envelope:
 
     def __init__(self, message: typing.Any = None, corr_id: typing.Optional[str] = None):
         if corr_id:
-            validateInstance(corr_id, str)
+            validate_instance(corr_id, str)
         self.__correlation_id = corr_id or str(uuid.uuid4())
         self.message = message
 
@@ -83,7 +83,7 @@ class DeviceEnvelope(Envelope):
             self.__device_id = device.id
         else:
             raise TypeError(type(device))
-        validateInstance(service, str)
+        validate_instance(service, str)
         self.__service_uri = service
 
     @property
@@ -100,7 +100,7 @@ class DeviceEnvelope(Envelope):
 
     @message.setter
     def message(self, arg):
-        validateInstance(arg, DeviceMessage)
+        validate_instance(arg, DeviceMessage)
         Envelope.message.fset(self, arg)
 
     def __iter__(self):
@@ -156,7 +156,7 @@ class CommandResponseEnvelope(DeviceEnvelope):
 
 
 def response_from_command_envelope(message: DeviceMessage, envelope: CommandEnvelope) -> CommandResponseEnvelope:
-    validateInstance(envelope, CommandEnvelope)
+    validate_instance(envelope, CommandEnvelope)
     return CommandResponseEnvelope(
         device=envelope.device_id,
         service=envelope.service_uri,
@@ -177,7 +177,7 @@ class FogProcessesEnvelope(Envelope):
 
     def __init__(self, sub_topic: str, message: str):
         super().__init__(message=message)
-        validateInstance(sub_topic, str)
+        validate_instance(sub_topic, str)
         self.__sub_topic = sub_topic
 
     @property
@@ -190,6 +190,6 @@ class FogProcessesEnvelope(Envelope):
 
     @message.setter
     def message(self, arg):
-        validateInstance(arg, str)
+        validate_instance(arg, str)
         Envelope.message.fset(self, arg)
 

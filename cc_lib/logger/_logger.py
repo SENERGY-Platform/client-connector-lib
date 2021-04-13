@@ -64,7 +64,6 @@ stream_handler.setFormatter(standard_formatter)
 
 logger = logging.getLogger('connector')
 logger.propagate = False
-logger.addHandler(stream_handler)
 
 
 def init_logging() -> None:
@@ -75,7 +74,6 @@ def init_logging() -> None:
         stream_handler.setFormatter(color_formatter)
     logger.setLevel(logging_levels[cc_conf.logger.level])
     if cc_conf.logger.rotating_log:
-        logger.removeHandler(stream_handler)
         logs_path = '{}/logs'.format(user_dir)
         if not os.path.exists(logs_path):
             try:
@@ -90,6 +88,8 @@ def init_logging() -> None:
         )
         log_handler.setFormatter(standard_formatter)
         logger.addHandler(log_handler)
+    else:
+        logger.addHandler(stream_handler)
 
 
 def get_logger(name: str) -> logging.Logger:

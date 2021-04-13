@@ -16,10 +16,10 @@
 
 
 __all__ = (
-    'validateInstance',
-    'validateSubclass',
-    'calcNthTerm',
-    'calcDuration',
+    'validate_instance',
+    'validate_subclass',
+    'calc_nth_term',
+    'calc_duration',
     'getSubclass'
 )
 
@@ -29,8 +29,7 @@ import math
 import uuid
 
 
-
-def validateInstance(obj: object, cls: typing.Union[type, typing.Tuple[type, ...]]) -> None:
+def validate_instance(obj: object, cls: typing.Union[type, typing.Tuple[type, ...]]) -> None:
     """
     Raise TypeError if given object is not an instance of given class.
     Also works with instances of sub classes derived from the given class.
@@ -43,7 +42,7 @@ def validateInstance(obj: object, cls: typing.Union[type, typing.Tuple[type, ...
         raise TypeError(err)
 
 
-def validateSubclass(cls: type, parent_cls: typing.Union[type, typing.Tuple[type, ...]]) -> None:
+def validate_subclass(cls: type, parent_cls: typing.Union[type, typing.Tuple[type, ...]]) -> None:
     """
     Raise TypeError if given class is not sub class of given class.
     :param cls: Class to be validated.
@@ -55,7 +54,7 @@ def validateSubclass(cls: type, parent_cls: typing.Union[type, typing.Tuple[type
         raise TypeError(err)
 
 
-def calcNthTerm(a_1: typing.Union[float, int], r: typing.Union[float, int], n: typing.Union[float, int]) -> typing.Union[float, int]:
+def calc_nth_term(a_1: typing.Union[float, int], r: typing.Union[float, int], n: typing.Union[float, int]) -> typing.Union[float, int]:
     """
     Calculates the nth term of a geometric progression (an = a1 * r^(n-1)).
     :param a_1: First term.
@@ -66,7 +65,7 @@ def calcNthTerm(a_1: typing.Union[float, int], r: typing.Union[float, int], n: t
     return a_1 * r ** (n - 1)
 
 
-def calcDuration(min_duration: int, max_duration: int, retry_num: int, factor: typing.Union[float, int]) -> int:
+def calc_duration(min_duration: int, max_duration: int, retry_num: int, factor: typing.Union[float, int]) -> int:
     """
     Calculate a value to be used as sleep duration based on a geometric progression.
     Won't return values above max_duration.
@@ -77,7 +76,7 @@ def calcDuration(min_duration: int, max_duration: int, retry_num: int, factor: t
     :return: Integer.
     """
     try:
-        base_value = calcNthTerm(min_duration, factor, retry_num)
+        base_value = calc_nth_term(min_duration, factor, retry_num)
         magnitude = int(math.log10(math.ceil(base_value)))+1
         duration = math.ceil(base_value / 10 ** (magnitude - 1)) * 10 ** (magnitude - 1)
         if duration <= max_duration:
@@ -88,7 +87,7 @@ def calcDuration(min_duration: int, max_duration: int, retry_num: int, factor: t
 
 
 def getSubclass(obj: typing.Union[type, dict], parent: type):
-    validateInstance(obj, (type, dict))
+    validate_instance(obj, (type, dict))
     if isinstance(obj, dict):
         sub_cls = type("{}_{}".format(parent.__name__, uuid.uuid4().hex), (parent,), obj)
         try:

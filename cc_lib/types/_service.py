@@ -16,7 +16,7 @@
 
 __all__ = ('Service', 'service')
 
-from .._util import validateInstance, getSubclass
+from .._util import validate_instance, getSubclass
 
 
 class Service:
@@ -30,5 +30,5 @@ class Service:
 
 
 def service(obj: type) -> type:
-    validateInstance(obj, type)
+    validate_instance(obj, type)
     return getSubclass(obj, Service)
