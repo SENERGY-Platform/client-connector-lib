@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ("init_config", "cc_conf")
+__all__ = ("cc_conf", )
 
 
 import os
@@ -57,10 +57,6 @@ class CC_Lib:
 
 
 if file_conf_manager:
-    cc_conf = CC_Lib(conf_file='cc_lib.conf', user_path=user_dir, ext_aft_crt=True, load=False)
+    cc_conf = CC_Lib(conf_file='cc_lib.conf', user_path=user_dir, ext_aft_crt=True)
 else:
-    cc_conf = CC_Lib(load=False)
-
-
-def init_config() -> None:
-    conf_manager.loadConfig(cc_conf)
+    cc_conf = CC_Lib()
