@@ -33,12 +33,6 @@ user_dir = os.getenv("CC_LIB_USER_PATH") or os.getcwd()
 class CC_Lib:
 
     @conf_manager.section
-    class credentials:
-        user: str = None
-        pw: str = None
-        client_id: str = None
-
-    @conf_manager.section
     class connector:
         host: str = None
         port: int = None

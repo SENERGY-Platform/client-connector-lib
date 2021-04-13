@@ -33,6 +33,7 @@ import time
 import queue
 import threading
 import json
+import os
 
 
 logger = getLogger(__name__.rsplit(".", 1)[-1].replace("_", ""))
@@ -71,12 +72,12 @@ class Client:
         initConnectorConf()
         initLogging()
         logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
-        self.__user = user or cc_conf.credentials.user
-        self.__pw = pw or cc_conf.credentials.pw
+        self.__user = user or os.getenv("CC_LIB_CREDENTIALS_USER")
+        self.__pw = pw or os.getenv("CC_LIB_CREDENTIALS_PW")
         self.__device_id_prefix = device_id_prefix
         self.__fog_processes = fog_processes
         self.__fog_analytics = fog_analytics
-        self.__auth = OpenIdClient(cc_conf.api.auth_endpt, user, pw, client_id or cc_conf.credentials.client_id)
+        self.__auth = OpenIdClient(cc_conf.api.auth_endpt, user, pw, client_id or os.getenv("CC_LIB_CREDENTIALS_CLIENT_ID"))
         self.__comm = None
         self.__connected_flag = False
         self.__connect_lock = threading.Lock()
