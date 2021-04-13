@@ -144,6 +144,17 @@ class CommandEnvelope(DeviceEnvelope):
         return super().__str__(completion_strategy=self.completion_strategy, timestamp=self.timestamp)
 
 
+class CommandResponseEnvelope(DeviceEnvelope):
+    def __init__(
+            self,
+            device: typing.Union[Device, str],
+            service: str,
+            message: DeviceMessage,
+            corr_id: str
+    ):
+        super().__init__(device=device, service=service, message=message, corr_id=corr_id)
+
+
 class EventEnvelope(DeviceEnvelope):
 
     def __init__(self, device: typing.Union[Device, str], service: str, message: DeviceMessage):
