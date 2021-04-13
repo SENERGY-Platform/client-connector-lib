@@ -69,8 +69,8 @@ class Client:
         """
         Create a Client instance. Set device manager, initiate configuration and library logging facility.
         """
-        initConnectorConf()
         init_logging()
+        init_config()
         logger.info(20 * "-" + " client-connector-lib v{} ".format(VERSION) + 20 * "-")
         self.__user = user or os.getenv("CC_LIB_CREDENTIALS_USER")
         self.__pw = pw or os.getenv("CC_LIB_CREDENTIALS_PW")

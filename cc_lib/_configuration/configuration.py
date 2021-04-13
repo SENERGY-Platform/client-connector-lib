@@ -60,5 +60,5 @@ else:
     cc_conf = CC_Lib(load=False)
 
 
-def initConnectorConf() -> None:
+def init_config() -> None:
     conf_manager.loadConfig(cc_conf)
