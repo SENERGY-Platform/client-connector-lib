@@ -15,7 +15,7 @@
 """
 
 
-__all__ = ("CommandEnvelope", "EventEnvelope", "FogProcessesEnvelope")
+__all__ = ("CommandEnvelope", "CommandResponseEnvelope", "EventEnvelope", "FogProcessesEnvelope", "response_from_command_envelope")
 
 
 from ._message import *
