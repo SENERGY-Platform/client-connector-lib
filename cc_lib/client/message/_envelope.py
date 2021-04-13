@@ -140,6 +140,9 @@ class CommandEnvelope(DeviceEnvelope):
     def timestamp(self) -> float:
         return self.__timestamp
 
+    def __str__(self):
+        return super().__str__(completion_strategy=self.completion_strategy, timestamp=self.timestamp)
+
 
 class EventEnvelope(DeviceEnvelope):
 
