@@ -111,8 +111,8 @@ class DeviceEnvelope(Envelope):
         for item in items:
             yield item
 
-    def __str__(self):
-        return super().__str__(device_id=self.device_id, service_uri=self.service_uri)
+    def __str__(self, **kwargs):
+        return super().__str__(device_id=self.device_id, service_uri=self.service_uri, **kwargs)
 
 
 class CommandEnvelope(DeviceEnvelope):
