@@ -130,7 +130,7 @@ class Client:
             else:
                 logger.debug("hub ID '{}'".format(hub_id))
                 req = http.Request(
-                    url="{}/{}".format(cc_conf.api.hub_endpt, http.urlEncode(hub_id)),
+                    url="{}/{}".format(cc_conf.api.hub_endpt, http.url_encode(hub_id)),
                     method=http.Method.HEAD,
                     headers={"Authorization": "Bearer {}".format(access_token)},
                     timeout=cc_conf.api.request_timeout
@@ -185,7 +185,7 @@ class Client:
                 logger.debug("hash '{}'".format(devices_hash))
                 access_token = self.__auth.getAccessToken()
                 req = http.Request(
-                    url="{}/{}".format(cc_conf.api.hub_endpt, http.urlEncode(self.__hub_id)),
+                    url="{}/{}".format(cc_conf.api.hub_endpt, http.url_encode(self.__hub_id)),
                     method=http.Method.GET,
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
@@ -198,7 +198,7 @@ class Client:
                         logger.debug("synchronizing hub - local hash differs from remote hash")
                         logger.info("synchronizing hub - updating devices ...")
                         req = http.Request(
-                            url="{}/{}".format(cc_conf.api.hub_endpt, http.urlEncode(self.__hub_id)),
+                            url="{}/{}".format(cc_conf.api.hub_endpt, http.url_encode(self.__hub_id)),
                             method=http.Method.PUT,
                             body={
                                 "id": self.__hub_id,
@@ -263,7 +263,7 @@ class Client:
             req = http.Request(
                 url="{}/{}".format(
                     cc_conf.api.device_endpt,
-                    http.urlEncode(self.__prefix_device_id(device.id)) if self.__device_id_prefix else http.urlEncode(device.id)
+                    http.url_encode(self.__prefix_device_id(device.id)) if self.__device_id_prefix else http.url_encode(device.id)
                 ),
                 method=http.Method.GET,
                 headers={"Authorization": "Bearer {}".format(access_token)},
@@ -329,7 +329,7 @@ class Client:
             req = http.Request(
                 url="{}/{}".format(
                     cc_conf.api.device_endpt,
-                    http.urlEncode(self.__prefix_device_id(device_id)) if self.__device_id_prefix else http.urlEncode(device_id)
+                    http.url_encode(self.__prefix_device_id(device_id)) if self.__device_id_prefix else http.url_encode(device_id)
                 ),
                 method=http.Method.DELETE,
                 headers={"Authorization": "Bearer {}".format(access_token)},
@@ -361,7 +361,7 @@ class Client:
             req = http.Request(
                 url="{}/{}".format(
                     cc_conf.api.device_endpt,
-                    http.urlEncode(self.__prefix_device_id(device.id)) if self.__device_id_prefix else http.urlEncode(device.id)
+                    http.url_encode(self.__prefix_device_id(device.id)) if self.__device_id_prefix else http.url_encode(device.id)
                 ),
                 method=http.Method.PUT,
                 body={

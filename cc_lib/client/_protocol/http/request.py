@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('urlEncode', 'Method', 'ContentType', 'Request', 'URLError', 'SocketTimeout', 'tls_map')
+__all__ = ('url_encode', 'Method', 'ContentType', 'Request', 'URLError', 'SocketTimeout', 'tls_map')
 
 
 from ....logger import get_logger
@@ -70,7 +70,7 @@ reserved_chars = {
 }
 
 
-def urlEncode(s: str) -> str:
+def url_encode(s: str) -> str:
     """
     Encode string to URL encoded format.
     :param s: String to encode.
