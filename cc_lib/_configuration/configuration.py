@@ -26,18 +26,6 @@ if file_conf_manager:
 else:
     import simple_env_var as conf_manager
 
-
-formatter = logging.Formatter(fmt='%(asctime)s - %(levelname)s: [%(name)s] %(message)s', datefmt='%m.%d.%Y %I:%M:%S %p')
-stream_handler = logging.StreamHandler()
-stream_handler.setFormatter(formatter)
-
-if file_conf_manager:
-    sc_logger = logging.getLogger('simple-conf')
-else:
-    sc_logger = logging.getLogger('simple-env-var')
-sc_logger.addHandler(stream_handler)
-sc_logger.setLevel(logging.INFO)
-
 user_dir = os.getenv("CC_LIB_USER_PATH") or os.getcwd()
 
 
