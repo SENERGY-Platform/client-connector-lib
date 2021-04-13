@@ -20,7 +20,7 @@ from .._configuration.configuration import cc_conf, initConnectorConf
 from .._util import validate_instance, calc_duration
 from ..logger._logger import get_logger, init_logging
 from ..types import Device
-from .message import CommandEnvelope, EventEnvelope, FogProcessesEnvelope, DeviceMessage
+from .message import CommandEnvelope, CommandResponseEnvelope, EventEnvelope, FogProcessesEnvelope, DeviceMessage
 from ._exception import *
 from ._auth import OpenIdClient, NoTokenError
 from ._protocol import http, mqtt
@@ -1006,14 +1006,14 @@ class Client:
         except queue.Empty:
             raise QueueEmptyError
 
-    def send_command_response(self, envelope: CommandEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
+    def send_command_response(self, envelope: CommandResponseEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Send a response to the platform after handling a command.
         :param envelope: Envelope object received from a command via receiveCommand.
         :param asynchronous: If 'True' method returns a ClientFuture object.
         :return: Future or None.
         """
-        validate_instance(envelope, CommandEnvelope)
+        validate_instance(envelope, CommandResponseEnvelope)
         validate_instance(asynchronous, bool)
         worker = EventWorker(
             target=self.__send_cmd_resp,
