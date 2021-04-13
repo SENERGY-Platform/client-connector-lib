@@ -16,7 +16,7 @@
 
 __all__ = ("Client", "CompletionStrategy")
 
-from .._configuration.configuration import cc_conf, init_config
+from .._configuration import cc_conf, init_config
 from .._util import validate_instance, calc_duration, get_logger
 from ..types import Device
 from .message import CommandEnvelope, CommandResponseEnvelope, EventEnvelope, FogProcessesEnvelope, DeviceMessage
