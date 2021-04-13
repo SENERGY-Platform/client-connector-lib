@@ -17,7 +17,7 @@
 __all__ = ('urlEncode', 'Method', 'ContentType', 'Request', 'URLError', 'SocketTimeout', 'tls_map')
 
 
-from ....logger import getLogger
+from ....logger import get_logger
 from .response import Response
 import typing
 import socket
@@ -27,7 +27,7 @@ import urllib.parse
 import json
 
 
-logger = getLogger(__name__.split('.', 1)[-1].replace("_", ""))
+logger = get_logger(__name__.split('.', 1)[-1].replace("_", ""))
 
 
 class SocketTimeout(Exception):

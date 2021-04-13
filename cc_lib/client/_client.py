@@ -18,7 +18,7 @@ __all__ = ("Client", "CompletionStrategy")
 
 from .._configuration.configuration import cc_conf, initConnectorConf
 from .._util import validateInstance, calcDuration
-from ..logger._logger import getLogger, initLogging
+from ..logger._logger import get_logger, init_logging
 from ..types import Device
 from .message import CommandEnvelope, EventEnvelope, FogProcessesEnvelope, DeviceMessage
 from ._exception import *
@@ -36,7 +36,7 @@ import json
 import os
 
 
-logger = getLogger(__name__.rsplit(".", 1)[-1].replace("_", ""))
+logger = get_logger(__name__.rsplit(".", 1)[-1].replace("_", ""))
 
 
 def _hashDevices(devices: typing.Union[typing.Tuple[Device], typing.List[Device]]) -> str:

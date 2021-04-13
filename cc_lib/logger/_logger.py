@@ -14,7 +14,7 @@
    limitations under the License.
 """
 
-__all__ = ('getLogger', )
+__all__ = ('get_logger',)
 
 from .._configuration.configuration import user_dir, cc_conf
 import os
@@ -67,7 +67,7 @@ logger.propagate = False
 logger.addHandler(stream_handler)
 
 
-def initLogging() -> None:
+def init_logging() -> None:
     if not cc_conf.logger.level in logging_levels.keys():
         err = "unknown log level '{}'".format(cc_conf.logger.level)
         raise LoggerError(err)
@@ -92,5 +92,5 @@ def initLogging() -> None:
         logger.addHandler(log_handler)
 
 
-def getLogger(name: str) -> logging.Logger:
+def get_logger(name: str) -> logging.Logger:
     return logger.getChild(name)

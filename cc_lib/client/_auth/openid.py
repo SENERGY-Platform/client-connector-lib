@@ -16,14 +16,14 @@
 
 __all__ = ('OpenIdClient', 'NoTokenError')
 
-from ...logger import getLogger
+from ...logger import get_logger
 from ..._configuration.configuration import cc_conf
 from ...client._protocol import http
 import time
 import json
 
 
-logger = getLogger(__name__.split('.', 1)[-1].replace("_", ""))
+logger = get_logger(__name__.split('.', 1)[-1].replace("_", ""))
 
 
 class OpenIdError(Exception):

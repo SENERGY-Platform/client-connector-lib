@@ -25,14 +25,14 @@ __all__ = (
     'ConnectError'
 )
 
-from ....logger import getLogger
+from ....logger import get_logger
 import paho.mqtt.client
 import threading
 import typing
 import ssl
 
 
-logger = getLogger(__name__.split('.', 1)[-1].replace("_", ""))
+logger = get_logger(__name__.split('.', 1)[-1].replace("_", ""))
 
 
 class MqttClientError(Exception):
