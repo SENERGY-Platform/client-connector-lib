@@ -46,13 +46,6 @@ class CC_Lib:
         reconn_delay_factor: typing.Union[int, float] = 1.85
 
     @conf_manager.section
-    class logger:
-        level: str = 'info'
-        colored: bool = False
-        rotating_log: bool = False
-        rotating_log_backup_count: int = 14
-
-    @conf_manager.section
     class api:
         hub_endpt: str = None
         device_endpt: str = None
