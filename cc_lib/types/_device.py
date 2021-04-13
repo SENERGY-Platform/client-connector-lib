@@ -16,7 +16,7 @@
 
 __all__ = ('Device', 'device', 'ServiceNotFoundError')
 
-from .._util import validate_instance, getSubclass
+from .._util import validate_instance, get_subclass
 from ._service import Service
 
 
@@ -91,4 +91,4 @@ class Device:
 
 def device(obj: type) -> type:
     validate_instance(obj, type)
-    return getSubclass(obj, Device)
+    return get_subclass(obj, Device)

@@ -20,7 +20,7 @@ __all__ = (
     'validate_subclass',
     'calc_nth_term',
     'calc_duration',
-    'getSubclass'
+    'get_subclass'
 )
 
 import typing
@@ -86,7 +86,7 @@ def calc_duration(min_duration: int, max_duration: int, retry_num: int, factor: 
     return max_duration
 
 
-def getSubclass(obj: typing.Union[type, dict], parent: type):
+def get_subclass(obj: typing.Union[type, dict], parent: type):
     validate_instance(obj, (type, dict))
     if isinstance(obj, dict):
         sub_cls = type("{}_{}".format(parent.__name__, uuid.uuid4().hex), (parent,), obj)
