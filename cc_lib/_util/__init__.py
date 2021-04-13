@@ -16,7 +16,6 @@
 
 
 __all__ = (
-    'Singleton',
     'validateInstance',
     'validateSubclass',
     'calcNthTerm',
@@ -29,16 +28,6 @@ import inspect
 import math
 import uuid
 
-
-class Singleton(type):
-    """
-    Subclass this class for singleton behavior.
-    """
-    _instances = dict()
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
 
 
 def validateInstance(obj: object, cls: typing.Union[type, typing.Tuple[type, ...]]) -> None:
