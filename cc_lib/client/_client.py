@@ -73,7 +73,7 @@ class Client:
         self.__device_id_prefix = device_id_prefix
         self.__fog_processes = fog_processes
         self.__fog_analytics = fog_analytics
-        self.__auth = OpenIdClient(cc_conf.api.auth_endpt, user, pw, client_id or os.getenv("CC_LIB_CREDENTIALS_CLIENT_ID"))
+        self.__auth = OpenIdClient(cc_conf.api.auth_endpt, self.__user, self.__pw, client_id or os.getenv("CC_LIB_CREDENTIALS_CLIENT_ID"))
         self.__comm = None
         self.__connected_flag = False
         self.__connect_lock = threading.Lock()
