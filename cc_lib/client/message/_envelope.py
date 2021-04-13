@@ -155,6 +155,16 @@ class CommandResponseEnvelope(DeviceEnvelope):
         super().__init__(device=device, service=service, message=message, corr_id=corr_id)
 
 
+def response_from_command_envelope(message: DeviceMessage, envelope: CommandEnvelope) -> CommandResponseEnvelope:
+    validateInstance(envelope, CommandEnvelope)
+    return CommandResponseEnvelope(
+        device=envelope.device_id,
+        service=envelope.service_uri,
+        message=message,
+        corr_id=envelope.correlation_id
+    )
+
+
 class EventEnvelope(DeviceEnvelope):
 
     def __init__(self, device: typing.Union[Device, str], service: str, message: DeviceMessage):
