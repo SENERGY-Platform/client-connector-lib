@@ -516,7 +516,9 @@ class Client:
                 msg_retry=cc_conf.connector.msg_retry,
                 keepalive=cc_conf.connector.keepalive,
                 loop_time=cc_conf.connector.loop_time,
-                tls=cc_conf.connector.tls
+                tls=cc_conf.connector.tls,
+                clean_session=cc_conf.connector.clean_session,
+                logging=cc_conf.connector.low_level_logger
             )
             self.__comm.on_connect = self.__on_connect
             self.__comm.on_disconnect = self.__on_disconnect

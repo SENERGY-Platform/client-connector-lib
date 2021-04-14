@@ -42,10 +42,12 @@ class CC_Lib:
         qos: int = 2
         msg_retry: int = 5
         keepalive: int = 20
+        clean_session: bool = True
         loop_time: typing.Union[int, float] = 1
         reconn_delay_min: int = 5
         reconn_delay_max: int = 120
         reconn_delay_factor: typing.Union[int, float] = 1.85
+        low_level_logger: bool = False
 
     @conf_manager.section
     class api:
