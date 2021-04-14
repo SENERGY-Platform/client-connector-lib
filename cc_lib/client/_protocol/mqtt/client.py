@@ -34,6 +34,8 @@ import ssl
 
 logger = get_logger(__name__.split('.', 1)[-1].replace("_", ""))
 
+mqtt_logger = logger.getChild("low")
+
 
 class MqttClientError(Exception):
     pass
@@ -64,7 +66,7 @@ class PublishError(MqttClientError):
 
 
 class Client:
-    def __init__(self, client_id: str, msg_retry: int, keepalive: int, loop_time: float, tls: bool):
+    def __init__(self, client_id: str, msg_retry: int, keepalive: int, loop_time: float, tls: bool, clean_session: bool, logging: bool):
         if not loop_time > 0.0:
             raise MqttClientError("loop time must be larger than 0")
         if keepalive <= loop_time:
@@ -75,17 +77,19 @@ class Client:
         self.__keepalive = keepalive
         self.__loop_time = loop_time
         self.__tls = tls
+        self.__logging = logging
         self.__events = dict()
         self.__loop_thread = None
         self.__usr_disconn = False
-        self.__mqtt = paho.mqtt.client.Client(client_id=client_id, clean_session=True)
+        self.__mqtt = paho.mqtt.client.Client(client_id=client_id, clean_session=clean_session)
         self.__setup_mqtt()
         self.on_connect = None
         self.on_disconnect = None
         self.on_message = None
 
     def __setup_mqtt(self):
-        self.__mqtt.enable_logger(logger)
+        if self.__logging:
+            self.__mqtt.enable_logger(mqtt_logger)
         if self.__tls:
             self.__mqtt.tls_set()
         self.__mqtt.message_retry_set(self.__msg_retry)
