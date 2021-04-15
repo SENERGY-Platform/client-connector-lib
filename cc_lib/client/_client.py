@@ -49,12 +49,6 @@ def _hashDevices(devices: typing.Union[typing.Tuple[Device], typing.List[Device]
     return hashlib.sha1("".join(hashes).encode()).hexdigest()
 
 
-_handler_map = {
-    CommandEnvelope: "response",
-    EventEnvelope: "event"
-}
-
-
 class CompletionStrategy:
     optimistic = "optimistic"
     pessimistic = "pessimistic"
