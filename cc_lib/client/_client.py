@@ -83,6 +83,17 @@ class Client:
         self.__disconnect_clbk = None
         self.__set_clbk_lock = threading.RLock()
         self.__hub_id = None
+        cmd_sub_topic = cc_conf.api.command_sub_topic.split("/")
+        self.__command_sub_topic_map = {
+            "identifier": cmd_sub_topic.index(cc_conf.router.command_sub_topic_identifier),
+            "device_id": cmd_sub_topic.index("{device_id}"),
+            "service_id": cmd_sub_topic.index("+")
+        }
+        fog_prcs_topic = cc_conf.api.fog_processes_sub_topic.split("/")
+        self.__fog_processes_sub_topic_map = {
+            "identifier": fog_prcs_topic.index(cc_conf.router.fog_processes_sub_topic_identifier),
+            "sub_topic": fog_prcs_topic.index("#")
+        }
 
     # ------------- internal methods ------------- #
 
@@ -430,7 +441,7 @@ class Client:
         if self.__fog_processes:
             worker = EventWorker(
                 target=self.__fog_subscribe,
-                args=("processes/{}/cmd/#".format(self.__hub_id),),
+                args=(cc_conf.api.fog_processes_sub_topic.format(hub_id=self.__hub_id),),
                 name="subscribe-fog-processes",
                 usr_method=self.__fog_subscribe_on_done,
                 usr_data="processes"
@@ -576,7 +587,9 @@ class Client:
             raise NotConnectedError
         try:
             self.__comm.subscribe(
-                topic="command/{}/+".format(self.__prefix_device_id(device_id) if self.__device_id_prefix else device_id),
+                topic=cc_conf.api.command_sub_topic.format(
+                    device_id=self.__prefix_device_id(device_id) if self.__device_id_prefix else device_id
+                ),
                 qos=cc_conf.connector.qos,
                 event_worker=event_worker
             )
@@ -604,7 +617,9 @@ class Client:
             raise NotConnectedError
         try:
             self.__comm.unsubscribe(
-                topic="command/{}/+".format(self.__prefix_device_id(device_id) if self.__device_id_prefix else device_id),
+                topic=cc_conf.api.command_sub_topic.format(
+                    device_id=self.__prefix_device_id(device_id) if self.__device_id_prefix else device_id
+                ),
                 event_worker=event_worker
             )
         except mqtt.NotConnectedError:
@@ -617,12 +632,16 @@ class Client:
     def __route_message(self, payload: typing.Union[str, bytes], topic: str):
         try:
             topic_parts = topic.split("/")
-            if topic_parts[0] == "command":
-                self.__handle_command(payload=payload, device_id=topic_parts[1], service_uri=topic_parts[2])
-            elif topic_parts[0] == "processes":
-                self.__handle_fog_process(payload=payload, sub_topic="/".join(topic_parts[2:]))
-            # elif topic_parts[0] == "fog":
-            #     self.__handle_fog_analytics(payload=payload)
+            if topic_parts[self.__command_sub_topic_map["identifier"]] == cc_conf.router.command_sub_topic_identifier:
+                self.__handle_command(
+                    payload=payload,
+                    device_id=topic_parts[self.__command_sub_topic_map["device_id"]],
+                    service_uri=topic_parts[self.__command_sub_topic_map["service_id"]]
+                )
+            elif topic_parts[self.__fog_processes_sub_topic_map["identifier"]] == cc_conf.router.fog_processes_sub_topic_identifier:
+                self.__handle_fog_process(
+                    payload=payload,
+                    sub_topic="/".join(topic_parts[self.__fog_processes_sub_topic_map["sub_topic"]:]))
         except Exception as ex:
             logger.error("routing received message failed - {}\ntopic: {}\npayload: {}".format(ex, topic, payload))
 
@@ -713,9 +732,9 @@ class Client:
 
     def __send_cmd_resp(self, envelope: CommandEnvelope, event_worker):
         self.__send(
-            topic="response/{}/{}".format(
-                self.__prefix_device_id(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
-                envelope.service_uri
+            topic=cc_conf.api.command_response_pub_topic.format(
+                device_id=self.__prefix_device_id(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
+                service_id=envelope.service_uri
             ),
             payload=json.dumps(dict(envelope)),
             envelope_type=envelope.__class__.__name__,
@@ -725,9 +744,9 @@ class Client:
 
     def __send_event(self, envelope: EventEnvelope, event_worker):
         self.__send(
-            topic="event/{}/{}".format(
-                self.__prefix_device_id(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
-                envelope.service_uri
+            topic=cc_conf.api.event_pub_topic.format(
+                device_id=self.__prefix_device_id(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
+                service_id=envelope.service_uri
             ),
             payload=json.dumps(dict(envelope.message)),
             envelope_type=envelope.__class__.__name__,
@@ -737,10 +756,7 @@ class Client:
 
     def __send_fog_prcs_sync(self, envelope: FogProcessesEnvelope, event_worker):
         self.__send(
-            topic="processes/{}/{}".format(
-                self.__hub_id,
-                envelope.sub_topic
-            ),
+            topic=cc_conf.api.fog_processes_pub_topic.format(hub_id=self.__hub_id, sub_topic=envelope.sub_topic),
             payload=envelope.message,
             envelope_type=envelope.__class__.__name__,
             correlation_id=envelope.correlation_id,
