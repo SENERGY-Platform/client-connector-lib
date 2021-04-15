@@ -648,7 +648,7 @@ class Client:
     def __handle_fog_process(self, payload: typing.Union[str, bytes], sub_topic: str):
         logger.debug("received fog processes message ...\nsub id: {}\npayload: '{}'".format(sub_topic, payload))
         try:
-            self.__fog_prcs_queue.put_nowait(FogProcessesEnvelope(sub_topic=sub_topic, message=json.loads(payload)))
+            self.__fog_prcs_queue.put_nowait(FogProcessesEnvelope(sub_topic=sub_topic, message=payload))
         except Exception as ex:
             logger.error(
                 "could not handle fog processes message - {}\nsub topic: {}\npayload: '{}'".format(ex, sub_topic, payload)
