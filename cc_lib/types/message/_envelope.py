@@ -175,7 +175,7 @@ class FogProcessesEnvelope(Envelope):
 
     __slots__ = ('__sub_topic',)
 
-    def __init__(self, sub_topic: str, message: str):
+    def __init__(self, sub_topic: str, message: typing.Union[str, bytes]):
         super().__init__(message=message)
         validate_instance(sub_topic, str)
         self.__sub_topic = sub_topic
@@ -185,11 +185,11 @@ class FogProcessesEnvelope(Envelope):
         return self.__sub_topic
 
     @property
-    def message(self) -> str:
+    def message(self) -> typing.Union[str, bytes]:
         return Envelope.message.fget(self)
 
     @message.setter
     def message(self, arg):
-        validate_instance(arg, str)
+        validate_instance(arg, (str, bytes))
         Envelope.message.fset(self, arg)
 
