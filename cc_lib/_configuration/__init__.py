@@ -48,14 +48,14 @@ class CC_Lib:
         reconn_delay_max: int = 120
         reconn_delay_factor: typing.Union[int, float] = 1.85
         low_level_logger: bool = False
+        request_timeout: typing.Union[int, float] = 30
+        eventual_consistency_delay: typing.Union[int, float] = 2
 
     @conf_manager.section
     class api:
         hub_endpt: str = None
         device_endpt: str = None
         auth_endpt: str = None
-        request_timeout: typing.Union[int, float] = 30
-        eventual_consistency_delay: typing.Union[int, float] = 2
 
 
 if file_conf_manager:

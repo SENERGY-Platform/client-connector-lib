@@ -98,7 +98,7 @@ class OpenIdClient:
             method=http.Method.POST,
             body=payload,
             content_type=http.ContentType.form,
-            timeout=cc_conf.api.request_timeout
+            timeout=cc_conf.connector.request_timeout
         )
         try:
             resp = req.send()

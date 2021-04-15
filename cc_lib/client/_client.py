@@ -112,7 +112,7 @@ class Client:
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
-                    timeout=cc_conf.api.request_timeout
+                    timeout=cc_conf.connector.request_timeout
                 )
                 resp = req.send()
                 if not resp.status == 200:
@@ -129,7 +129,7 @@ class Client:
                     url="{}/{}".format(cc_conf.api.hub_endpt, http.url_encode(hub_id)),
                     method=http.Method.HEAD,
                     headers={"Authorization": "Bearer {}".format(access_token)},
-                    timeout=cc_conf.api.request_timeout
+                    timeout=cc_conf.connector.request_timeout
                 )
                 resp = req.send()
                 if resp.status == 200:
@@ -185,7 +185,7 @@ class Client:
                     method=http.Method.GET,
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
-                    timeout=cc_conf.api.request_timeout
+                    timeout=cc_conf.connector.request_timeout
                 )
                 resp = req.send()
                 if resp.status == 200:
@@ -204,7 +204,7 @@ class Client:
                             },
                             content_type=http.ContentType.json,
                             headers={"Authorization": "Bearer {}".format(access_token)},
-                            timeout=cc_conf.api.request_timeout
+                            timeout=cc_conf.connector.request_timeout
                         )
                         resp = req.send()
                         if resp.status == 400:
@@ -263,7 +263,7 @@ class Client:
                 ),
                 method=http.Method.GET,
                 headers={"Authorization": "Bearer {}".format(access_token)},
-                timeout=cc_conf.api.request_timeout
+                timeout=cc_conf.connector.request_timeout
             )
             resp = req.send()
             if resp.status == 404:
@@ -277,7 +277,7 @@ class Client:
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
-                    timeout=cc_conf.api.request_timeout
+                    timeout=cc_conf.connector.request_timeout
                 )
                 resp = req.send()
                 if not resp.status == 200:
@@ -288,10 +288,10 @@ class Client:
                 logger.debug(
                     "adding device '{}' to platform - waiting {}s for eventual consistency".format(
                         device.id,
-                        cc_conf.api.eventual_consistency_delay
+                        cc_conf.connector.eventual_consistency_delay
                     )
                 )
-                time.sleep(cc_conf.api.eventual_consistency_delay)
+                time.sleep(cc_conf.connector.eventual_consistency_delay)
                 logger.info("adding device '{}' to platform successful".format(device.id))
                 device_atr = json.loads(resp.body)
                 setattr(device, '_{}__{}'.format(Device.__name__, "remote_id"), device_atr["id"])
@@ -329,7 +329,7 @@ class Client:
                 ),
                 method=http.Method.DELETE,
                 headers={"Authorization": "Bearer {}".format(access_token)},
-                timeout=cc_conf.api.request_timeout
+                timeout=cc_conf.connector.request_timeout
             )
             resp = req.send()
             if resp.status == 200:
@@ -368,7 +368,7 @@ class Client:
                 },
                 content_type=http.ContentType.json,
                 headers={"Authorization": "Bearer {}".format(access_token)},
-                timeout=cc_conf.api.request_timeout
+                timeout=cc_conf.connector.request_timeout
             )
             resp = req.send()
             if resp.status == 200:
