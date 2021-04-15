@@ -56,6 +56,16 @@ class CC_Lib:
         hub_endpt: str = None
         device_endpt: str = None
         auth_endpt: str = None
+        event_pub_topic: str = "event/{device_id}/{service_id}"
+        command_sub_topic: str = "command/{device_id}/+"
+        command_response_pub_topic: str = "response/{device_id}/{service_id}"
+        fog_processes_sub_topic: str = "processes/{hub_id}/cmd/#"
+        fog_processes_pub_topic: str = "processes/{hub_id}/state/{sub_topic}"
+
+    @conf_manager.section
+    class router:
+        command_sub_topic_identifier: str = "command"
+        fog_processes_sub_topic_identifier: str = "processes"
 
 
 if file_conf_manager:
