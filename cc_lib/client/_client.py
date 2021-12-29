@@ -370,7 +370,8 @@ class Client:
                     "id": device.remote_id,
                     "name": device.name,
                     "device_type_id": device.device_type_id,
-                    "local_id": self.__prefix_device_id(device.id) if self.__device_id_prefix else device.id
+                    "local_id": self.__prefix_device_id(device.id) if self.__device_id_prefix else device.id,
+                    "attributes": device.attributes,
                 },
                 content_type=http.ContentType.json,
                 headers={"Authorization": "Bearer {}".format(access_token)},
