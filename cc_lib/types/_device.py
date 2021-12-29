@@ -16,16 +16,19 @@
 
 __all__ = ('Device', )
 
+from typing import Optional, List, Dict
+
 from .._util import validate_instance
 
 
 class Device:
-    def __init__(self, id: str, name: str, device_type_id: str):
+    def __init__(self, id: str, name: str, device_type_id: str, attributes: Optional[List[Dict]] = None):
         validate_instance(id, str)
         validate_instance(device_type_id, str)
         self.__id = id
         self.__device_type_id = device_type_id
         self.__remote_id = None
+        self.__attributes = attributes
         self.name = name
 
     @property
@@ -44,6 +47,10 @@ class Device:
     def name(self) -> str:
         return self.__name
 
+    @property
+    def attributes(self) -> Optional[List[Dict]]:
+        return self.__attributes
+
     @name.setter
     def name(self, arg: str) -> None:
         validate_instance(arg, str)
@@ -52,16 +59,17 @@ class Device:
     def __str__(self, **kwargs):
         """
         Provide a string representation.
-        :param kwargs: User attributes provided from subclass.
+        :param kwargs: User properties provided from subclass.
         :return: String.
         """
-        attributes = [
+        properties = [
             ('id', repr(self.id)),
             ('remote_id', repr(self.remote_id)),
             ('name', repr(self.name)),
-            ('device_type_id', repr(self.device_type_id))
+            ('device_type_id', repr(self.device_type_id)),
+            ('attributes', repr(self.attributes))
         ]
         if kwargs:
             for arg, value in kwargs.items():
-                attributes.append((arg, value))
-        return "{}({})".format(self.__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in attributes]))
+                properties.append((arg, value))
+        return "{}({})".format(self.__class__.__name__, ", ".join(["=".join([key, str(value)]) for key, value in properties]))
