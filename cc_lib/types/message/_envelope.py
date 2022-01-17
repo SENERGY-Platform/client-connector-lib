@@ -15,7 +15,7 @@
 """
 
 
-__all__ = ("CommandEnvelope", "CommandResponseEnvelope", "EventEnvelope", "FogProcessesEnvelope", "response_from_command_envelope")
+__all__ = ("CommandEnvelope", "CommandResponseEnvelope", "EventEnvelope", "FogProcessesEnvelope", "ClientErrorEnvelope", "DeviceErrorEnvelope", "CommandErrorEnvelope", "response_from_command_envelope", "error_from_command_envelope")
 
 
 from ._message import *
@@ -193,3 +193,57 @@ class FogProcessesEnvelope(Envelope):
         validate_instance(arg, (str, bytes))
         Envelope.message.fset(self, arg)
 
+    def __str__(self, **kwargs):
+        return super().__str__(sub_topic=self.sub_topic, **kwargs)
+
+
+class ErrorEnvelope(Envelope):
+    def __init__(self, message: typing.Union[str, bytes], corr_id: typing.Optional[str] = None):
+        super().__init__(message=message, corr_id=corr_id)
+
+    @property
+    def message(self) -> typing.Union[str, bytes]:
+        return Envelope.message.fget(self)
+
+    @message.setter
+    def message(self, arg):
+        validate_instance(arg, (str, bytes))
+        Envelope.message.fset(self, arg)
+
+
+class ClientErrorEnvelope(ErrorEnvelope):
+    def __init__(self, message: typing.Union[str, bytes]):
+        super().__init__(message=message)
+
+
+class DeviceErrorEnvelope(ErrorEnvelope):
+    __slots__ = ('__device_id',)
+
+    def __init__(self, message: typing.Union[str, bytes], device: typing.Union[Device, str]):
+        super().__init__(message=message)
+        if type(device) is str:
+            self.__device_id = device
+        elif type(device) is Device or issubclass(type(device), Device):
+            self.__device_id = device.id
+        else:
+            raise TypeError(type(device))
+
+    @property
+    def device_id(self) -> str:
+        return self.__device_id
+
+    def __str__(self, **kwargs):
+        return super().__str__(device_id=self.device_id, **kwargs)
+
+
+class CommandErrorEnvelope(ErrorEnvelope):
+    def __init__(self, message: typing.Union[str, bytes], corr_id: str):
+        super().__init__(message=message, corr_id=corr_id)
+
+
+def error_from_command_envelope(message: typing.Union[str, bytes], envelope: CommandEnvelope) -> CommandErrorEnvelope:
+    validate_instance(envelope, CommandEnvelope)
+    return CommandErrorEnvelope(
+        message=message,
+        corr_id=envelope.correlation_id
+    )
