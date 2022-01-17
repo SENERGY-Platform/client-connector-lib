@@ -61,6 +61,9 @@ class CC_Lib:
         command_response_pub_topic: str = "response/{device_id}/{service_id}"
         fog_processes_sub_topic: str = "processes/{hub_id}/cmd/#"
         fog_processes_pub_topic: str = "processes/{hub_id}/state/{sub_topic}"
+        client_error_pub_topic: str = "error"
+        device_error_pub_topic: str = "error/device/{device_id}"
+        command_error_pub_topic: str = "error/command/{correlation_id}"
 
     @conf_manager.section
     class router:
