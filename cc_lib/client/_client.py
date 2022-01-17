@@ -20,7 +20,7 @@ __all__ = ("Client", "CompletionStrategy")
 from .._configuration import cc_conf
 from .._util import validate_instance, calc_duration, get_logger
 from ..types import Device
-from ..types.message import CommandEnvelope, CommandResponseEnvelope, EventEnvelope, FogProcessesEnvelope, DeviceMessage
+from ..types.message import CommandEnvelope, CommandResponseEnvelope, EventEnvelope, FogProcessesEnvelope, DeviceMessage, ClientErrorEnvelope, DeviceErrorEnvelope, CommandErrorEnvelope
 from ._exception import *
 from ._auth import OpenIdClient, NoTokenError
 from ._protocol import http, mqtt
@@ -732,38 +732,26 @@ class Client:
             )
             raise SendError
 
-    def __send_cmd_resp(self, envelope: CommandEnvelope, event_worker):
-        self.__send(
-            topic=cc_conf.api.command_response_pub_topic.format(
-                device_id=self.__prefix_device_id(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
-                service_id=envelope.service_uri
+    def __send_wrapper(self, topic, payload, envelope, asynchronous) -> typing.Optional[Future]:
+        validate_instance(asynchronous, bool)
+        worker = EventWorker(
+            target=self.__send,
+            args=(
+                topic,
+                payload,
+                envelope.__class__.__name__,
+                envelope.correlation_id
             ),
-            payload=json.dumps(dict(envelope)),
-            envelope_type=envelope.__class__.__name__,
-            correlation_id=envelope.correlation_id,
-            event_worker=event_worker
+            name="send-{}-{}".format(envelope.__class__.__name__, envelope.correlation_id),
+            usr_method=self.__send_on_done,
+            usr_data=envelope
         )
-
-    def __send_event(self, envelope: EventEnvelope, event_worker):
-        self.__send(
-            topic=cc_conf.api.event_pub_topic.format(
-                device_id=self.__prefix_device_id(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
-                service_id=envelope.service_uri
-            ),
-            payload=json.dumps(dict(envelope.message)),
-            envelope_type=envelope.__class__.__name__,
-            correlation_id=envelope.correlation_id,
-            event_worker=event_worker
-        )
-
-    def __send_fog_prcs_sync(self, envelope: FogProcessesEnvelope, event_worker):
-        self.__send(
-            topic=cc_conf.api.fog_processes_pub_topic.format(hub_id=self.__hub_id, sub_topic=envelope.sub_topic),
-            payload=envelope.message,
-            envelope_type=envelope.__class__.__name__,
-            correlation_id=envelope.correlation_id,
-            event_worker=event_worker
-        )
+        future = worker.start()
+        if asynchronous:
+            return future
+        else:
+            future.wait()
+            future.result()
 
     def __prefix_device_id(self, device_id: str) -> str:
         """
@@ -826,7 +814,7 @@ class Client:
         """
         Synchronize a hub. Associate devices managed by the client with the hub and update hub name.
         Devices must be added via addDevice.
-        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :param asynchronous: If 'True' method returns a Future object.
         :return: Future or None.
         """
         validate_instance(devices, list)
@@ -844,7 +832,7 @@ class Client:
         """
         Add a device to local device manager and remote platform. Blocks by default.
         :param device: Device object.
-        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :param asynchronous: If 'True' method returns a Future object.
         :return: Future or None.
         """
         validate_instance(device, Device)
@@ -865,7 +853,7 @@ class Client:
         """
         Delete a device from local device manager and remote platform. Blocks by default.
         :param device: Device ID or Device object.
-        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :param asynchronous: If 'True' method returns a Future object.
         :return: Future or None.
         """
         validate_instance(device, (Device, str))
@@ -889,7 +877,7 @@ class Client:
         """
         Update a device on the platform.
         :param device: Device object or device ID.
-        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :param asynchronous: If 'True' method returns a Future object.
         :return: Future or None.
         """
         validate_instance(device, Device)
@@ -909,7 +897,7 @@ class Client:
     def connect(self, reconnect: bool = False, asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Connect to platform message broker.
-        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :param asynchronous: If 'True' method returns a Future object.
         :return: Future or None.
         """
         if self.__fog_processes and not self.__hub_id:
@@ -954,7 +942,7 @@ class Client:
         """
         Connect a device to the platform.
         :param device: Device object or device ID.
-        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :param asynchronous: If 'True' method returns a Future object.
         :return: Future or None.
         """
         validate_instance(device, (Device, str))
@@ -980,7 +968,7 @@ class Client:
         """
         Disconnect a device from the platform.
         :param device: Device object or device ID.
-        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :param asynchronous: If 'True' method returns a Future object.
         :return: Future or None.
         """
         validate_instance(device, (Device, str))
@@ -1020,47 +1008,37 @@ class Client:
         """
         Send a response to the platform after handling a command.
         :param envelope: Envelope object received from a command via receiveCommand.
-        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :param asynchronous: If 'True' method returns a Future object.
         :return: Future or None.
         """
         validate_instance(envelope, CommandResponseEnvelope)
-        validate_instance(asynchronous, bool)
-        worker = EventWorker(
-            target=self.__send_cmd_resp,
-            args=(envelope, ),
-            name="send-response-".format(envelope.correlation_id),
-            usr_method=self.__send_on_done,
-            usr_data=envelope
+        return self.__send_wrapper(
+            topic=cc_conf.api.command_response_pub_topic.format(
+                device_id=self.__prefix_device_id(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
+                service_id=envelope.service_uri
+            ),
+            payload=json.dumps(dict(envelope)),
+            envelope=envelope,
+            asynchronous=asynchronous
         )
-        future = worker.start()
-        if asynchronous:
-            return future
-        else:
-            future.wait()
-            future.result()
 
     def send_event(self, envelope: EventEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
         """
         Send an event to the platform.
         :param envelope: Envelope object.
-        :param asynchronous: If 'True' method returns a ClientFuture object.
+        :param asynchronous: If 'True' method returns a Future object.
         :return: Future or None.
         """
         validate_instance(envelope, EventEnvelope)
-        validate_instance(asynchronous, bool)
-        worker = EventWorker(
-            target=self.__send_event,
-            args=(envelope, ),
-            name="send-event-".format(envelope.correlation_id),
-            usr_method=self.__send_on_done,
-            usr_data=envelope
+        return self.__send_wrapper(
+            topic=cc_conf.api.event_pub_topic.format(
+                device_id=self.__prefix_device_id(envelope.device_id) if self.__device_id_prefix else envelope.device_id,
+                service_id=envelope.service_uri
+            ),
+            payload=json.dumps(dict(envelope.message)),
+            envelope=envelope,
+            asynchronous=asynchronous
         )
-        future = worker.start()
-        if asynchronous:
-            return future
-        else:
-            future.wait()
-            future.result()
 
     def receive_fog_processes(self, block: bool = True, timeout: typing.Optional[typing.Union[int, float]] = None) -> FogProcessesEnvelope:
         """
@@ -1080,21 +1058,58 @@ class Client:
         """
             Send fog processes sync data to the platform.
             :param envelope: FogProcessesEnvelope object.
-            :param asynchronous: If 'True' method returns a ClientFuture object.
+            :param asynchronous: If 'True' method returns a Future object.
             :return: Future or None.
         """
         validate_instance(envelope, FogProcessesEnvelope)
-        validate_instance(asynchronous, bool)
-        worker = EventWorker(
-            target=self.__send_fog_prcs_sync,
-            args=(envelope,),
-            name="send-process-sync-".format(envelope.correlation_id),
-            usr_method=self.__send_on_done,
-            usr_data=envelope
+        return self.__send_wrapper(
+            topic=cc_conf.api.fog_processes_pub_topic.format(hub_id=self.__hub_id, sub_topic=envelope.sub_topic),
+            payload=envelope.message,
+            envelope=envelope,
+            asynchronous=asynchronous
         )
-        future = worker.start()
-        if asynchronous:
-            return future
-        else:
-            future.wait()
-            future.result()
+
+    def send_client_error(self, envelope: ClientErrorEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
+        """
+            Send a client error to the platform.
+            :param envelope: ClientErrorEnvelope object.
+            :param asynchronous: If 'True' method returns a Future object.
+            :return: Future or None.
+        """
+        validate_instance(envelope, ClientErrorEnvelope)
+        return self.__send_wrapper(
+            topic=cc_conf.api.client_error_pub_topic,
+            payload=envelope.message,
+            envelope=envelope,
+            asynchronous=asynchronous
+        )
+
+    def send_device_error(self, envelope: DeviceErrorEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
+        """
+            Send a device error to the platform.
+            :param envelope: ClientErrorEnvelope object.
+            :param asynchronous: If 'True' method returns a Future object.
+            :return: Future or None.
+        """
+        validate_instance(envelope, DeviceErrorEnvelope)
+        return self.__send_wrapper(
+            topic=cc_conf.api.device_error_pub_topic.format(device_id=envelope.device_id),
+            payload=envelope.message,
+            envelope=envelope,
+            asynchronous=asynchronous
+        )
+
+    def send_command_error(self, envelope: CommandErrorEnvelope, asynchronous: bool = False) -> typing.Optional[Future]:
+        """
+            Send a command error to the platform.
+            :param envelope: ClientErrorEnvelope object.
+            :param asynchronous: If 'True' method returns a Future object.
+            :return: Future or None.
+        """
+        validate_instance(envelope, CommandErrorEnvelope)
+        return self.__send_wrapper(
+            topic=cc_conf.api.command_error_pub_topic.format(correlation_id=envelope.correlation_id),
+            payload=envelope.message,
+            envelope=envelope,
+            asynchronous=asynchronous
+        )
