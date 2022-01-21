@@ -19,6 +19,7 @@ __all__ = ("Client", "CompletionStrategy")
 
 from .._configuration import cc_conf
 from .._util import validate_instance, calc_duration, get_logger
+from .._model import DeviceAttribute
 from ..types import Device
 from ..types.message import CommandEnvelope, CommandResponseEnvelope, EventEnvelope, FogProcessesEnvelope, DeviceMessage, ClientErrorEnvelope, DeviceErrorEnvelope, CommandErrorEnvelope
 from ._exception import *
@@ -58,13 +59,14 @@ class Client:
     """
     Client class for client-connector projects.
     """
-    def __init__(self, user: typing.Optional[str] = None, pw: typing.Optional[str] = None, client_id: typing.Optional[str] = None, device_id_prefix: typing.Optional[str] = None, fog_processes: typing.Optional[bool] = False, fog_analytics: typing.Optional[bool] = False):
+    def __init__(self, user: typing.Optional[str] = None, pw: typing.Optional[str] = None, client_id: typing.Optional[str] = None, device_id_prefix: typing.Optional[str] = None, device_attribute_origin: typing.Optional[str] = None, fog_processes: typing.Optional[bool] = False, fog_analytics: typing.Optional[bool] = False):
         """
         Create a Client instance. Set device manager, initiate configuration and library logging facility.
         """
         self.__user = user or os.getenv("CC_LIB_CREDENTIALS_USER")
         self.__pw = pw or os.getenv("CC_LIB_CREDENTIALS_PW")
         self.__device_id_prefix = device_id_prefix
+        self.__device_attribute_origin = device_attribute_origin or os.getenv("CC_LIB_DEVICE_ATTRIBUTE_ORIGIN") or "local-cc"
         self.__fog_processes = fog_processes
         self.__fog_analytics = fog_analytics
         self.__auth = OpenIdClient(cc_conf.api.auth_endpt, self.__user, self.__pw, client_id or os.getenv("CC_LIB_CREDENTIALS_CLIENT_ID"))
@@ -279,7 +281,7 @@ class Client:
                         "name": device.name,
                         "device_type_id": device.device_type_id,
                         "local_id": self.__prefix_device_id(device.id) if self.__device_id_prefix else device.id,
-                        "attributes": device.attributes,
+                        "attributes": self.__add_device_attribute_origin(device.attributes)
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
@@ -371,7 +373,7 @@ class Client:
                     "name": device.name,
                     "device_type_id": device.device_type_id,
                     "local_id": self.__prefix_device_id(device.id) if self.__device_id_prefix else device.id,
-                    "attributes": device.attributes,
+                    "attributes": self.__add_device_attribute_origin(device.attributes)
                 },
                 content_type=http.ContentType.json,
                 headers={"Authorization": "Bearer {}".format(access_token)},
@@ -768,6 +770,11 @@ class Client:
         :return: Device ID.
         """
         return device_id.replace("{}-".format(self.__device_id_prefix), "")
+
+    def __add_device_attribute_origin(self, attributes: typing.List[typing.Dict[str, typing.Union[str, int, float]]]):
+        for attr in attributes:
+            attr[DeviceAttribute.origin] = self.__device_attribute_origin
+        return attributes
 
     # ------------- user methods ------------- #
 
