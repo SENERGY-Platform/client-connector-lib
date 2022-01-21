@@ -17,6 +17,7 @@
 __all__ = ('Device', )
 
 from .._util import validate_instance
+from .._model import DeviceAttribute
 import typing
 
 
@@ -24,12 +25,6 @@ def gen_attribute(key, value):
     validate_instance(key, str)
     validate_instance(value, (str, int, float))
     return {DeviceAttribute.key: key, DeviceAttribute.value: value}
-
-
-class DeviceAttribute:
-    key = "key"
-    value = "value"
-    origin = "origin"
 
 
 class Device:
