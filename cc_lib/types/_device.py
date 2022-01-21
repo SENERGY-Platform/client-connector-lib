@@ -16,19 +16,31 @@
 
 __all__ = ('Device', )
 
-from typing import Optional, List, Dict
-
 from .._util import validate_instance
+import typing
+
+
+def gen_attribute(key, value):
+    validate_instance(key, str)
+    validate_instance(value, (str, int, float))
+    return {DeviceAttribute.key: key, DeviceAttribute.value: value}
+
+
+class DeviceAttribute:
+    key = "key"
+    value = "value"
+    origin = "origin"
 
 
 class Device:
-    def __init__(self, id: str, name: str, device_type_id: str, attributes: Optional[List[Dict]] = None):
+    def __init__(self, id: str, name: str, device_type_id: str, attributes: typing.Optional[typing.List[typing.Dict[str, typing.Union[str, int, float]]]] = None):
         validate_instance(id, str)
         validate_instance(device_type_id, str)
         self.__id = id
         self.__device_type_id = device_type_id
         self.__remote_id = None
-        self.__attributes = attributes
+        self.__attributes = None
+        self.attributes = attributes or list()
         self.name = name
 
     @property
@@ -47,14 +59,22 @@ class Device:
     def name(self) -> str:
         return self.__name
 
-    @property
-    def attributes(self) -> Optional[List[Dict]]:
-        return self.__attributes
-
     @name.setter
-    def name(self, arg: str) -> None:
+    def name(self, arg: str):
         validate_instance(arg, str)
         self.__name = arg
+
+    @property
+    def attributes(self) -> typing.List[typing.Dict[str, typing.Union[str, int, float]]]:
+        return [obj.copy() for obj in self.__attributes]
+
+    @attributes.setter
+    def attributes(self, arg: typing.List[typing.Dict[str, typing.Union[str, int, float]]]):
+        validate_instance(arg, (list, tuple))
+        attributes = list()
+        for item in arg:
+            attributes.append(gen_attribute(**item))
+        self.__attributes = attributes
 
     def __str__(self, **kwargs):
         """
@@ -67,7 +87,7 @@ class Device:
             ('remote_id', repr(self.remote_id)),
             ('name', repr(self.name)),
             ('device_type_id', repr(self.device_type_id)),
-            ('attributes', repr(self.attributes))
+            ('attributes', repr(self.__attributes))
         ]
         if kwargs:
             for arg, value in kwargs.items():
