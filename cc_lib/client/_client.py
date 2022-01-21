@@ -281,7 +281,7 @@ class Client:
                         "name": device.name,
                         "device_type_id": device.device_type_id,
                         "local_id": self.__prefix_device_id(device.id) if self.__device_id_prefix else device.id,
-                        "attributes": self.__add_device_attribute_origin(device.attributes)
+                        "attributes": self.__add_device_attribute_origin(device.attributes) if device.attributes else device.attributes
                     },
                     content_type=http.ContentType.json,
                     headers={"Authorization": "Bearer {}".format(access_token)},
@@ -373,7 +373,7 @@ class Client:
                     "name": device.name,
                     "device_type_id": device.device_type_id,
                     "local_id": self.__prefix_device_id(device.id) if self.__device_id_prefix else device.id,
-                    "attributes": self.__add_device_attribute_origin(device.attributes)
+                    "attributes": self.__add_device_attribute_origin(device.attributes) if device.attributes else device.attributes
                 },
                 content_type=http.ContentType.json,
                 headers={"Authorization": "Bearer {}".format(access_token)},

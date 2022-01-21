@@ -34,8 +34,7 @@ class Device:
         self.__id = id
         self.__device_type_id = device_type_id
         self.__remote_id = None
-        self.__attributes = None
-        self.attributes = attributes or list()
+        self.attributes = attributes
         self.name = name
 
     @property
@@ -60,16 +59,22 @@ class Device:
         self.__name = arg
 
     @property
-    def attributes(self) -> typing.List[typing.Dict[str, typing.Union[str, int, float]]]:
-        return [obj.copy() for obj in self.__attributes]
+    def attributes(self) -> typing.Optional[typing.List[typing.Dict[str, typing.Union[str, int, float]]]]:
+        if self.__attributes:
+            return [obj.copy() for obj in self.__attributes]
+        else:
+            return self.__attributes
 
     @attributes.setter
     def attributes(self, arg: typing.List[typing.Dict[str, typing.Union[str, int, float]]]):
-        validate_instance(arg, (list, tuple))
-        attributes = list()
-        for item in arg:
-            attributes.append(gen_attribute(**item))
-        self.__attributes = attributes
+        validate_instance(arg, (list, tuple, type(None)))
+        if arg:
+            attributes = list()
+            for item in arg:
+                attributes.append(gen_attribute(**item))
+            self.__attributes = attributes
+        else:
+            self.__attributes = arg
 
     def __str__(self, **kwargs):
         """
