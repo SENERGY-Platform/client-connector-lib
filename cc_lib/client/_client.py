@@ -363,9 +363,10 @@ class Client:
             logger.info("updating device '{}' on platform ...".format(device.id))
             access_token = self.__auth.get_access_token()
             req = http.Request(
-                url="{}/{}".format(
+                url="{}/{}?update-only-same-origin-attributes={}".format(
                     cc_conf.api.device_endpt,
-                    http.url_encode(self.__prefix_device_id(device.id)) if self.__device_id_prefix else http.url_encode(device.id)
+                    http.url_encode(self.__prefix_device_id(device.id)) if self.__device_id_prefix else http.url_encode(device.id),
+                    self.__device_attribute_origin
                 ),
                 method=http.Method.PUT,
                 body={
