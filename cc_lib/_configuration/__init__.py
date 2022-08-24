@@ -17,61 +17,58 @@
 __all__ = ("cc_conf", )
 
 
-import os
 import typing
+import sevm
 
 
-file_conf_manager = os.getenv("CC_LIB_CONF_MANAGER") == "file"
-
-if file_conf_manager:
-    import simple_conf as conf_manager
-else:
-    import simple_env_var as conf_manager
-
-user_dir = os.getenv("CC_LIB_USER_PATH") or os.getcwd()
-
-
-@conf_manager.configuration
-class CC_Lib:
-
-    @conf_manager.section
-    class connector:
-        host: str = None
-        port: int = None
-        tls: bool = True
-        qos: int = 2
-        msg_retry: int = 5
-        keepalive: int = 20
-        clean_session: bool = True
-        loop_time: typing.Union[int, float] = 1
-        reconn_delay_min: int = 5
-        reconn_delay_max: int = 120
-        reconn_delay_factor: typing.Union[int, float] = 1.85
-        low_level_logger: bool = False
-        request_timeout: typing.Union[int, float] = 30
-        eventual_consistency_delay: typing.Union[int, float] = 2
-
-    @conf_manager.section
-    class api:
-        hub_endpt: str = None
-        device_endpt: str = None
-        auth_endpt: str = None
-        event_pub_topic: str = "event/{device_id}/{service_id}"
-        command_sub_topic: str = "command/{device_id}/+"
-        command_response_pub_topic: str = "response/{device_id}/{service_id}"
-        fog_processes_sub_topic: str = "processes/{hub_id}/cmd/#"
-        fog_processes_pub_topic: str = "processes/{hub_id}/state/{sub_topic}"
-        client_error_pub_topic: str = "error"
-        device_error_pub_topic: str = "error/device/{device_id}"
-        command_error_pub_topic: str = "error/command/{correlation_id}"
-
-    @conf_manager.section
-    class router:
-        command_sub_topic_identifier: str = "command"
-        fog_processes_sub_topic_identifier: str = "processes"
+class ConnectorConfig(sevm.Config):
+    host: str = None
+    port: int = None
+    tls: bool = True
+    qos: int = 2
+    msg_retry: int = 5
+    keepalive: int = 20
+    clean_session: bool = True
+    loop_time: typing.Union[int, float] = 1
+    reconn_delay_min: int = 5
+    reconn_delay_max: int = 120
+    reconn_delay_factor: typing.Union[int, float] = 1.85
+    low_level_logger: bool = False
+    request_timeout: typing.Union[int, float] = 30
+    eventual_consistency_delay: typing.Union[int, float] = 2
 
 
-if file_conf_manager:
-    cc_conf = CC_Lib(conf_file='cc_lib.conf', user_path=user_dir, ext_aft_crt=True)
-else:
-    cc_conf = CC_Lib()
+class ApiConfig(sevm.Config):
+    hub_endpt: str = None
+    device_endpt: str = None
+    auth_endpt: str = None
+    event_pub_topic: str = "event/{device_id}/{service_id}"
+    command_sub_topic: str = "command/{device_id}/+"
+    command_response_pub_topic: str = "response/{device_id}/{service_id}"
+    fog_processes_sub_topic: str = "processes/{hub_id}/cmd/#"
+    fog_processes_pub_topic: str = "processes/{hub_id}/state/{sub_topic}"
+    client_error_pub_topic: str = "error"
+    device_error_pub_topic: str = "error/device/{device_id}"
+    command_error_pub_topic: str = "error/command/{correlation_id}"
+
+
+class RouterConfig(sevm.Config):
+    command_sub_topic_identifier: str = "command"
+    fog_processes_sub_topic_identifier: str = "processes"
+
+
+class Credentials(sevm.Config):
+    user: str = None
+    pw: str = None
+    client_id: str = None
+
+
+class Config(sevm.Config):
+    connector = ConnectorConfig
+    api = ApiConfig
+    router = RouterConfig
+    credentials = Credentials
+    device_attribute_origin: str = "local-cc"
+
+
+cc_conf = Config(prefix="CC_LIB_")

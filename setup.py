@@ -42,8 +42,7 @@ setuptools.setup(
     copyright=metadata.get('__copyright__'),
     install_requires=[
         'paho-mqtt>=1.4.0,<1.6',
-        'simple-env-var-manager @ git+https://github.com/y-du/simple-env-var-manager.git@1.0.2',
-        'simple-conf-manager @ git+https://github.com/y-du/simple-conf-manager.git@1.0.1'
+        'simple-env-var-manager @ git+https://github.com/y-du/simple-env-var-manager.git@2.3.0'
     ],
     packages=setuptools.find_packages(),
     python_requires='>=3.7',
