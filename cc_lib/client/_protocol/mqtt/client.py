@@ -125,12 +125,14 @@ class Client:
                 logger.debug("starting loop")
                 loop_ex = None
                 try:
-                    while rc == paho.mqtt.client.MQTT_ERR_SUCCESS:
+                    while rc == paho.mqtt.client.MQTT_ERR_SUCCESS and self.__mqtt.socket():
                         rc = self.__mqtt.loop(timeout=self.__loop_time)
                         if self.__usr_disconn:
                             self.__usr_disconn = False
                             self.__mqtt.disconnect()
                             break
+                    if rc == paho.mqtt.client.MQTT_ERR_SUCCESS and not self.__mqtt.socket():
+                        rc = paho.mqtt.client.MQTT_ERR_NO_CONN
                 except OSError as loop_ex:
                     logger.error("socket error - {}".format(loop_ex))
                 logger.debug("loop stopped")
