@@ -33,7 +33,6 @@ import time
 import queue
 import threading
 import json
-import os
 
 
 logger = get_logger(__name__.rsplit(".", 1)[-1].replace("_", ""))
@@ -63,13 +62,13 @@ class Client:
         """
         Create a Client instance. Set device manager, initiate configuration and library logging facility.
         """
-        self.__user = user or os.getenv("CC_LIB_CREDENTIALS_USER")
-        self.__pw = pw or os.getenv("CC_LIB_CREDENTIALS_PW")
+        self.__user = user or cc_conf.credentials.user
+        self.__pw = pw or cc_conf.credentials.pw
         self.__device_id_prefix = device_id_prefix
-        self.__device_attribute_origin = device_attribute_origin or os.getenv("CC_LIB_DEVICE_ATTRIBUTE_ORIGIN") or "local-cc"
+        self.__device_attribute_origin = device_attribute_origin or cc_conf.device_attribute_origin
         self.__fog_processes = fog_processes
         self.__fog_analytics = fog_analytics
-        self.__auth = OpenIdClient(cc_conf.api.auth_endpt, self.__user, self.__pw, client_id or os.getenv("CC_LIB_CREDENTIALS_CLIENT_ID"))
+        self.__auth = OpenIdClient(cc_conf.api.auth_endpt, self.__user, self.__pw, client_id or cc_conf.credentials.client_id)
         self.__comm = None
         self.__connected_flag = False
         self.__connect_lock = threading.Lock()
